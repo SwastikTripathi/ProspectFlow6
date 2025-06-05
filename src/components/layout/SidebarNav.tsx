@@ -80,28 +80,29 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
                 Favorites
               </SidebarGroupLabel>
               <SidebarMenu>
-                {favoriteJobOpenings.map((opening) => (
-                  <SidebarMenuItem key={opening.id}>
-                    <Link href={`/job-openings?view=${opening.id}`} passHref legacyBehavior>
-                      <SidebarMenuButton
-                        asChild
-                        // No direct isActive check for dynamic items unless path matches exactly
-                        // isActive={pathname === `/job-openings?view=${opening.id}`}
-                        tooltip={`${opening.role_title} at ${opening.company_name_cache}`}
-                      >
-                        <a>
-                          <Star className="text-yellow-500 fill-yellow-400" />
-                          <span className="truncate">
-                            {opening.role_title}
-                            <span className="text-xs text-sidebar-foreground/70 ml-1 truncate hidden sm:group-data-[collapsible=expanded]:inline">
-                              @ {opening.company_name_cache}
+                {favoriteJobOpenings.map((opening) => {
+                  const favoriteDisplayName = `${opening.role_title} @ ${opening.company_name_cache}`;
+                  return (
+                    <SidebarMenuItem key={opening.id}>
+                      <Link href={`/job-openings?view=${opening.id}`} passHref legacyBehavior>
+                        <SidebarMenuButton
+                          asChild
+                          tooltip={favoriteDisplayName}
+                        >
+                          <a>
+                            <Star className="text-yellow-500 fill-yellow-400" />
+                            <span className="truncate">
+                              {opening.role_title}
+                              <span className="text-xs text-sidebar-foreground/70 ml-1 truncate hidden sm:group-data-[collapsible=expanded]:inline">
+                                @ {opening.company_name_cache}
+                              </span>
                             </span>
-                          </span>
-                        </a>
-                      </SidebarMenuButton>
-                    </Link>
-                  </SidebarMenuItem>
-                ))}
+                          </a>
+                        </SidebarMenuButton>
+                      </Link>
+                    </SidebarMenuItem>
+                  );
+                })}
               </SidebarMenu>
             </SidebarGroup>
           </>

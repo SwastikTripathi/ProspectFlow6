@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle as DialogPlainTitle, DialogDescription as DialogPlainDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle as RadixDialogTitle, DialogDescription as RadixDialogDescription } from '@/components/ui/dialog';
 
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from "@/components/ui/checkbox";
@@ -1024,25 +1024,26 @@ export default function JobOpeningsPage() {
         
         {focusedOpening && (
           <Dialog open={!!focusedOpening} onOpenChange={(open) => { if (!open) handleCloseFocusedOpeningDialog(); }}>
-            <DialogContent className="sm:max-w-xl p-0 border-0 shadow-2xl bg-transparent">
-              {/* DialogHeader/Title/Description removed to let JobOpeningCard be the full content */}
+            <DialogContent className="sm:max-w-xl p-0 border-0 shadow-2xl bg-transparent data-[state=open]:sm:zoom-in-90 data-[state=closed]:sm:zoom-out-90">
+              <DialogHeader className="sr-only">
+                 <RadixDialogTitle>{focusedOpening.role_title}</RadixDialogTitle>
+                 <RadixDialogDescription>Details for {focusedOpening.role_title} at {focusedOpening.company_name_cache}</RadixDialogDescription>
+              </DialogHeader>
               <JobOpeningCard 
                 opening={focusedOpening}
                 onEdit={() => {
-                  handleCloseFocusedOpeningDialog(); // Close this dialog
-                  handleEditOpening(focusedOpening); // Open the edit dialog
+                  handleCloseFocusedOpeningDialog(); 
+                  handleEditOpening(focusedOpening); 
                 }}
                 onLogFollowUp={handleLogFollowUp}
                 onUnlogFollowUp={handleUnlogFollowUp}
                 onToggleFavorite={async (id, isFav) => {
                     await handleToggleFavorite(id, isFav);
-                    // After toggle, refetch might change the focusedOpening object.
-                    // Find it again from potentially updated jobOpenings state.
                     const updatedFocusedOpening = jobOpenings.find(op => op.id === id);
                     if (updatedFocusedOpening) {
-                        setFocusedOpening(updatedFocusedOpening); // Refresh dialog content if still visible
+                        setFocusedOpening(updatedFocusedOpening); 
                     } else {
-                        handleCloseFocusedOpeningDialog(); // If it's gone (e.g. deleted by another action)
+                        handleCloseFocusedOpeningDialog(); 
                     }
                 }}
                 isFocusedView={true}
