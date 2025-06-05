@@ -127,7 +127,7 @@ function HeroVisual() {
       ]
     },
      {
-      title: 'Data Analyst', 
+      title: 'Data Analyst',
       contextLine: 'Acme Corp.',
       status: 'Applied',
       statusColor: 'bg-blue-500 text-blue-50 border-transparent',
@@ -197,13 +197,19 @@ function HeroVisual() {
                             <div
                               key={detailIndex}
                               className={cn(
-                                "flex text-xs",
-                                isRedAlert ? "bg-destructive text-destructive-foreground px-2 py-1 rounded-md items-center" : "text-muted-foreground items-start",
-                                detail.className && !isRedAlert ? "items-start" : "items-center"
+                                "flex text-xs items-center",
+                                isRedAlert
+                                  ? "border border-destructive px-2 py-1 rounded-md" 
+                                  : "",
+                                detail.className 
                               )}
                             >
-                              <DetailIcon className="mr-1.5 h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-                              <span className={cn("min-w-0", detail.className && !isRedAlert ? detail.className : "truncate", isRedAlert ? "font-semibold" : "")}>
+                              <DetailIcon className={cn("mr-1.5 h-3.5 w-3.5 flex-shrink-0", isRedAlert ? "text-destructive" : "text-muted-foreground")} />
+                              <span className={cn(
+                                "min-w-0",
+                                isRedAlert ? "text-muted-foreground" : "text-muted-foreground truncate",
+                                detail.className 
+                              )}>
                                 {detail.text}
                               </span>
                             </div>
