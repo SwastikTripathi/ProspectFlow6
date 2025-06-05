@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams, notFound, useRouter } from 'next/navigation';
@@ -11,19 +11,18 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, CalendarDays, UserCircle as UserIcon, Edit3, Trash2, ArrowRight } from 'lucide-react';
+import { Loader2, ArrowLeft, CalendarDays, UserCircle as UserIcon, Edit3, Trash2, ArrowRight, Facebook, Twitter, Linkedin, Globe as FooterGlobeIcon } from 'lucide-react'; // Renamed Globe to FooterGlobeIcon
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Logo } from '@/components/icons/Logo';
 import { Around } from "@theme-toggles/react";
 import "@theme-toggles/react/css/Around.css";
 import { cn, slugify } from '@/lib/utils';
-import { Facebook, Twitter, Youtube, Linkedin, Globe } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { OWNER_EMAIL } from '@/lib/config';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { TableOfContents, type TocItem } from '../components/TableOfContents'; 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; 
+import { TableOfContents, type TocItem } from '../components/TableOfContents';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 type PostWithAuthor = Tables<'posts'>;
 
@@ -66,6 +65,9 @@ export default function BlogPostPage() {
   const [isOwner, setIsOwner] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
+  const [scrollPercentage, setScrollPercentage] = useState(0);
+  const articleContentRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     const checkUser = async () => {
@@ -78,7 +80,7 @@ export default function BlogPostPage() {
       }
     };
     checkUser();
-    
+
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
         const user = session?.user ?? null;
         setCurrentUser(user);
@@ -88,7 +90,7 @@ export default function BlogPostPage() {
             setIsOwner(false);
         }
     });
-    
+
     return () => {
         authListener.subscription.unsubscribe();
     };
@@ -114,7 +116,7 @@ export default function BlogPostPage() {
           .single();
 
         if (dbError) {
-          if (dbError.code === 'PGRST116') { 
+          if (dbError.code === 'PGRST116') {
             notFound();
           }
           throw dbError;
@@ -134,15 +136,15 @@ export default function BlogPostPage() {
   useEffect(() => {
     if (post?.content) {
       const newTocItems: TocItem[] = [];
-      const headingRegex = /^(#{1,4})\s+(.*)/gm; 
+      const headingRegex = /^(#{1,4})\s+(.*)/gm;
       let match;
-      const tempContent = post.content.replace(/```[\s\S]*?```/g, ''); 
+      const tempContent = post.content.replace(/```[\s\S]*?```/g, '');
 
       while ((match = headingRegex.exec(tempContent)) !== null) {
         const level = match[1].length;
         const text = match[2].trim();
         const id = slugify(text);
-        if (text) { 
+        if (text) {
             newTocItems.push({ id, level, text });
         }
       }
@@ -150,7 +152,45 @@ export default function BlogPostPage() {
     } else {
       setTocItems([]);
     }
-  }, [post?.content, slug]);
+  }, [post?.content]);
+
+  useEffect(() => {
+    const articleElement = articleContentRef.current;
+    if (!articleElement) return;
+
+    const handleScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const articleTop = articleElement.offsetTop;
+      const articleHeight = articleElement.scrollHeight;
+      const viewportHeight = window.innerHeight;
+      
+      // Calculate how much of the article content has been scrolled past its starting point
+      let scrolledPastArticleStart = Math.max(0, scrollTop - articleTop);
+      
+      // Total scrollable distance within the article content itself
+      let scrollableDistanceInArticle = articleHeight - viewportHeight;
+      if (scrollableDistanceInArticle <=0) { // If article content is shorter than viewport
+        setScrollPercentage(scrollTop > articleTop ? 100: 0); // If past top, show 100%, else 0
+        return;
+      }
+
+      let percentage = (scrolledPastArticleStart / scrollableDistanceInArticle) * 100;
+      percentage = Math.min(100, Math.max(0, percentage));
+      setScrollPercentage(percentage);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial calculation
+
+    // Re-calculate on resize too, as viewportHeight might change
+    window.addEventListener('resize', handleScroll, { passive: true });
+
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [post?.content, isLoading]); // Re-run if content or loading state changes
 
 
   useEffect(() => {
@@ -194,11 +234,15 @@ export default function BlogPostPage() {
   };
 
   const headingRenderer = (level: number) => ({ node, children, ...props }: any) => {
-    const text = node.children.map((child: any) => child.value || '').join('');
-    const id = slugify(text);
+    const textContent = React.Children.toArray(children).reduce((acc: string, child: any) => {
+        if (typeof child === 'string') return acc + child;
+        if (child.props && child.props.children) return acc + React.Children.toArray(child.props.children).join('');
+        return acc;
+    }, '');
+    const id = slugify(textContent);
     return React.createElement(`h${level}`, { id, ...props }, children);
   };
-  
+
   const markdownComponents = {
     h1: headingRenderer(1),
     h2: headingRenderer(2),
@@ -208,7 +252,7 @@ export default function BlogPostPage() {
     h6: headingRenderer(6),
   };
 
-  if (isLoading && !post) { 
+  if (isLoading && !post) {
     return (
       <div className="flex flex-col min-h-screen">
         <div className="flex-grow flex justify-center items-center py-20">
@@ -327,8 +371,11 @@ export default function BlogPostPage() {
                 )}
             </div>
 
-            <div className="lg:grid lg:grid-cols-[1fr_260px] lg:gap-10 xl:gap-16">
-                <div className="min-w-0"> 
+            <div className="lg:grid lg:grid-cols-[260px_1fr] lg:gap-10 xl:gap-16">
+                 <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-12rem)] overflow-y-auto pr-4 border-r border-border/60 py-2 order-last">
+                    <TableOfContents tocItems={tocItems} isLoading={isLoading} scrollPercentage={scrollPercentage} postTitle={post.title || ''} />
+                </aside>
+                <div className="min-w-0 order-first">
                     <article>
                         <header className="mb-8">
                         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 font-headline text-foreground">
@@ -360,14 +407,14 @@ export default function BlogPostPage() {
                         </div>
                         )}
 
-                        <div className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-headline prose-headings:text-foreground prose-p:text-foreground/90 prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground prose-blockquote:border-primary prose-blockquote:text-muted-foreground prose-code:bg-muted prose-code:text-foreground prose-code:p-1 prose-code:rounded-sm prose-code:font-code">
+                        <div ref={articleContentRef} className="prose prose-lg dark:prose-invert prose-headings:font-headline prose-headings:text-foreground prose-p:text-foreground/90 prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground prose-blockquote:border-primary prose-blockquote:text-muted-foreground prose-code:bg-muted prose-code:text-foreground prose-code:p-1 prose-code:rounded-sm prose-code:font-code">
                         <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                             {post.content}
                         </ReactMarkdown>
                         </div>
                     </article>
 
-                    <section className="mt-12 py-10">
+                    <section className="mt-8 py-6">
                         <div className="flex justify-center">
                         <Button size="lg" asChild className="shadow-md rounded-full">
                             <Link href="/auth?action=signup">
@@ -387,8 +434,8 @@ export default function BlogPostPage() {
                             <p className="text-sm text-muted-foreground mb-1">Article written by</p>
                             <h4 className="text-xl font-bold font-headline text-foreground mb-2">{post.author_name_cache || 'ProspectFlow Team'}</h4>
                             <p className="text-muted-foreground text-sm leading-relaxed">
-                            {post.author_name_cache === 'Swastik Tripathi' 
-                             ? "Founder of ProspectFlow. Passionate about helping professionals connect and achieve their goals through streamlined outreach and productivity tools." 
+                            {post.author_name_cache === 'Swastik Tripathi'
+                             ? "Founder of ProspectFlow. Passionate about helping professionals connect and achieve their goals through streamlined outreach and productivity tools."
                              : "A valued contributor to the ProspectFlow blog, sharing insights on professional development and outreach strategies."
                             }
                             </p>
@@ -396,13 +443,10 @@ export default function BlogPostPage() {
                         </div>
                     </section>
                 </div>
-                <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-12rem)] overflow-y-auto pl-4 border-l border-border/60 py-2">
-                    <TableOfContents tocItems={tocItems} isLoading={isLoading} />
-                </aside>
             </div>
         </div>
       </main>
-      
+
       <footer className="bg-slate-900 text-slate-300 mt-auto">
          <div className="container mx-auto px-[5vw] md:px-[10vw] py-12 md:py-16">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 mb-12">
@@ -448,7 +492,7 @@ export default function BlogPostPage() {
               <div className="mt-4">
                  <Button variant="outline" className="w-full justify-between bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200 hover:text-slate-50">
                     <span>Language</span>
-                    <Globe className="h-4 w-4 opacity-50" />
+                    <FooterGlobeIcon className="h-4 w-4 opacity-50" />
                 </Button>
               </div>
             </div>
@@ -472,3 +516,4 @@ export default function BlogPostPage() {
     </div>
   );
 }
+
