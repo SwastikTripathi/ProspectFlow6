@@ -715,7 +715,7 @@ export default function LandingPage() {
             <div className="max-w-3xl mx-auto">
               <Accordion type="single" collapsible className="w-full">
                 {faqData.map((faq, index) => (
-                  <AccordionItem value={`item-${index + 1}`} key={index} className="bg-card shadow-sm rounded-md mb-3 last:mb-0">
+                  <AccordionItem value={`item-${index + 1}`} key={index}>
                     <AccordionTrigger className="px-6 py-4 text-left font-semibold text-foreground hover:no-underline">
                       {faq.question}
                     </AccordionTrigger>
@@ -800,3 +800,4 @@ export default function LandingPage() {
     </div>
   );
 }
+
