@@ -371,10 +371,7 @@ export default function BlogPostPage() {
                 )}
             </div>
 
-            <div className="lg:grid lg:grid-cols-[260px_1fr] lg:gap-10 xl:gap-16">
-                 <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-12rem)] overflow-y-auto pr-4 border-r border-border/60 py-2 order-last">
-                    <TableOfContents tocItems={tocItems} isLoading={isLoading} scrollPercentage={scrollPercentage} postTitle={post.title || ''} />
-                </aside>
+            <div className="lg:grid lg:grid-cols-[1fr_260px] lg:gap-10 xl:gap-16">
                 <div className="min-w-0 order-first">
                     <article>
                         <header className="mb-8">
@@ -407,14 +404,17 @@ export default function BlogPostPage() {
                         </div>
                         )}
 
-                        <div ref={articleContentRef} className="prose prose-lg dark:prose-invert prose-headings:font-headline prose-headings:text-foreground prose-p:text-foreground/90 prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground prose-blockquote:border-primary prose-blockquote:text-muted-foreground prose-code:bg-muted prose-code:text-foreground prose-code:p-1 prose-code:rounded-sm prose-code:font-code">
+                        <div 
+                          ref={articleContentRef} 
+                          className="prose prose-lg dark:prose-invert prose-headings:font-headline prose-headings:text-foreground prose-p:text-foreground/90 prose-p:leading-relaxed prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground prose-blockquote:border-primary prose-blockquote:text-muted-foreground prose-code:bg-muted prose-code:text-foreground prose-code:p-1 prose-code:rounded-sm prose-code:font-code"
+                        >
                         <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                             {post.content}
                         </ReactMarkdown>
                         </div>
                     </article>
 
-                    <section className="mt-8 py-6">
+                    <section className="mt-4 py-6">
                         <div className="flex justify-center">
                         <Button size="lg" asChild className="shadow-md rounded-full">
                             <Link href="/auth?action=signup">
@@ -443,6 +443,9 @@ export default function BlogPostPage() {
                         </div>
                     </section>
                 </div>
+                <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-12rem)] overflow-y-auto pl-4 border-l border-border/60 py-2 order-last">
+                    <TableOfContents tocItems={tocItems} isLoading={isLoading} scrollPercentage={scrollPercentage} postTitle={post.title || ''} />
+                </aside>
             </div>
         </div>
       </main>

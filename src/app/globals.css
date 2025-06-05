@@ -4,10 +4,11 @@
 
 body {
   font-family: 'PT Sans', sans-serif; /* Default body font */
+  @apply leading-relaxed; /* Apply relaxed line height globally */
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Playfair Display', serif; /* Default headline font */
+  font-family: 'PT Sans', sans-serif; /* Default headline font, was Playfair Display */
 }
 
 @layer base {
