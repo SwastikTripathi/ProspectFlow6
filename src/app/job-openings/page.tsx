@@ -34,15 +34,16 @@ import type { User } from '@supabase/supabase-js';
 import type { TablesInsert, TablesUpdate } from '@/lib/database.types';
 import { isToday, isValid, startOfDay, add, isBefore, format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 
-type SortOptionValue = 'nextFollowUpDate_asc' | 'initialEmailDate_desc' | 'initialEmailDate_asc' | 'favorited_at_desc';
+type SortOptionValue = 'nextFollowUpDate_asc' | 'initialEmailDate_desc' | 'initialEmailDate_asc';
 
 const SORT_OPTIONS: { value: SortOptionValue; label: string }[] = [
   { value: 'nextFollowUpDate_asc', label: 'Next Follow-up Date (Earliest First)' },
   { value: 'initialEmailDate_desc', label: 'Initial Email Date (Newest First)' },
   { value: 'initialEmailDate_asc', label: 'Initial Email Date (Oldest First)' },
-  { value: 'favorited_at_desc', label: 'Favorites (Recently Favorited First)' },
+  // { value: 'favorited_at_desc', label: 'Favorites (Recently Favorited First)' }, // Removed
 ];
 
 const emailingCycleStatuses: JobOpening['status'][] = ['Emailed', '1st Follow Up', '2nd Follow Up', '3rd Follow Up'];
@@ -98,6 +99,7 @@ export default function JobOpeningsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchInNotes, setSearchInNotes] = useState(true);
   const [sortOption, setSortOption] = useState<SortOptionValue>('nextFollowUpDate_asc');
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -244,13 +246,13 @@ export default function JobOpeningsPage() {
       const openingToFocus = jobOpenings.find(op => op.id === focusedOpeningIdFromUrl);
       setFocusedOpening(openingToFocus || null);
     } else if (!focusedOpeningIdFromUrl) {
-      setFocusedOpening(null); // Clear focused opening if URL param is removed
+      setFocusedOpening(null); 
     }
   }, [focusedOpeningIdFromUrl, jobOpenings]);
 
   const handleCloseFocusedOpeningDialog = () => {
     setFocusedOpening(null);
-    router.replace('/job-openings', { scroll: false }); // Remove query param from URL
+    router.replace('/job-openings', { scroll: false }); 
   };
 
   const handleAddNewCompanyToListSupabase = async (companyName: string): Promise<Company | null> => {
@@ -370,7 +372,7 @@ export default function JobOpeningsPage() {
       job_description_url: values.jobDescriptionUrl || null,
       notes: values.notes || null,
       tags: [],
-      is_favorite: false, // Default new openings are not favorite
+      is_favorite: false, 
       favorited_at: null,
     };
 
@@ -452,8 +454,8 @@ export default function JobOpeningsPage() {
           title: "Job Opening Added",
           description: `${newJobOpeningData.role_title} at ${newJobOpeningData.company_name_cache} has been added.`,
         });
-        await fetchPageData(); // Refreshes main list
-        router.refresh(); // Triggers AppLayout to refetch favorites
+        await fetchPageData(); 
+        router.refresh(); 
         setIsAddDialogOpen(false);
       } else {
          toast({ title: 'Save Error', description: 'Failed to get new job opening data after insert.', variant: 'destructive' });
@@ -505,7 +507,6 @@ export default function JobOpeningsPage() {
       status: formValues.status,
       job_description_url: formValues.jobDescriptionUrl || null,
       notes: formValues.notes || null,
-      // is_favorite and favorited_at are handled by handleToggleFavorite
     };
 
     try {
@@ -601,6 +602,18 @@ export default function JobOpeningsPage() {
         router.refresh(); 
         setIsEditDialogOpen(false);
         setEditingOpening(null);
+        // If the focused opening was the one being edited, update it
+        if (focusedOpening && focusedOpening.id === openingId) {
+            const newlyFetchedOpening = (await supabase.from('job_openings').select('*, is_favorite, favorited_at').eq('id', openingId).single()).data;
+            if (newlyFetchedOpening) {
+                 setFocusedOpening({
+                    ...newlyFetchedOpening,
+                    initial_email_date: new Date(newlyFetchedOpening.initial_email_date),
+                    followUps: followUpsToInsert.map(fu => ({...fu, follow_up_date: new Date(fu.follow_up_date!), original_due_date: fu.original_due_date ? new Date(fu.original_due_date) : null } as FollowUp)),
+                    associated_contacts: formValues.contacts.map(fc => ({contact_id: fc.contact_id || '', name: fc.contactName, email: fc.contactEmail})),
+                 } as JobOpening);
+            }
+        }
       }
     } catch (error: any) {
       toast({ title: 'Error Updating Job Opening', description: error.message, variant: 'destructive'});
@@ -814,8 +827,8 @@ export default function JobOpeningsPage() {
         title: newIsFavorite ? 'Added to Favorites' : 'Removed from Favorites',
         description: `Job opening has been ${newIsFavorite ? 'favorited' : 'unfavorited'}.`,
       });
-      await fetchPageData(); // Refreshes the main list
-      router.refresh(); // This should trigger AppLayout to refetch favorites
+      await fetchPageData(); 
+      router.refresh(); 
     } catch (error: any) {
       toast({ title: 'Error Toggling Favorite', description: error.message, variant: 'destructive' });
     }
@@ -824,6 +837,10 @@ export default function JobOpeningsPage() {
 
   const { actionRequiredOpenings, otherOpenings, allFilteredAndSortedOpenings } = useMemo(() => {
     let openings = [...jobOpenings];
+
+    if (showOnlyFavorites) {
+      openings = openings.filter(opening => opening.is_favorite);
+    }
 
     if (searchTerm) {
         openings = openings.filter(opening => {
@@ -855,17 +872,16 @@ export default function JobOpeningsPage() {
       case 'initialEmailDate_asc':
         openings.sort((a, b) => new Date(a.initial_email_date).getTime() - new Date(b.initial_email_date).getTime());
         break;
-      case 'favorited_at_desc':
-        openings.sort((a, b) => {
-          if (a.is_favorite && !b.is_favorite) return -1;
-          if (!a.is_favorite && b.is_favorite) return 1;
-          if (a.is_favorite && b.is_favorite) {
-            return (b.favorited_at ? new Date(b.favorited_at).getTime() : 0) - (a.favorited_at ? new Date(a.favorited_at).getTime() : 0);
-          }
-          // For non-favorites, maintain previous sort or sort by initial email date
-          return new Date(b.initial_email_date).getTime() - new Date(a.initial_email_date).getTime();
-        });
-        break;
+      // case 'favorited_at_desc': // Removed
+      //   openings.sort((a, b) => {
+      //     if (a.is_favorite && !b.is_favorite) return -1;
+      //     if (!a.is_favorite && b.is_favorite) return 1;
+      //     if (a.is_favorite && b.is_favorite) {
+      //       return (b.favorited_at ? new Date(b.favorited_at).getTime() : 0) - (a.favorited_at ? new Date(a.favorited_at).getTime() : 0);
+      //     }
+      //     return new Date(b.initial_email_date).getTime() - new Date(a.initial_email_date).getTime();
+      //   });
+      //   break;
       case 'nextFollowUpDate_asc':
         openings.sort((a, b) => {
           const nextFollowUpA = getNextPendingFollowUpDate(a);
@@ -909,7 +925,7 @@ export default function JobOpeningsPage() {
     }
 
     return { actionRequiredOpenings: [], otherOpenings: [], allFilteredAndSortedOpenings: openings };
-  }, [jobOpenings, searchTerm, searchInNotes, sortOption]);
+  }, [jobOpenings, searchTerm, searchInNotes, sortOption, showOnlyFavorites]);
 
   const clearSearch = () => setSearchTerm('');
 
@@ -969,6 +985,17 @@ export default function JobOpeningsPage() {
               ))}
             </SelectContent>
           </Select>
+          <Button
+            variant={showOnlyFavorites ? "default" : "outline"}
+            size="icon"
+            onClick={() => setShowOnlyFavorites(!showOnlyFavorites)}
+            disabled={!currentUser || isLoading}
+            title={showOnlyFavorites ? "Show All Openings" : "Show Only Favorites"}
+            className={cn(showOnlyFavorites && "border-yellow-500 ring-2 ring-yellow-500/50")}
+          >
+            <Star className={cn("h-5 w-5", showOnlyFavorites ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground")} />
+            <span className="sr-only">{showOnlyFavorites ? "Show All" : "Show Favorites"}</span>
+          </Button>
         </div>
 
         {isLoading ? (
@@ -977,10 +1004,20 @@ export default function JobOpeningsPage() {
             <Card className="shadow-lg"><CardHeader><CardTitle className="font-headline flex items-center"><Briefcase className="mr-2 h-5 w-5 text-primary" />Please Sign In</CardTitle></CardHeader><CardContent><p className="text-muted-foreground">You need to be signed in to manage job openings.</p></CardContent></Card>
         ) : noResultsAfterFiltering && !focusedOpening ? (
           <Card className="shadow-lg">
-            <CardHeader><CardTitle className="font-headline flex items-center"><Briefcase className="mr-2 h-5 w-5 text-primary" />{searchTerm ? 'No Matches' : 'No Job Openings Yet'}</CardTitle></CardHeader>
-            <CardContent><p className="text-muted-foreground">{searchTerm ? 'Try a different search term.' : 'Click "Add New Opening" to get started.'}</p></CardContent>
+            <CardHeader><CardTitle className="font-headline flex items-center"><Briefcase className="mr-2 h-5 w-5 text-primary" />
+            {showOnlyFavorites && searchTerm ? "No Favorite Openings Match Your Search" :
+             showOnlyFavorites ? "No Favorite Openings Yet" :
+             searchTerm ? "No Openings Match Your Search" : 
+             "No Job Openings Yet"}
+            </CardTitle></CardHeader>
+            <CardContent><p className="text-muted-foreground">
+            {showOnlyFavorites && searchTerm ? "Try adjusting your search or clear the favorites filter." :
+             showOnlyFavorites ? "Mark some openings as favorite to see them here." :
+             searchTerm ? "Try a different search term or add a new opening." : 
+             "Click \"Add New Opening\" to get started."}
+            </p></CardContent>
           </Card>
-        ) : focusedOpening ? null : ( // Don't render list if focusedOpening is shown in dialog
+        ) : focusedOpening ? null : ( 
           sortOption === 'nextFollowUpDate_asc' ? (
             <>
               {actionRequiredOpenings.length > 0 && (

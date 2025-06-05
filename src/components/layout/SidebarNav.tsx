@@ -12,11 +12,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarSeparator,
-  // useSidebar not strictly needed for this CSS-only hover effect visualization,
-  // as we rely on data-attributes set by the Sidebar component itself.
 } from '@/components/ui/sidebar';
-// TooltipProvider and related components are not needed here for the custom "show below" effect,
-// as the SidebarMenuButton's own 'tooltip' prop handles the collapsed state.
 import type { JobOpening } from '@/lib/types';
 
 interface NavItem {
@@ -58,7 +54,7 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
                 aria-disabled={item.disabled}
                 tabIndex={item.disabled ? -1 : undefined}
                 onClick={(e) => item.disabled && e.preventDefault()}
-                tooltip={item.label} // Use built-in tooltip for collapsed state
+                tooltip={item.label}
               >
                 <a>
                   <item.icon />
@@ -91,29 +87,27 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
                       <Link href={`/job-openings?view=${opening.id}`} passHref legacyBehavior>
                         <SidebarMenuButton
                           asChild
-                          tooltip={favoriteDisplayName} // This tooltip handles the collapsed state (shows on the right)
-                          className="w-full" // Ensure button takes full width to correctly trigger hover for the custom div
+                          tooltip={favoriteDisplayName} 
+                          className="w-full"
                         >
-                          <a className="flex items-center w-full overflow-hidden"> {/* Anchor needs full width too */}
+                          <a className="flex items-center w-full overflow-hidden">
                             <Star className="text-yellow-500 fill-yellow-400 flex-shrink-0" />
                             <span className="truncate group-data-[collapsible=icon]:hidden ml-2">
                               {favoriteDisplayName}
                             </span>
-                            {/* Screen reader text for collapsed state if main text is hidden */}
                             <span className="sr-only group-data-[collapsible=expanded]:hidden">
                               {favoriteDisplayName}
                             </span>
                           </a>
                         </SidebarMenuButton>
                       </Link>
-                      {/* Custom "tooltip" div for expanded sidebar, shown below on hover */}
+                      {/* Custom tooltip for expanded sidebar */}
                       <div
                         className={cn(
-                          "absolute left-2 right-2 top-full z-20 mt-1 p-2", // Positioned below, slight margin, takes available width
+                          "absolute left-2 right-2 top-full z-20 mt-1 p-2",
                           "bg-popover text-popover-foreground shadow-lg rounded-md text-xs",
-                          "opacity-0 invisible pointer-events-none", // Base hidden state
-                          // Conditional visibility:
-                          // Only when the main sidebar ('peer') is expanded AND this item ('group/favorite-item') is hovered
+                          "opacity-0 invisible pointer-events-none", 
+                          // Show when sidebar ('peer') is expanded AND this item ('group/favorite-item') is hovered
                           "group-data-[state=expanded]/peer:group-hover/favorite-item:opacity-100",
                           "group-data-[state=expanded]/peer:group-hover/favorite-item:visible",
                           "group-data-[state=expanded]/peer:group-hover/favorite-item:pointer-events-auto",
