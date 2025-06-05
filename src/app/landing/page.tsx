@@ -123,7 +123,7 @@ function HeroVisual() {
       cardTypeIcon: Users,
       details: [
         { icon: Mail, text: 'alex.c@innovate.com' },
-        { icon: Info, text: 'Met at conference. Likes coffee.', className: 'italic break-words' }
+        { icon: Info, text: 'Met at conference. Likes coffee, discussed upcoming roles.', className: 'italic break-words' }
       ]
     },
     {
@@ -172,7 +172,7 @@ function HeroVisual() {
                   </div>
 
                   <div className="flex flex-col flex-grow space-y-1.5">
-                    <div className="flex items-start"> {/* Use items-start for vertical alignment with multi-line text block */}
+                    <div className="flex items-start">
                        <Image
                         src={card.avatar}
                         alt={card.title}
@@ -181,10 +181,10 @@ function HeroVisual() {
                         className="rounded-full mr-2 border border-border/20 flex-shrink-0 mt-0.5"
                         data-ai-hint={card.dataAiHint}
                       />
-                      <div className="flex-grow min-w-0"> {/* This div will hold title and contextLine */}
+                      <div className="flex-grow min-w-0 text-left">
                         <h4 className="text-sm font-semibold text-card-foreground truncate leading-tight">{card.title}</h4>
                         {card.contextLine && (
-                          <p className="text-xs text-muted-foreground truncate">{card.contextLine}</p>
+                          <p className="text-xs text-muted-foreground truncate -mt-1">{card.contextLine}</p>
                         )}
                       </div>
                     </div>
