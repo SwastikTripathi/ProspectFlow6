@@ -12,9 +12,9 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarSeparator,
-  useSidebar, // Import useSidebar
+  useSidebar,
 } from '@/components/ui/sidebar';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'; // Import Tooltip components
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { JobOpening } from '@/lib/types';
 
 interface NavItem {
@@ -37,7 +37,11 @@ interface SidebarNavProps {
 
 export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
   const pathname = usePathname();
-  const { state: sidebarState, isMobile } = useSidebar(); // Get sidebar state
+  const { state: sidebarState, isMobile } = useSidebar();
+
+  // console.log('[SidebarNav] State:', { sidebarState, isMobile });
+  // console.log('[SidebarNav] Favorite Openings Prop:', favoriteJobOpenings);
+
 
   const renderNavItems = (items: NavItem[], groupLabel?: string) => (
     <SidebarGroup>
@@ -57,7 +61,7 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
                 aria-disabled={item.disabled}
                 tabIndex={item.disabled ? -1 : undefined}
                 onClick={(e) => item.disabled && e.preventDefault()}
-                tooltip={item.label} // Standard tooltip for collapsed state
+                tooltip={item.label} 
               >
                 <a>
                   <item.icon />
@@ -85,16 +89,30 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
               <SidebarMenu>
                 {favoriteJobOpenings.map((opening) => {
                   const favoriteDisplayName = `${opening.role_title} @ ${opening.company_name_cache}`;
+                  const isCollapsedDesktop = sidebarState === 'collapsed' && !isMobile;
+                  const isExpandedDesktop = sidebarState === 'expanded' && !isMobile;
+                  
+                  // console.log(`[SidebarNav Favorite Item: ${opening.id}] DisplayName: "${favoriteDisplayName}"`, {isCollapsedDesktop, isExpandedDesktop});
+
+                  const sidebarMenuButtonTooltipProp = isCollapsedDesktop 
+                    ? { children: favoriteDisplayName, side: "right" as const, align: "center" as const, className: "whitespace-normal max-w-xs" }
+                    : undefined;
+                  
+                  // if (isCollapsedDesktop) {
+                  //   console.log(`[SidebarNav Favorite Item: ${opening.id}] Providing tooltip to SidebarMenuButton:`, sidebarMenuButtonTooltipProp);
+                  // } else {
+                  //   console.log(`[SidebarNav Favorite Item: ${opening.id}] NOT providing tooltip to SidebarMenuButton.`);
+                  // }
+
                   return (
                     <SidebarMenuItem key={opening.id} className="group/favorite-item">
-                      <TooltipProvider delayDuration={100}>
-                        <Tooltip>
+                      <TooltipProvider key={`tp-${opening.id}`}>
+                        <Tooltip key={`t-${opening.id}`} delayDuration={100}>
                           <TooltipTrigger asChild>
                             <Link href={`/job-openings?view=${opening.id}`} passHref legacyBehavior>
                               <SidebarMenuButton
                                 asChild
-                                // Pass tooltip object for SidebarMenuButton's internal collapsed state handling
-                                tooltip={isMobile ? undefined : { children: favoriteDisplayName, side: "right", align: "center" }}
+                                tooltip={sidebarMenuButtonTooltipProp}
                                 className="w-full"
                               >
                                 <a className="flex items-center w-full overflow-hidden">
@@ -106,14 +124,15 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
                               </SidebarMenuButton>
                             </Link>
                           </TooltipTrigger>
-                          {/* This TooltipContent is for the EXPANDED sidebar state hover */}
-                          {!isMobile && sidebarState === 'expanded' && (
+                          {/* Custom Tooltip for EXPANDED sidebar desktop */}
+                          {isExpandedDesktop && (
                             <TooltipContent
                               side="bottom"
                               align="start"
-                              className="whitespace-normal max-w-[calc(var(--sidebar-width)-2rem)] z-30 bg-popover text-popover-foreground"
+                              className="whitespace-normal max-w-xs z-50 bg-popover text-popover-foreground"
                               sideOffset={5}
                             >
+                              {/* {console.log(`[SidebarNav Favorite Item: ${opening.id}] Rendering EXPANDED tooltip content.`)} */}
                               {favoriteDisplayName}
                             </TooltipContent>
                           )}
