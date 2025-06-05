@@ -395,7 +395,7 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-background to-secondary/10">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-[10vw]">
+        <div className="container flex h-16 max-w-screen-2xl items-center justify-between mx-auto px-[10vw]">
           <Link href="/landing" className="mr-6 flex items-center space-x-2">
             <Logo />
           </Link>
@@ -640,11 +640,11 @@ export default function LandingPage() {
           </div>
 
           <div className="container mx-auto px-[10vw]">
-            <div className="grid md:grid-cols-3 gap-0 text-left max-w-6xl mx-auto border border-border rounded-lg overflow-hidden">
+            <div className="grid md:grid-cols-3 gap-0 text-left max-w-6xl mx-auto">
               {newTestimonialsData.map((testimonial, index) => (
                 <div
                   key={testimonial.name + index}
-                  className={`bg-card p-6 flex flex-col ${index < newTestimonialsData.length - 1 ? 'border-b md:border-b-0 md:border-r border-border' : ''}`}
+                  className={`p-6 flex flex-col ${index < newTestimonialsData.length - 1 ? 'border-b md:border-b-0 md:border-r border-border' : ''}`}
                 >
                   <p className="text-muted-foreground mb-6 flex-grow text-base leading-relaxed">"{testimonial.quote}"</p>
                   <div className="flex items-center mt-auto">
