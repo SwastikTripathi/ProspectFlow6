@@ -22,8 +22,8 @@ import type { User } from '@supabase/supabase-js';
 import { OWNER_EMAIL } from '@/lib/config';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { TableOfContents, type TocItem } from '../components/TableOfContents'; // New import
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // For Author Bio
+import { TableOfContents, type TocItem } from '../components/TableOfContents'; 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; 
 
 type PostWithAuthor = Tables<'posts'>;
 
@@ -134,15 +134,15 @@ export default function BlogPostPage() {
   useEffect(() => {
     if (post?.content) {
       const newTocItems: TocItem[] = [];
-      const headingRegex = /^(#{1,4})\s+(.*)/gm; // Matches H1 to H4
+      const headingRegex = /^(#{1,4})\s+(.*)/gm; 
       let match;
-      const tempContent = post.content.replace(/```[\s\S]*?```/g, ''); // Remove code blocks
+      const tempContent = post.content.replace(/```[\s\S]*?```/g, ''); 
 
       while ((match = headingRegex.exec(tempContent)) !== null) {
         const level = match[1].length;
         const text = match[2].trim();
         const id = slugify(text);
-        if (text) { // Ensure heading text is not empty
+        if (text) { 
             newTocItems.push({ id, level, text });
         }
       }
@@ -208,7 +208,7 @@ export default function BlogPostPage() {
     h6: headingRenderer(6),
   };
 
-  if (isLoading && !post) { // Changed condition to only show full page loader if post is not yet available
+  if (isLoading && !post) { 
     return (
       <div className="flex flex-col min-h-screen">
         <div className="flex-grow flex justify-center items-center py-20">
@@ -285,7 +285,7 @@ export default function BlogPostPage() {
       </header>
 
       <main className="flex-1 py-12 md:py-16">
-        <div className="container mx-auto px-[5vw] md:px-[10vw] max-w-6xl"> {/* Max width increased for two columns */}
+        <div className="container mx-auto px-[5vw] md:px-[10vw] max-w-6xl">
             <div className="mb-8 flex justify-between items-center">
                 <Button variant="outline" asChild className="group">
                 <Link href="/blog">
@@ -327,12 +327,8 @@ export default function BlogPostPage() {
                 )}
             </div>
 
-            <div className="lg:grid lg:grid-cols-[260px_1fr] lg:gap-10 xl:gap-16"> {/* Two column layout */}
-                <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-12rem)] overflow-y-auto pr-4 border-r border-border/60 py-2">
-                    <TableOfContents tocItems={tocItems} isLoading={isLoading} />
-                </aside>
-
-                <div className="min-w-0"> {/* Main article content column */}
+            <div className="lg:grid lg:grid-cols-[1fr_260px] lg:gap-10 xl:gap-16">
+                <div className="min-w-0"> 
                     <article>
                         <header className="mb-8">
                         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 font-headline text-foreground">
@@ -371,11 +367,7 @@ export default function BlogPostPage() {
                         </div>
                     </article>
 
-                    {/* CTA Section */}
-                    <section className="mt-12 py-10 border-t border-border">
-                        <p className="text-lg text-center text-muted-foreground mb-6">
-                        Eager to test it all out? If you liked what you heard out of ProspectFlow&apos;s features, you can poke around the software by signing up for a free trial.
-                        </p>
+                    <section className="mt-12 py-10">
                         <div className="flex justify-center">
                         <Button size="lg" asChild className="shadow-md rounded-full">
                             <Link href="/auth?action=signup">
@@ -385,7 +377,6 @@ export default function BlogPostPage() {
                         </div>
                     </section>
 
-                    {/* Author Bio Section */}
                     <section className="mt-10 py-8 border-t border-border">
                         <div className="flex items-start gap-6">
                         <Avatar className="h-20 w-20 flex-shrink-0">
@@ -401,11 +392,13 @@ export default function BlogPostPage() {
                              : "A valued contributor to the ProspectFlow blog, sharing insights on professional development and outreach strategies."
                             }
                             </p>
-                            {/* Add social links here if available, e.g., <X className="h-4 w-4 text-muted-foreground mt-2" /> */}
                         </div>
                         </div>
                     </section>
                 </div>
+                <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-12rem)] overflow-y-auto pl-4 border-l border-border/60 py-2">
+                    <TableOfContents tocItems={tocItems} isLoading={isLoading} />
+                </aside>
             </div>
         </div>
       </main>
