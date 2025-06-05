@@ -3,15 +3,15 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Briefcase, Users, Building2, Star } from 'lucide-react'; 
+import { Home, Briefcase, Users, Building2, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarGroup,
-  SidebarGroupLabel, 
-  SidebarSeparator, 
+  SidebarGroupLabel,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import type { JobOpening } from '@/lib/types';
 
@@ -88,14 +88,22 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
                         <SidebarMenuButton
                           asChild
                           tooltip={favoriteDisplayName}
+                          className="group" // Add group for hover effect on children
                         >
                           <a>
-                            <Star className="text-yellow-500 fill-yellow-400" />
-                            <span className="truncate">
-                              {opening.role_title}
-                              <span className="text-xs text-sidebar-foreground/70 ml-1 truncate hidden sm:group-data-[collapsible=expanded]:inline">
-                                @ {opening.company_name_cache}
+                            <Star className="text-yellow-500 fill-yellow-400 flex-shrink-0" />
+                            <div className="overflow-hidden whitespace-nowrap w-full group-data-[collapsible=icon]:hidden">
+                              <span className="inline-block group-data-[collapsible=expanded]:group-hover:animate-marquee-sidebar">
+                                <span className="pr-4">{favoriteDisplayName}</span>
+                                {/* Duplicate for seamless marquee only when expanded */}
+                                <span className="pr-4 group-data-[collapsible=expanded]:inline hidden" aria-hidden="true">
+                                  {favoriteDisplayName}
+                                </span>
                               </span>
+                            </div>
+                             {/* For collapsed view, just show a hint or rely on tooltip */}
+                            <span className="group-data-[collapsible=expanded]:hidden truncate">
+                              {opening.role_title}
                             </span>
                           </a>
                         </SidebarMenuButton>
@@ -111,5 +119,3 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
     </div>
   );
 }
-
-    

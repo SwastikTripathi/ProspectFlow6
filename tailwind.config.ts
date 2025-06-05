@@ -91,18 +91,23 @@ export default {
         },
         'marquee-left': {
           '0%': { transform: 'translateX(0%)' },
-          '100%': { transform: 'translateX(-50%)' }, // Animate by half the duplicated content width
+          '100%': { transform: 'translateX(-50%)' },
         },
         'marquee-right': {
-          '0%': { transform: 'translateX(-50%)' }, // Start from the "end" of the first set
-          '100%': { transform: 'translateX(0%)' },  // Animate to the "start" of the first set
+          '0%': { transform: 'translateX(-50%)' },
+          '100%': { transform: 'translateX(0%)' },
         },
+        'marquee-sidebar': {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' }, // Assumes duplicated content
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'marquee-left': 'marquee-left 40s linear infinite', // Adjust duration as needed
-        'marquee-right': 'marquee-right 40s linear infinite', // Adjust duration as needed
+        'marquee-left': 'marquee-left 40s linear infinite',
+        'marquee-right': 'marquee-right 40s linear infinite',
+        'marquee-sidebar': 'marquee-sidebar 10s linear infinite', // Adjust duration as needed
       },
     },
   },

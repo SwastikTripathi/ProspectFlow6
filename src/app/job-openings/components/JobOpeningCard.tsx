@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { JobOpening, FollowUp } from '@/lib/types'; 
+import type { JobOpening, FollowUp } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,21 +28,21 @@ const logDebug = (...args: any[]) => {
 };
 
 
-export function JobOpeningCard({ 
-    opening, 
-    onEdit, 
-    onLogFollowUp, 
-    onUnlogFollowUp, 
+export function JobOpeningCard({
+    opening,
+    onEdit,
+    onLogFollowUp,
+    onUnlogFollowUp,
     onToggleFavorite,
-    isFocusedView = false 
+    isFocusedView = false
 }: JobOpeningCardProps) {
   const { toast } = useToast();
   const [isLoggingFollowUp, setIsLoggingFollowUp] = useState(false);
   const [isUnloggingFollowUp, setIsUnloggingFollowUp] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
-  
-  const followUpsArray = useMemo(() => 
-    Array.isArray(opening.followUps) ? opening.followUps.map(fu => ({...fu, follow_up_date: new Date(fu.follow_up_date)})) : [], 
+
+  const followUpsArray = useMemo(() =>
+    Array.isArray(opening.followUps) ? opening.followUps.map(fu => ({...fu, follow_up_date: new Date(fu.follow_up_date)})) : [],
     [opening.followUps]
   );
 
@@ -77,7 +77,7 @@ export function JobOpeningCard({
     const itemsToFilterAndSort = followUpsArray.map(fu => ({
       id: fu.id,
       status: fu.status,
-      date: fu.follow_up_date, 
+      date: fu.follow_up_date,
       isValidDate: isValid(fu.follow_up_date),
       formattedDate: fu.follow_up_date && isValid(fu.follow_up_date) ? format(fu.follow_up_date, 'yyyy-MM-dd HH:mm:ss XXX') : 'Invalid Date'
     }));
@@ -93,17 +93,17 @@ export function JobOpeningCard({
     return filtered;
   }, [followUpsArray, opening.id]);
 
-  const nextFollowUp = useMemo(() => 
+  const nextFollowUp = useMemo(() =>
     upcomingPendingFollowUps.length > 0 ? upcomingPendingFollowUps[0] : undefined,
     [upcomingPendingFollowUps]
   );
-   
+
   useEffect(() => {
     logDebug(`[Card State Update ID: ${opening.id}] nextFollowUp:`, nextFollowUp ? {id: nextFollowUp.id, date: nextFollowUp.follow_up_date, status: nextFollowUp.status} : 'undefined', `| upcomingPendingFollowUps count: ${upcomingPendingFollowUps.length}`);
   }, [nextFollowUp, upcomingPendingFollowUps, opening.id]);
 
 
-  const firstFollowUpEmailContentExists = followUpsArray[0]?.email_body && followUpsArray[0].email_body.trim() !== '';
+  const firstFollowUpEmailContentExists = followUpsArray[0]?.email_subject && followUpsArray[0].email_subject.trim() !== '';
 
 
   const lastSentFollowUpLoggedToday = useMemo(() => {
@@ -112,12 +112,12 @@ export function JobOpeningCard({
       const fu = followUpsArray[i];
       if (
         fu.status === 'Sent' &&
-        fu.follow_up_date && 
+        fu.follow_up_date &&
         isValid(fu.follow_up_date) &&
-        isToday(fu.follow_up_date) 
+        isToday(fu.follow_up_date)
       ) {
-        latestSent = fu; 
-        break; 
+        latestSent = fu;
+        break;
       }
     }
     return latestSent;
@@ -155,25 +155,25 @@ export function JobOpeningCard({
   const formattedNextFollowUpDate = nextFollowUp && nextFollowUp.follow_up_date && isValid(nextFollowUp.follow_up_date)
     ? format(nextFollowUp.follow_up_date, 'PPP')
     : null;
-  
+
 
   const handleLogFollowUpClick = async (event: React.MouseEvent) => {
     event.stopPropagation();
     if (!nextFollowUp || !nextFollowUp.id) return;
     setIsLoggingFollowUp(true);
-    try { await onLogFollowUp(nextFollowUp.id, opening.id); } 
-    catch (error) { console.error("Error logging follow-up from card:", error); } 
+    try { await onLogFollowUp(nextFollowUp.id, opening.id); }
+    catch (error) { console.error("Error logging follow-up from card:", error); }
     finally { setIsLoggingFollowUp(false); }
   };
-  
+
   const handleUnlogFollowUpClick = async (event: React.MouseEvent) => {
     event.stopPropagation();
     if (!lastSentFollowUpLoggedToday || !lastSentFollowUpLoggedToday.id) return;
-    
+
     logDebug(`[Card Unlog Click ID: ${opening.id}] Unlogging FollowUpID: ${lastSentFollowUpLoggedToday.id}`);
     setIsUnloggingFollowUp(true);
-    try { await onUnlogFollowUp(lastSentFollowUpLoggedToday.id, opening.id); } 
-    catch (error) { console.error("Error unlogging follow-up from card:", error); toast({ title: "Unlog Error", variant: "destructive" }); } 
+    try { await onUnlogFollowUp(lastSentFollowUpLoggedToday.id, opening.id); }
+    catch (error) { console.error("Error unlogging follow-up from card:", error); toast({ title: "Unlog Error", variant: "destructive" }); }
     finally { setIsUnloggingFollowUp(false); }
   };
 
@@ -189,7 +189,7 @@ export function JobOpeningCard({
       setIsTogglingFavorite(false);
     }
   };
-  
+
   let footerContent;
   const hasAnyFollowUps = followUpsArray.length > 0;
 
@@ -199,28 +199,28 @@ export function JobOpeningCard({
         {isLoggingFollowUp ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MailCheck className="mr-2 h-4 w-4" />} Log Follow-up
       </Button>
     );
-  } else if (hasAnyFollowUps && !nextFollowUp) { 
+  } else if (hasAnyFollowUps && !nextFollowUp) {
     footerContent = (<Button variant="outline" size="sm" className="w-full" disabled> <CheckCircle className="mr-2 h-4 w-4 text-green-500" /> All Followed up </Button>);
-  } else { 
+  } else {
      footerContent = (<Button variant="outline" size="sm" className="w-full" disabled> <AlertCircle className="mr-2 h-4 w-4" /> No Follow-ups </Button>);
   }
 
   const bannerBaseClasses = "flex items-center p-2 rounded-md text-xs";
   const bannerRedStyle = "bg-destructive/15 text-destructive border border-destructive/30";
-  const bannerInfoStyle = "bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20"; 
+  const bannerInfoStyle = "bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20";
   const bannerUpcomingStyle = "bg-primary/10 text-primary border border-primary/20";
 
   const isNextFollowUpToday = nextFollowUp?.follow_up_date && isValid(nextFollowUp.follow_up_date) && isToday(nextFollowUp.follow_up_date);
 
 
   return (
-    <Card 
+    <Card
       className={cn(
           "shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col",
           isOverdue && nextFollowUp && nextFollowUp.status === 'Pending' && "border-destructive border-2",
-          isFocusedView ? "" : "cursor-pointer" // No cursor pointer if it's already focused in a dialog
+          "cursor-pointer" // Keep cursor pointer for all cards
         )}
-      onClick={isFocusedView ? undefined : () => onEdit(opening)} // Prevent click if in focused view, as dialog handles open state
+      onClick={() => onEdit(opening)} // Always allow click to edit
     >
       <CardHeader>
         <div className="flex justify-between items-start">
@@ -276,17 +276,17 @@ export function JobOpeningCard({
           <CalendarDays className="mr-2 h-4 w-4 text-muted-foreground" />
           <span>Initial Email: {formattedInitialEmailDate}</span>
         </div>
-        
+
         {isOverdue && formattedNextFollowUpDate && nextFollowUp && nextFollowUp.status === 'Pending' && (
           <div className={cn(bannerBaseClasses, bannerRedStyle)}>
             <CalendarDays className="mr-2 h-4 w-4" />
             <span>Overdue: <span className="font-semibold">{formattedNextFollowUpDate}</span></span>
           </div>
         )}
-        
+
         {!isOverdue && formattedNextFollowUpDate && nextFollowUp && nextFollowUp.status === 'Pending' && (
            <div className={cn(bannerBaseClasses, isNextFollowUpToday ? bannerInfoStyle : bannerUpcomingStyle )}>
-            <CalendarDays className="mr-2 h-4 w-4" /> 
+            <CalendarDays className="mr-2 h-4 w-4" />
             <span>Next Follow-up: <span className="font-semibold">{formattedNextFollowUpDate}</span></span>
           </div>
         )}
@@ -322,5 +322,3 @@ export function JobOpeningCard({
     </Card>
   );
 }
-
-    
