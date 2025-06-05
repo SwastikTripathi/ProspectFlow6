@@ -1,17 +1,18 @@
 
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Search as SearchIcon, Briefcase, Trash2, XCircle, Loader2 } from 'lucide-react';
+import { PlusCircle, Search as SearchIcon, Briefcase, Trash2, XCircle, Loader2, Star } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { JobOpening, Company, Contact, FollowUp, UserSettings, DefaultFollowUpTemplates, JobOpeningAssociatedContact, ContactFormEntry } from '@/lib/types';
 import { AddJobOpeningDialog, type AddJobOpeningFormValues, DEFAULT_FOLLOW_UP_CADENCE_DAYS } from './components/AddJobOpeningDialog';
 import { EditJobOpeningDialog, type EditJobOpeningFormValues } from './components/EditJobOpeningDialog';
 import { JobOpeningList } from './components/JobOpeningList';
-import { useSearchParams } from 'next/navigation';
+import { JobOpeningCard } from './components/JobOpeningCard';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AlertDialog,
@@ -23,6 +24,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle as DialogPlainTitle, DialogDescription as DialogPlainDescription } from '@/components/ui/dialog';
+
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -33,12 +36,13 @@ import { isToday, isValid, startOfDay, add, isBefore, format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 
 
-type SortOptionValue = 'nextFollowUpDate_asc' | 'initialEmailDate_desc' | 'initialEmailDate_asc';
+type SortOptionValue = 'nextFollowUpDate_asc' | 'initialEmailDate_desc' | 'initialEmailDate_asc' | 'favorited_at_desc';
 
 const SORT_OPTIONS: { value: SortOptionValue; label: string }[] = [
   { value: 'nextFollowUpDate_asc', label: 'Next Follow-up Date (Earliest First)' },
   { value: 'initialEmailDate_desc', label: 'Initial Email Date (Newest First)' },
   { value: 'initialEmailDate_asc', label: 'Initial Email Date (Oldest First)' },
+  { value: 'favorited_at_desc', label: 'Favorites (Recently Favorited First)' },
 ];
 
 const emailingCycleStatuses: JobOpening['status'][] = ['Emailed', '1st Follow Up', '2nd Follow Up', '3rd Follow Up'];
@@ -85,6 +89,8 @@ async function determineNewJobOpeningStatus(
 
 
 export default function JobOpeningsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [jobOpenings, setJobOpenings] = useState<JobOpening[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -98,10 +104,13 @@ export default function JobOpeningsPage() {
   const [editingOpening, setEditingOpening] = useState<JobOpening | null>(null);
   const [openingToDelete, setOpeningToDelete] = useState<JobOpening | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const searchParams = useSearchParams();
+  
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  
+  const [focusedOpening, setFocusedOpening] = useState<JobOpening | null>(null);
+  const focusedOpeningIdFromUrl = searchParams?.get('view');
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -137,11 +146,11 @@ export default function JobOpeningsPage() {
         jobOpeningsResponse,
         companiesResponse,
         contactsResponse,
-        allFollowUpsResponse, // Fetching all follow-ups
+        allFollowUpsResponse, 
         userSettingsResponse,
         jobOpeningContactsResponse,
       ] = await Promise.all([
-        supabase.from('job_openings').select('*').eq('user_id', currentUser.id),
+        supabase.from('job_openings').select('*, is_favorite, favorited_at').eq('user_id', currentUser.id),
         supabase.from('companies').select('*').eq('user_id', currentUser.id).order('name', { ascending: true }),
         supabase.from('contacts').select('*').eq('user_id', currentUser.id).order('name', { ascending: true }),
         supabase.from('follow_ups').select('id, job_opening_id, follow_up_date, original_due_date, email_subject, email_body, status, created_at').eq('user_id', currentUser.id).order('created_at', { ascending: true }),
@@ -171,8 +180,8 @@ export default function JobOpeningsPage() {
             id: fuDb.id,
             follow_up_date: startOfDay(new Date(fuDb.follow_up_date)),
             original_due_date: fuDb.original_due_date ? startOfDay(new Date(fuDb.original_due_date)) : null,
-            email_subject: fuDb.email_subject, // Keep
-            email_body: fuDb.email_body,       // Keep
+            email_subject: fuDb.email_subject, 
+            email_body: fuDb.email_body,       
           } as FollowUp))
           .sort((a,b) => (a.original_due_date || a.created_at!).getTime() - (b.original_due_date || b.created_at!).getTime());
 
@@ -193,6 +202,8 @@ export default function JobOpeningsPage() {
           initial_email_date: normalizedInitialEmailDate,
           followUps: followUpsForThisOpening,
           associated_contacts: associatedContacts,
+          is_favorite: jo.is_favorite,
+          favorited_at: jo.favorited_at ? new Date(jo.favorited_at) : null,
         };
       });
 
@@ -223,10 +234,24 @@ export default function JobOpeningsPage() {
     if (searchParams?.get('new') === 'true' && currentUser) {
       setIsAddDialogOpen(true);
       if (typeof window !== "undefined") {
-        window.history.replaceState({}, '', '/job-openings');
+        router.replace('/job-openings', { scroll: false });
       }
     }
-  }, [searchParams, currentUser]);
+  }, [searchParams, currentUser, router]);
+
+  useEffect(() => {
+    if (focusedOpeningIdFromUrl && jobOpenings.length > 0) {
+      const openingToFocus = jobOpenings.find(op => op.id === focusedOpeningIdFromUrl);
+      setFocusedOpening(openingToFocus || null);
+    } else if (!focusedOpeningIdFromUrl) {
+      setFocusedOpening(null); // Clear focused opening if URL param is removed
+    }
+  }, [focusedOpeningIdFromUrl, jobOpenings]);
+
+  const handleCloseFocusedOpeningDialog = () => {
+    setFocusedOpening(null);
+    router.replace('/job-openings', { scroll: false }); // Remove query param from URL
+  };
 
   const handleAddNewCompanyToListSupabase = async (companyName: string): Promise<Company | null> => {
     if (!currentUser) {
@@ -345,6 +370,8 @@ export default function JobOpeningsPage() {
       job_description_url: values.jobDescriptionUrl || null,
       notes: values.notes || null,
       tags: [],
+      is_favorite: false, // Default new openings are not favorite
+      favorited_at: null,
     };
 
     try {
@@ -425,7 +452,8 @@ export default function JobOpeningsPage() {
           title: "Job Opening Added",
           description: `${newJobOpeningData.role_title} at ${newJobOpeningData.company_name_cache} has been added.`,
         });
-        await fetchPageData();
+        await fetchPageData(); // Refreshes main list
+        router.refresh(); // Triggers AppLayout to refetch favorites
         setIsAddDialogOpen(false);
       } else {
          toast({ title: 'Save Error', description: 'Failed to get new job opening data after insert.', variant: 'destructive' });
@@ -477,6 +505,7 @@ export default function JobOpeningsPage() {
       status: formValues.status,
       job_description_url: formValues.jobDescriptionUrl || null,
       notes: formValues.notes || null,
+      // is_favorite and favorited_at are handled by handleToggleFavorite
     };
 
     try {
@@ -569,6 +598,7 @@ export default function JobOpeningsPage() {
         }
         toast({ title: "Job Opening Updated", description: `${updatedJobOpening.role_title} has been updated.`});
         await fetchPageData();
+        router.refresh(); 
         setIsEditDialogOpen(false);
         setEditingOpening(null);
       }
@@ -624,6 +654,7 @@ export default function JobOpeningsPage() {
               }
             }
             await fetchPageData();
+            router.refresh();
         }
     } catch (error: any) {
         toast({title: 'Error Logging Follow-up', description: error.message, variant: 'destructive'});
@@ -706,11 +737,12 @@ export default function JobOpeningsPage() {
         }
       }
       await fetchPageData();
+      router.refresh();
     } catch (error: any) {
       toast({ title: 'Error Unlogging Follow-up', description: error.message || 'An unexpected error occurred.', variant: 'destructive' });
       console.error(`[Unlog Debug ${jobOpeningId}] Full error object in catch block:`, error);
     }
-  }, [currentUser, toast, fetchPageData, userSettings]);
+  }, [currentUser, toast, fetchPageData, router]);
 
 
   const handleInitiateDeleteOpening = (opening: JobOpening) => {
@@ -751,6 +783,7 @@ export default function JobOpeningsPage() {
 
       toast({ title: "Job Opening Deleted", description: `${openingToDelete.role_title} has been removed.`});
       await fetchPageData();
+      router.refresh();
     } catch (error: any) {
       toast({ title: 'Error Deleting Opening', description: error.message, variant: 'destructive'});
     } finally {
@@ -758,6 +791,36 @@ export default function JobOpeningsPage() {
       setIsDeleteConfirmOpen(false);
     }
   };
+  
+  const handleToggleFavorite = async (jobOpeningId: string, currentIsFavorite: boolean) => {
+    if (!currentUser) {
+      toast({ title: 'Not Authenticated', description: 'Please log in to favorite openings.', variant: 'destructive' });
+      return;
+    }
+    try {
+      const newIsFavorite = !currentIsFavorite;
+      const { error } = await supabase
+        .from('job_openings')
+        .update({ 
+          is_favorite: newIsFavorite,
+          favorited_at: newIsFavorite ? new Date().toISOString() : null,
+        })
+        .eq('id', jobOpeningId)
+        .eq('user_id', currentUser.id);
+
+      if (error) throw error;
+
+      toast({
+        title: newIsFavorite ? 'Added to Favorites' : 'Removed from Favorites',
+        description: `Job opening has been ${newIsFavorite ? 'favorited' : 'unfavorited'}.`,
+      });
+      await fetchPageData(); // Refreshes the main list
+      router.refresh(); // This should trigger AppLayout to refetch favorites
+    } catch (error: any) {
+      toast({ title: 'Error Toggling Favorite', description: error.message, variant: 'destructive' });
+    }
+  };
+
 
   const { actionRequiredOpenings, otherOpenings, allFilteredAndSortedOpenings } = useMemo(() => {
     let openings = [...jobOpenings];
@@ -791,6 +854,17 @@ export default function JobOpeningsPage() {
         break;
       case 'initialEmailDate_asc':
         openings.sort((a, b) => new Date(a.initial_email_date).getTime() - new Date(b.initial_email_date).getTime());
+        break;
+      case 'favorited_at_desc':
+        openings.sort((a, b) => {
+          if (a.is_favorite && !b.is_favorite) return -1;
+          if (!a.is_favorite && b.is_favorite) return 1;
+          if (a.is_favorite && b.is_favorite) {
+            return (b.favorited_at ? new Date(b.favorited_at).getTime() : 0) - (a.favorited_at ? new Date(a.favorited_at).getTime() : 0);
+          }
+          // For non-favorites, maintain previous sort or sort by initial email date
+          return new Date(b.initial_email_date).getTime() - new Date(a.initial_email_date).getTime();
+        });
         break;
       case 'nextFollowUpDate_asc':
         openings.sort((a, b) => {
@@ -901,12 +975,12 @@ export default function JobOpeningsPage() {
           <div className="flex justify-center items-center py-10"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
         ) : !currentUser ? (
             <Card className="shadow-lg"><CardHeader><CardTitle className="font-headline flex items-center"><Briefcase className="mr-2 h-5 w-5 text-primary" />Please Sign In</CardTitle></CardHeader><CardContent><p className="text-muted-foreground">You need to be signed in to manage job openings.</p></CardContent></Card>
-        ) : noResultsAfterFiltering ? (
+        ) : noResultsAfterFiltering && !focusedOpening ? (
           <Card className="shadow-lg">
             <CardHeader><CardTitle className="font-headline flex items-center"><Briefcase className="mr-2 h-5 w-5 text-primary" />{searchTerm ? 'No Matches' : 'No Job Openings Yet'}</CardTitle></CardHeader>
             <CardContent><p className="text-muted-foreground">{searchTerm ? 'Try a different search term.' : 'Click "Add New Opening" to get started.'}</p></CardContent>
           </Card>
-        ) : (
+        ) : focusedOpening ? null : ( // Don't render list if focusedOpening is shown in dialog
           sortOption === 'nextFollowUpDate_asc' ? (
             <>
               {actionRequiredOpenings.length > 0 && (
@@ -917,6 +991,7 @@ export default function JobOpeningsPage() {
                     onEditOpening={handleEditOpening}
                     onLogFollowUp={handleLogFollowUp}
                     onUnlogFollowUp={handleUnlogFollowUp}
+                    onToggleFavorite={handleToggleFavorite}
                   />
                 </div>
               )}
@@ -931,6 +1006,7 @@ export default function JobOpeningsPage() {
                     onEditOpening={handleEditOpening}
                     onLogFollowUp={handleLogFollowUp}
                     onUnlogFollowUp={handleUnlogFollowUp}
+                    onToggleFavorite={handleToggleFavorite}
                   />
                 </div>
               )}
@@ -941,9 +1017,40 @@ export default function JobOpeningsPage() {
               onEditOpening={handleEditOpening}
               onLogFollowUp={handleLogFollowUp}
               onUnlogFollowUp={handleUnlogFollowUp}
+              onToggleFavorite={handleToggleFavorite}
             />
           )
         )}
+        
+        {focusedOpening && (
+          <Dialog open={!!focusedOpening} onOpenChange={(open) => { if (!open) handleCloseFocusedOpeningDialog(); }}>
+            <DialogContent className="sm:max-w-xl p-0 border-0 shadow-2xl bg-transparent">
+              {/* DialogHeader/Title/Description removed to let JobOpeningCard be the full content */}
+              <JobOpeningCard 
+                opening={focusedOpening}
+                onEdit={() => {
+                  handleCloseFocusedOpeningDialog(); // Close this dialog
+                  handleEditOpening(focusedOpening); // Open the edit dialog
+                }}
+                onLogFollowUp={handleLogFollowUp}
+                onUnlogFollowUp={handleUnlogFollowUp}
+                onToggleFavorite={async (id, isFav) => {
+                    await handleToggleFavorite(id, isFav);
+                    // After toggle, refetch might change the focusedOpening object.
+                    // Find it again from potentially updated jobOpenings state.
+                    const updatedFocusedOpening = jobOpenings.find(op => op.id === id);
+                    if (updatedFocusedOpening) {
+                        setFocusedOpening(updatedFocusedOpening); // Refresh dialog content if still visible
+                    } else {
+                        handleCloseFocusedOpeningDialog(); // If it's gone (e.g. deleted by another action)
+                    }
+                }}
+                isFocusedView={true}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
+
 
         <AddJobOpeningDialog
           isOpen={isAddDialogOpen}
@@ -990,3 +1097,5 @@ export default function JobOpeningsPage() {
     </AppLayout>
   );
 }
+
+    

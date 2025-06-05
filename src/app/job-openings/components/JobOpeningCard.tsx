@@ -5,7 +5,7 @@ import type { JobOpening, FollowUp } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Mail, User, ExternalLink, Tag as TagIcon, MessageSquareText, Copy, MailCheck, Loader2, AlertCircle, RotateCcw, CheckCircle, Users as UsersIcon } from 'lucide-react';
+import { CalendarDays, Mail, User, ExternalLink, Tag as TagIcon, MessageSquareText, Copy, MailCheck, Loader2, AlertCircle, RotateCcw, CheckCircle, Users as UsersIcon, Star } from 'lucide-react';
 import { format, isValid, isToday, isBefore, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import React, { useState, useMemo, useEffect } from 'react';
@@ -16,6 +16,8 @@ interface JobOpeningCardProps {
   onEdit: (opening: JobOpening) => void;
   onLogFollowUp: (followUpId: string, jobOpeningId: string) => Promise<void>;
   onUnlogFollowUp: (followUpId: string, jobOpeningId: string) => Promise<void>;
+  onToggleFavorite: (jobOpeningId: string, currentIsFavorite: boolean) => Promise<void>;
+  isFocusedView?: boolean; // Optional: indicates if card is in a special focused view
 }
 
 // Helper to ensure console logs are not too verbose in production builds if needed
@@ -26,10 +28,18 @@ const logDebug = (...args: any[]) => {
 };
 
 
-export function JobOpeningCard({ opening, onEdit, onLogFollowUp, onUnlogFollowUp }: JobOpeningCardProps) {
+export function JobOpeningCard({ 
+    opening, 
+    onEdit, 
+    onLogFollowUp, 
+    onUnlogFollowUp, 
+    onToggleFavorite,
+    isFocusedView = false 
+}: JobOpeningCardProps) {
   const { toast } = useToast();
   const [isLoggingFollowUp, setIsLoggingFollowUp] = useState(false);
   const [isUnloggingFollowUp, setIsUnloggingFollowUp] = useState(false);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   
   const followUpsArray = useMemo(() => 
     Array.isArray(opening.followUps) ? opening.followUps.map(fu => ({...fu, follow_up_date: new Date(fu.follow_up_date)})) : [], 
@@ -93,11 +103,11 @@ export function JobOpeningCard({ opening, onEdit, onLogFollowUp, onUnlogFollowUp
   }, [nextFollowUp, upcomingPendingFollowUps, opening.id]);
 
 
-  const firstFollowUpEmailContentExists = followUpsArray[0]?.email_content && followUpsArray[0].email_content.trim() !== '';
+  const firstFollowUpEmailContentExists = followUpsArray[0]?.email_body && followUpsArray[0].email_body.trim() !== '';
+
 
   const lastSentFollowUpLoggedToday = useMemo(() => {
     let latestSent: FollowUp | null = null;
-    // Iterate in reverse to find the latest-in-sequence FU that was sent today
     for (let i = followUpsArray.length - 1; i >= 0; i--) {
       const fu = followUpsArray[i];
       if (
@@ -116,7 +126,6 @@ export function JobOpeningCard({ opening, onEdit, onLogFollowUp, onUnlogFollowUp
 
   const isOverdue = useMemo(() => {
     if (nextFollowUp && nextFollowUp.status === 'Pending' && nextFollowUp.follow_up_date && isValid(nextFollowUp.follow_up_date)) {
-      // Ensure we are comparing just the date parts by using startOfDay for comparison
       const nextFollowUpDayStart = startOfDay(nextFollowUp.follow_up_date);
       const todayStart = startOfDay(new Date());
       return isBefore(nextFollowUpDayStart, todayStart);
@@ -140,7 +149,7 @@ export function JobOpeningCard({ opening, onEdit, onLogFollowUp, onUnlogFollowUp
   };
 
   const formattedInitialEmailDate = opening.initial_email_date && isValid(opening.initial_email_date)
-    ? format(opening.initial_email_date, 'PPP')
+    ? format(new Date(opening.initial_email_date), 'PPP') // Ensure date is treated as Date object
     : 'Invalid Date';
 
   const formattedNextFollowUpDate = nextFollowUp && nextFollowUp.follow_up_date && isValid(nextFollowUp.follow_up_date)
@@ -162,12 +171,23 @@ export function JobOpeningCard({ opening, onEdit, onLogFollowUp, onUnlogFollowUp
     if (!lastSentFollowUpLoggedToday || !lastSentFollowUpLoggedToday.id) return;
     
     logDebug(`[Card Unlog Click ID: ${opening.id}] Unlogging FollowUpID: ${lastSentFollowUpLoggedToday.id}`);
-    // (window as any).lastUnloggedFollowUpId = lastSentFollowUpLoggedToday.id; // For diagnostics
-
     setIsUnloggingFollowUp(true);
     try { await onUnlogFollowUp(lastSentFollowUpLoggedToday.id, opening.id); } 
     catch (error) { console.error("Error unlogging follow-up from card:", error); toast({ title: "Unlog Error", variant: "destructive" }); } 
     finally { setIsUnloggingFollowUp(false); }
+  };
+
+  const handleToggleFavoriteClick = async (event: React.MouseEvent) => {
+    event.stopPropagation();
+    setIsTogglingFavorite(true);
+    try {
+      await onToggleFavorite(opening.id, !!opening.is_favorite);
+    } catch (error) {
+      console.error("Error toggling favorite from card:", error);
+      // Toast will be handled by the page component
+    } finally {
+      setIsTogglingFavorite(false);
+    }
   };
   
   let footerContent;
@@ -175,7 +195,7 @@ export function JobOpeningCard({ opening, onEdit, onLogFollowUp, onUnlogFollowUp
 
   if (nextFollowUp && nextFollowUp.status === 'Pending') {
     footerContent = (
-      <Button variant="outline" size="sm" className="w-full" onClick={handleLogFollowUpClick} disabled={isLoggingFollowUp || isUnloggingFollowUp}>
+      <Button variant="outline" size="sm" className="w-full" onClick={handleLogFollowUpClick} disabled={isLoggingFollowUp || isUnloggingFollowUp || isTogglingFavorite}>
         {isLoggingFollowUp ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MailCheck className="mr-2 h-4 w-4" />} Log Follow-up
       </Button>
     );
@@ -195,15 +215,35 @@ export function JobOpeningCard({ opening, onEdit, onLogFollowUp, onUnlogFollowUp
 
   return (
     <Card 
-      className={cn("shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col", isOverdue && nextFollowUp && nextFollowUp.status === 'Pending' && "border-destructive border-2" )}
-      onClick={() => onEdit(opening)}
+      className={cn(
+          "shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col",
+          isOverdue && nextFollowUp && nextFollowUp.status === 'Pending' && "border-destructive border-2",
+          isFocusedView ? "" : "cursor-pointer" // No cursor pointer if it's already focused in a dialog
+        )}
+      onClick={isFocusedView ? undefined : () => onEdit(opening)} // Prevent click if in focused view, as dialog handles open state
     >
       <CardHeader>
         <div className="flex justify-between items-start">
           <CardTitle className="font-headline text-xl mb-1">{opening.role_title}</CardTitle>
-          <Badge variant={['Hot Lead', 'Interviewing', 'Offer', 'Replied - Positive'].includes(opening.status) ? 'default' : 'secondary'} className="capitalize">
-            {opening.status}
-          </Badge>
+          <div className="flex items-center gap-2">
+             <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 p-1 text-muted-foreground hover:text-yellow-500 hover:bg-transparent"
+                onClick={handleToggleFavoriteClick}
+                disabled={isTogglingFavorite || isLoggingFollowUp || isUnloggingFollowUp}
+                title={opening.is_favorite ? "Unfavorite" : "Favorite"}
+              >
+                {isTogglingFavorite ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Star className={cn("h-5 w-5", opening.is_favorite ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground")} />
+                )}
+              </Button>
+            <Badge variant={['Hot Lead', 'Interviewing', 'Offer', 'Replied - Positive'].includes(opening.status) ? 'default' : 'secondary'} className="capitalize">
+              {opening.status}
+            </Badge>
+          </div>
         </div>
         <CardDescription className="text-primary">{opening.company_name_cache}</CardDescription>
       </CardHeader>
@@ -274,7 +314,7 @@ export function JobOpeningCard({ opening, onEdit, onLogFollowUp, onUnlogFollowUp
       <CardFooter className="border-t pt-4 flex space-x-2">
         {footerContent}
         {lastSentFollowUpLoggedToday && (
-            <Button variant="outline" size="sm" className="w-auto p-2" onClick={handleUnlogFollowUpClick} disabled={isUnloggingFollowUp || isLoggingFollowUp} title="Unlog today's follow-up">
+            <Button variant="outline" size="sm" className="w-auto p-2" onClick={handleUnlogFollowUpClick} disabled={isUnloggingFollowUp || isLoggingFollowUp || isTogglingFavorite} title="Unlog today's follow-up">
                 {isUnloggingFollowUp ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
             </Button>
         )}
@@ -282,3 +322,5 @@ export function JobOpeningCard({ opening, onEdit, onLogFollowUp, onUnlogFollowUp
     </Card>
   );
 }
+
+    
