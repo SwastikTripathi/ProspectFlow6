@@ -4,18 +4,23 @@
 import type { Contact } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UserCircle2, Mail, Linkedin, Briefcase, Phone, Info, Copy } from 'lucide-react';
+import { UserCircle2, Mail, Linkedin, Briefcase, Phone, Info, Copy, Star, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+import React, { useState } from 'react';
 
 interface ContactCardProps {
   contact: Contact;
   onEdit: (contact: Contact) => void;
+  onToggleFavorite: (contactId: string, currentIsFavorite: boolean) => Promise<void>;
 }
 
-export function ContactCard({ contact, onEdit }: ContactCardProps) {
+export function ContactCard({ contact, onEdit, onToggleFavorite }: ContactCardProps) {
   const { toast } = useToast();
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
 
-  const copyToClipboard = (text: string, fieldName: string = "Text") => {
+  const copyToClipboard = (text: string, fieldName: string = "Text", event?: React.MouseEvent) => {
+    event?.stopPropagation();
     if (!navigator.clipboard) {
       toast({ title: "Copy Failed", description: "Clipboard API not available.", variant: "destructive" });
       return;
@@ -26,6 +31,19 @@ export function ContactCard({ contact, onEdit }: ContactCardProps) {
       console.error(`Failed to copy ${fieldName.toLowerCase()}: `, err);
       toast({ title: "Copy Failed", description: `Could not copy.`, variant: "destructive" });
     });
+  };
+
+  const handleToggleFavoriteClick = async (event: React.MouseEvent) => {
+    event.stopPropagation();
+    setIsTogglingFavorite(true);
+    try {
+      await onToggleFavorite(contact.id, !!contact.is_favorite);
+    } catch (error) {
+      console.error("Error toggling contact favorite from card:", error);
+      toast({ title: "Favorite Error", description: "Could not update favorite status.", variant: "destructive" });
+    } finally {
+      setIsTogglingFavorite(false);
+    }
   };
 
   return (
@@ -39,6 +57,20 @@ export function ContactCard({ contact, onEdit }: ContactCardProps) {
             <UserCircle2 className="mr-2 h-5 w-5 text-primary" />
             {contact.name}
           </CardTitle>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 p-1 text-muted-foreground hover:text-yellow-500 hover:bg-transparent"
+            onClick={handleToggleFavoriteClick}
+            disabled={isTogglingFavorite}
+            title={contact.is_favorite ? "Unfavorite" : "Favorite"}
+          >
+            {isTogglingFavorite ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Star className={cn("h-5 w-5", contact.is_favorite ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground")} />
+            )}
+          </Button>
         </div>
         {contact.role && (
             <CardDescription className="text-accent">{contact.role}</CardDescription>
@@ -50,7 +82,7 @@ export function ContactCard({ contact, onEdit }: ContactCardProps) {
           <a 
             href={`mailto:${contact.email}`} 
             className="text-accent hover:underline truncate" 
-            onClick={(e) => e.stopPropagation()} // Prevent card click when mail link is clicked
+            onClick={(e) => e.stopPropagation()}
           >
             {contact.email}
           </a>
@@ -59,8 +91,8 @@ export function ContactCard({ contact, onEdit }: ContactCardProps) {
             size="icon"
             className="h-6 w-6 p-1 ml-1.5 text-muted-foreground hover:text-accent hover:bg-transparent"
             onClick={(e) => {
-              e.stopPropagation(); // Prevent card click
-              copyToClipboard(contact.email, "Email");
+              e.stopPropagation();
+              copyToClipboard(contact.email, "Email", e);
             }}
             title="Copy email"
           >
@@ -87,7 +119,7 @@ export function ContactCard({ contact, onEdit }: ContactCardProps) {
               target="_blank" 
               rel="noopener noreferrer" 
               className="text-accent hover:underline truncate"
-              onClick={(e) => e.stopPropagation()} // Prevent card click when link is clicked
+              onClick={(e) => e.stopPropagation()}
             >
               LinkedIn Profile
             </a>
@@ -103,7 +135,8 @@ export function ContactCard({ contact, onEdit }: ContactCardProps) {
              <p className="text-xs text-muted-foreground">No additional details provided.</p>
         )}
       </CardContent>
-      {/* CardFooter removed as the whole card is clickable */}
     </Card>
   );
 }
+
+    

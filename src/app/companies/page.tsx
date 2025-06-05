@@ -5,12 +5,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Building2, Search as SearchIcon, Trash2, XCircle, Loader2 } from 'lucide-react';
+import { PlusCircle, Building2, Search as SearchIcon, Trash2, XCircle, Loader2, Star } from 'lucide-react';
 import type { Company } from '@/lib/types';
 import { AddCompanyDialog } from './components/AddCompanyDialog';
 import { EditCompanyDialog } from './components/EditCompanyDialog';
 import { CompanyList } from './components/CompanyList';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AlertDialog,
@@ -27,14 +27,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
+import { cn } from '@/lib/utils';
 
 export default function CompaniesPage() {
+  const router = useRouter();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchInNotes, setSearchInNotes] = useState(true);
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const searchParams = useSearchParams();
@@ -48,7 +51,7 @@ export default function CompaniesPage() {
         setCurrentUser(session?.user ?? null);
       }
     );
-    // Get initial user
+    
     supabase.auth.getUser().then(({ data: { user } }) => {
         setCurrentUser(user);
     });
@@ -68,14 +71,14 @@ export default function CompaniesPage() {
     try {
       const { data, error } = await supabase
         .from('companies')
-        .select('*')
+        .select('*, is_favorite')
         .eq('user_id', currentUser.id)
         .order('name', { ascending: true });
 
       if (error) {
         throw error;
       }
-      setCompanies(data || []);
+      setCompanies(data as Company[] || []);
     } catch (error: any) {
       toast({
         title: 'Error Fetching Companies',
@@ -97,12 +100,12 @@ export default function CompaniesPage() {
     if (searchParams?.get('new') === 'true') {
       setIsAddDialogOpen(true);
       if (typeof window !== "undefined") {
-        window.history.replaceState({}, '', '/companies');
+        router.replace('/companies', {scroll: false});
       }
     }
-  }, [searchParams]);
+  }, [searchParams, router]);
 
-  const handleAddCompany = async (companyData: Omit<Company, 'id' | 'user_id' | 'created_at'>) => {
+  const handleAddCompany = async (companyData: Omit<Company, 'id' | 'user_id' | 'created_at' | 'is_favorite'>) => {
     if (!currentUser) {
         toast({ title: 'Authentication Error', description: 'You must be logged in to add a company.', variant: 'destructive'});
         return;
@@ -110,21 +113,19 @@ export default function CompaniesPage() {
     try {
       const { data, error } = await supabase
         .from('companies')
-        .insert([{ ...companyData, user_id: currentUser.id }])
+        .insert([{ ...companyData, user_id: currentUser.id, is_favorite: false }])
         .select()
-        .single(); // Assuming you want the inserted record back
+        .single(); 
 
       if (error) throw error;
 
       if (data) {
-        // Optimistically update or refetch
-        // setCompanies(prev => [data, ...prev].sort((a, b) => a.name.localeCompare(b.name)));
-        fetchCompanies(); // Refetch to ensure consistency
+        fetchCompanies(); 
         toast({
           title: "Company Added",
           description: `${data.name} has been added.`,
         });
-        setIsAddDialogOpen(false); // Close dialog from here
+        setIsAddDialogOpen(false); 
       }
     } catch (error: any) {
       toast({
@@ -146,28 +147,26 @@ export default function CompaniesPage() {
         toast({ title: 'Error', description: 'Invalid operation.', variant: 'destructive'});
         return;
     }
-    // Supabase expects only the fields to update, not the full object with id/user_id/created_at for the update payload
-    const { id, user_id, created_at, ...updatePayload } = updatedCompanyData;
+    const { id, user_id, created_at, is_favorite, ...updatePayload } = updatedCompanyData;
 
     try {
       const { data, error } = await supabase
         .from('companies')
         .update(updatePayload)
         .eq('id', id)
-        .eq('user_id', currentUser.id) // Ensure user owns the record
+        .eq('user_id', currentUser.id) 
         .select()
         .single();
 
       if (error) throw error;
 
       if (data) {
-        // setCompanies(prev => prev.map(c => c.id === data.id ? data : c).sort((a, b) => a.name.localeCompare(b.name)));
-        fetchCompanies(); // Refetch
+        fetchCompanies(); 
          toast({
           title: "Company Updated",
           description: `${data.name} has been updated.`,
         });
-        setIsEditDialogOpen(false); // Close dialog from here
+        setIsEditDialogOpen(false); 
         setEditingCompany(null);
       }
     } catch (error: any) {
@@ -176,6 +175,29 @@ export default function CompaniesPage() {
         description: error.message || 'Could not update the company.',
         variant: 'destructive',
       });
+    }
+  };
+  
+  const handleToggleFavoriteCompany = async (companyId: string, currentIsFavorite: boolean) => {
+    if (!currentUser) {
+      toast({ title: 'Not Authenticated', description: 'Please log in.', variant: 'destructive' });
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .update({ is_favorite: !currentIsFavorite })
+        .eq('id', companyId)
+        .eq('user_id', currentUser.id);
+
+      if (error) throw error;
+      toast({
+        title: !currentIsFavorite ? 'Added to Favorites' : 'Removed from Favorites',
+      });
+      await fetchCompanies(); 
+      router.refresh(); 
+    } catch (error: any) {
+      toast({ title: 'Error Toggling Favorite', description: error.message, variant: 'destructive' });
     }
   };
 
@@ -192,12 +214,10 @@ export default function CompaniesPage() {
         .from('companies')
         .delete()
         .eq('id', companyToDelete.id)
-        .eq('user_id', currentUser.id); // Ensure user owns the record
+        .eq('user_id', currentUser.id); 
 
       if (error) throw error;
-
-      // setCompanies(prev => prev.filter(c => c.id !== companyToDelete.id));
-      fetchCompanies(); // Refetch
+      fetchCompanies(); 
       toast({
         title: "Company Deleted",
         description: `${companyToDelete.name} has been removed.`,
@@ -215,6 +235,9 @@ export default function CompaniesPage() {
   };
 
   const filteredCompanies = companies.filter(company => {
+    if (showOnlyFavorites && !company.is_favorite) {
+        return false;
+    }
     const term = searchTerm.toLowerCase();
     const nameMatch = company.name.toLowerCase().includes(term);
     const websiteMatch = company.website && company.website.toLowerCase().includes(term);
@@ -266,6 +289,17 @@ export default function CompaniesPage() {
               <Label htmlFor="searchCompanyNotes" className="text-xs text-muted-foreground whitespace-nowrap">Include Notes</Label>
             </div>
           </div>
+          <Button
+            variant={showOnlyFavorites ? "default" : "outline"}
+            size="icon"
+            onClick={() => setShowOnlyFavorites(!showOnlyFavorites)}
+            disabled={!currentUser || isLoading}
+            title={showOnlyFavorites ? "Show All Companies" : "Show Only Favorites"}
+            className={cn(showOnlyFavorites && "border-yellow-500 ring-2 ring-yellow-500/50")}
+          >
+            <Star className={cn("h-5 w-5", showOnlyFavorites ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground")} />
+            <span className="sr-only">{showOnlyFavorites ? "Show All" : "Show Favorites"}</span>
+          </Button>
         </div>
         
         {isLoading ? (
@@ -287,21 +321,28 @@ export default function CompaniesPage() {
             </CardContent>
           </Card>
         ) : filteredCompanies.length > 0 ? (
-          <CompanyList companies={filteredCompanies} onEditCompany={handleEditCompany} />
+          <CompanyList 
+            companies={filteredCompanies} 
+            onEditCompany={handleEditCompany} 
+            onToggleFavoriteCompany={handleToggleFavoriteCompany}
+          />
         ) : (
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="font-headline flex items-center">
                 <Building2 className="mr-2 h-5 w-5 text-primary" />
-                {searchTerm ? 'No Companies Match Your Search' : 'Company Directory is Empty'}
+                {showOnlyFavorites && searchTerm ? "No Favorite Companies Match Your Search" :
+                 showOnlyFavorites ? "No Favorite Companies Yet" :
+                 searchTerm ? "No Companies Match Your Search" : 
+                 "Company Directory is Empty"}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                {searchTerm 
-                  ? 'Try adjusting your search term or add a new company.' 
-                  : 'No companies have been added yet. Click "Add New Company" to start building your directory.'
-                }
+                {showOnlyFavorites && searchTerm ? "Try adjusting your search or clear the favorites filter." :
+                 showOnlyFavorites ? "Mark some companies as favorite to see them here." :
+                 searchTerm ? "Try a different search term or add a new company." : 
+                 "No companies have been added yet. Click \"Add New Company\" to start building your directory."}
               </p>
             </CardContent>
           </Card>
@@ -310,7 +351,7 @@ export default function CompaniesPage() {
         <AddCompanyDialog
           isOpen={isAddDialogOpen}
           onOpenChange={setIsAddDialogOpen}
-          onAddCompanySubmit={handleAddCompany} // Changed prop name
+          onAddCompanySubmit={handleAddCompany}
         />
         {editingCompany && (
           <EditCompanyDialog
@@ -343,3 +384,5 @@ export default function CompaniesPage() {
     </AppLayout>
   );
 }
+
+    

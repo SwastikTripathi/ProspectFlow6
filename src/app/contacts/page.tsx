@@ -5,12 +5,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Users, Search as SearchIcon, Trash2, XCircle, Loader2 } from 'lucide-react';
+import { PlusCircle, Users, Search as SearchIcon, Trash2, XCircle, Loader2, Star } from 'lucide-react';
 import type { Contact, Company } from '@/lib/types';
 import { AddContactDialog, type AddContactFormValues } from './components/AddContactDialog';
 import { EditContactDialog, type EditContactFormValues } from './components/EditContactDialog';
 import { ContactList } from './components/ContactList';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AlertDialog,
@@ -27,8 +27,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
+import { cn } from '@/lib/utils';
 
 export default function ContactsPage() {
+  const router = useRouter();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -36,6 +38,7 @@ export default function ContactsPage() {
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchInNotes, setSearchInNotes] = useState(true);
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const searchParams = useSearchParams();
@@ -68,12 +71,12 @@ export default function ContactsPage() {
     setIsLoading(true);
     try {
       const [contactsResponse, companiesResponse] = await Promise.all([
-        supabase.from('contacts').select('*').eq('user_id', currentUser.id).order('name', { ascending: true }),
+        supabase.from('contacts').select('*, is_favorite').eq('user_id', currentUser.id).order('name', { ascending: true }),
         supabase.from('companies').select('*').eq('user_id', currentUser.id).order('name', { ascending: true }),
       ]);
 
       if (contactsResponse.error) throw contactsResponse.error;
-      setContacts(contactsResponse.data || []);
+      setContacts(contactsResponse.data as Contact[] || []);
 
       if (companiesResponse.error) throw companiesResponse.error;
       setCompanies(companiesResponse.data || []);
@@ -99,10 +102,10 @@ export default function ContactsPage() {
     if (searchParams?.get('new') === 'true') {
       setIsAddDialogOpen(true);
       if (typeof window !== "undefined") {
-        window.history.replaceState({}, '', '/contacts');
+        router.replace('/contacts', {scroll: false});
       }
     }
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   const handleAttemptCreateCompany = async (companyName: string): Promise<Company | null> => {
     if (!currentUser) {
@@ -114,7 +117,6 @@ export default function ContactsPage() {
         return null;
     }
 
-    // Check if company already exists (case-insensitive)
     const existingCompany = companies.find(c => c.name.toLowerCase() === companyName.trim().toLowerCase());
     if (existingCompany) {
         toast({ title: 'Company Exists', description: `${companyName} already exists. Selecting it.`, variant: 'default' });
@@ -124,14 +126,14 @@ export default function ContactsPage() {
     try {
       const { data, error } = await supabase
         .from('companies')
-        .insert([{ name: companyName, user_id: currentUser.id }])
+        .insert([{ name: companyName, user_id: currentUser.id, is_favorite: false }])
         .select()
         .single();
       if (error) throw error;
       if (data) {
         toast({ title: "Company Added", description: `${data.name} has been added.` });
-        await fetchContactsAndCompanies(); // Re-fetch companies to update list
-        return data;
+        await fetchContactsAndCompanies(); 
+        return data as Company;
       }
       return null;
     } catch (error: any) {
@@ -149,19 +151,15 @@ export default function ContactsPage() {
     let companyIdToLink: string | null = values.company_id || null;
     let companyNameCache: string | null = values.company_name_input || null;
 
-    // If company_id is not set but company_name_input is, try to find or create company
     if (!companyIdToLink && values.company_name_input) {
         const company = await handleAttemptCreateCompany(values.company_name_input);
         if (company) {
             companyIdToLink = company.id;
-            companyNameCache = company.name; // Use the potentially case-corrected name
+            companyNameCache = company.name; 
         } else {
-            // Failed to create/find company, user was already toasted.
-            // Optionally, clear company_name_input or prevent contact save
-            return; // Prevent contact save if company creation failed
+            return; 
         }
     } else if (companyIdToLink && values.company_name_input) {
-      // If an ID is selected, ensure company_name_cache matches the selected company's name
       const selectedCompany = companies.find(c => c.id === companyIdToLink);
       companyNameCache = selectedCompany ? selectedCompany.name : values.company_name_input;
     }
@@ -177,7 +175,8 @@ export default function ContactsPage() {
       notes: values.notes || null,
       company_id: companyIdToLink,
       company_name_cache: companyNameCache,
-      tags: [], // Default to empty array
+      tags: [], 
+      is_favorite: false,
     };
 
     try {
@@ -190,7 +189,7 @@ export default function ContactsPage() {
       if (error) throw error;
       if (data) {
         toast({ title: "Contact Added", description: `${data.name} has been added.` });
-        fetchContactsAndCompanies(); // Re-fetch contacts
+        fetchContactsAndCompanies(); 
         setIsAddDialogOpen(false);
       }
     } catch (error: any) {
@@ -223,11 +222,10 @@ export default function ContactsPage() {
     } else if (companyIdToLink && values.company_name_input) {
         const selectedCompany = companies.find(c => c.id === companyIdToLink);
         companyNameCache = selectedCompany ? selectedCompany.name : values.company_name_input;
-    } else if (!values.company_name_input) { // User cleared company name
+    } else if (!values.company_name_input) { 
         companyIdToLink = null;
         companyNameCache = null;
     }
-
 
     const contactDataToUpdate = {
       name: values.name,
@@ -238,7 +236,6 @@ export default function ContactsPage() {
       notes: values.notes || null,
       company_id: companyIdToLink,
       company_name_cache: companyNameCache,
-      // tags are not editable in this form yet, so keep existing if any
     };
 
     try {
@@ -253,7 +250,7 @@ export default function ContactsPage() {
       if (error) throw error;
       if (data) {
         toast({ title: "Contact Updated", description: `${data.name} has been updated.` });
-        fetchContactsAndCompanies(); // Re-fetch
+        fetchContactsAndCompanies(); 
         setIsEditDialogOpen(false);
         setEditingContact(null);
       }
@@ -262,9 +259,32 @@ export default function ContactsPage() {
     }
   };
 
+  const handleToggleFavoriteContact = async (contactId: string, currentIsFavorite: boolean) => {
+    if (!currentUser) {
+      toast({ title: 'Not Authenticated', description: 'Please log in.', variant: 'destructive' });
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('contacts')
+        .update({ is_favorite: !currentIsFavorite })
+        .eq('id', contactId)
+        .eq('user_id', currentUser.id);
+
+      if (error) throw error;
+      toast({
+        title: !currentIsFavorite ? 'Added to Favorites' : 'Removed from Favorites',
+      });
+      await fetchContactsAndCompanies(); 
+      router.refresh(); 
+    } catch (error: any) {
+      toast({ title: 'Error Toggling Favorite', description: error.message, variant: 'destructive' });
+    }
+  };
+
   const handleInitiateDeleteContact = (contact: Contact) => {
     setContactToDelete(contact);
-    setIsEditDialogOpen(false); // Close edit dialog if open
+    setIsEditDialogOpen(false); 
     setIsDeleteConfirmOpen(true);
   };
 
@@ -280,7 +300,7 @@ export default function ContactsPage() {
       if (error) throw error;
 
       toast({ title: "Contact Deleted", description: `${contactToDelete.name} has been removed.` });
-      fetchContactsAndCompanies(); // Re-fetch
+      fetchContactsAndCompanies(); 
     } catch (error: any) {
       toast({ title: 'Error Deleting Contact', description: error.message || 'Could not delete contact.', variant: 'destructive' });
     } finally {
@@ -290,6 +310,9 @@ export default function ContactsPage() {
   };
   
   const filteredContacts = contacts.filter(contact => {
+    if (showOnlyFavorites && !contact.is_favorite) {
+      return false;
+    }
     const term = searchTerm.toLowerCase();
     const nameMatch = contact.name.toLowerCase().includes(term);
     const emailMatch = contact.email.toLowerCase().includes(term);
@@ -343,6 +366,17 @@ export default function ContactsPage() {
               <Label htmlFor="searchContactNotes" className="text-xs text-muted-foreground whitespace-nowrap">Include Notes</Label>
             </div>
           </div>
+          <Button
+            variant={showOnlyFavorites ? "default" : "outline"}
+            size="icon"
+            onClick={() => setShowOnlyFavorites(!showOnlyFavorites)}
+            disabled={!currentUser || isLoading}
+            title={showOnlyFavorites ? "Show All Contacts" : "Show Only Favorites"}
+            className={cn(showOnlyFavorites && "border-yellow-500 ring-2 ring-yellow-500/50")}
+          >
+            <Star className={cn("h-5 w-5", showOnlyFavorites ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground")} />
+            <span className="sr-only">{showOnlyFavorites ? "Show All" : "Show Favorites"}</span>
+          </Button>
         </div>
         
         {isLoading ? (
@@ -355,21 +389,28 @@ export default function ContactsPage() {
             <CardContent><p className="text-muted-foreground">You need to be signed in to view and manage contacts.</p></CardContent>
           </Card>
         ) : filteredContacts.length > 0 ? (
-          <ContactList contacts={filteredContacts} onEditContact={handleEditContact} />
+          <ContactList 
+            contacts={filteredContacts} 
+            onEditContact={handleEditContact} 
+            onToggleFavoriteContact={handleToggleFavoriteContact}
+          />
         ) : (
            <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="font-headline flex items-center">
                 <Users className="mr-2 h-5 w-5 text-primary" />
-                {searchTerm ? 'No Contacts Match Your Search' : 'Contact Directory is Empty'}
+                {showOnlyFavorites && searchTerm ? "No Favorite Contacts Match Your Search" :
+                 showOnlyFavorites ? "No Favorite Contacts Yet" :
+                 searchTerm ? "No Contacts Match Your Search" : 
+                 "Contact Directory is Empty"}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                {searchTerm
-                  ? 'Try adjusting your search term or add a new contact.'
-                  : 'No contacts have been added yet. Click "Add New Contact" to start building your directory.'
-                }
+                {showOnlyFavorites && searchTerm ? "Try adjusting your search or clear the favorites filter." :
+                 showOnlyFavorites ? "Mark some contacts as favorite to see them here." :
+                 searchTerm ? "Try a different search term or add a new contact." : 
+                 "No contacts have been added yet. Click \"Add New Contact\" to start building your directory."}
               </p>
             </CardContent>
           </Card>
@@ -415,3 +456,5 @@ export default function ContactsPage() {
     </AppLayout>
   );
 }
+
+    

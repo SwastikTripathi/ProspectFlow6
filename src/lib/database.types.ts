@@ -19,6 +19,7 @@ export type Database = {
           notes: string | null
           user_id: string
           website: string | null
+          is_favorite: boolean | null
         }
         Insert: {
           created_at?: string
@@ -28,6 +29,7 @@ export type Database = {
           notes?: string | null
           user_id: string
           website?: string | null
+          is_favorite?: boolean | null
         }
         Update: {
           created_at?: string
@@ -37,6 +39,7 @@ export type Database = {
           notes?: string | null
           user_id?: string
           website?: string | null
+          is_favorite?: boolean | null
         }
         Relationships: [
           {
@@ -62,6 +65,7 @@ export type Database = {
           role: string | null
           tags: Json | null
           user_id: string
+          is_favorite: boolean | null
         }
         Insert: {
           company_id?: string | null
@@ -76,6 +80,7 @@ export type Database = {
           role?: string | null
           tags?: Json | null
           user_id: string
+          is_favorite?: boolean | null
         }
         Update: {
           company_id?: string | null
@@ -90,6 +95,7 @@ export type Database = {
           role?: string | null
           tags?: Json | null
           user_id?: string
+          is_favorite?: boolean | null
         }
         Relationships: [
           {
@@ -476,5 +482,6 @@ export const Constants = {
     Enums: {},
   },
 } as const
+    
 
     

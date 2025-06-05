@@ -9,6 +9,7 @@ export interface Company {
   website?: string | null;
   linkedin_url?: string | null;
   notes?: string | null;
+  is_favorite?: boolean | null;
 }
 
 export interface Contact {
@@ -24,6 +25,7 @@ export interface Contact {
   company_name_cache?: string | null;
   notes?: string | null;
   tags?: string[] | null;
+  is_favorite?: boolean | null;
 }
 
 export interface FollowUp {
@@ -143,5 +145,6 @@ export interface ContactFormEntry {
   contactName: string;
   contactEmail: string;
 }
+    
 
     
