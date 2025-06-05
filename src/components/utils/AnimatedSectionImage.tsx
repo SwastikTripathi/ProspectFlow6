@@ -57,7 +57,7 @@ export function AnimatedSectionImage({
         }
       },
       {
-        threshold: 0.4, 
+        threshold: 0.01,
         rootMargin: "-0.1px 0px -0.1px 0px",
       }
     );
@@ -80,10 +80,11 @@ export function AnimatedSectionImage({
   } else if (animationDirection === 'right') {
     initialTransform = 'translate-x-full';
   } else if (animationDirection === 'up') {
+    // For vertical animations, direction depends on scroll
     if (scrollDirection === 'down') {
-      initialTransform = '-translate-y-24'; // Animate from top to bottom
+      initialTransform = '-translate-y-24'; // Start above, animate down
     } else {
-      initialTransform = 'translate-y-24';  // Animate from bottom to top (scrolling up or initial)
+      initialTransform = 'translate-y-24';  // Start below, animate up (for scrolling up or initial load if no scroll yet)
     }
   }
 
