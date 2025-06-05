@@ -1,6 +1,7 @@
 
 'use client';
 
+import React from 'react'; // Added this line
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Briefcase, Users, Building2, Star, Edit3, Rss } from 'lucide-react';
@@ -16,9 +17,9 @@ import {
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { JobOpening } from '@/lib/types';
-import { supabase } from '@/lib/supabaseClient'; // Added for user check
-import { useEffect, useState } from 'react'; // Added for user check
-import { OWNER_EMAIL } from '@/lib/config'; // Added for owner email
+import { supabase } from '@/lib/supabaseClient'; 
+import { useEffect, useState } from 'react'; 
+import { OWNER_EMAIL } from '@/lib/config'; 
 
 interface NavItem {
   href: string;
@@ -84,7 +85,7 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
 
   const renderNavItems = (items: NavItem[], groupLabel?: string) => {
     const filteredItems = items.filter(item => !item.ownerOnly || (item.ownerOnly && isOwner));
-    if (filteredItems.length === 0 && groupLabel) return null; // Don't render group if no items visible
+    if (filteredItems.length === 0 && groupLabel) return null; 
 
     return (
         <SidebarGroup>
@@ -126,7 +127,7 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
     );
   };
   
-  if (isLoadingUser && !isCollapsedDesktop) { // Show skeleton only if expanded and loading
+  if (isLoadingUser && !isCollapsedDesktop) { 
     return (
       <div className="space-y-2 p-2">
         {[...Array(4)].map((_, i) => (
@@ -142,7 +143,7 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div> {/* Container for main navigation items */}
+      <div> 
         {renderNavItems(mainNavItems)}
         {renderNavItems(blogNavItems, "Blog Management")}
       </div>
