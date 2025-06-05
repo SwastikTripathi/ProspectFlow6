@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CheckCircle, TrendingUp, Users, Target, Briefcase, Zap, ArrowRight, Eye, MailCheck, Building, Workflow, Focus, ShieldCheck, HeartHandshake, Star, HelpCircle, Facebook, Twitter, Youtube, Linkedin, Globe, CreditCard, Search, Lightbulb } from 'lucide-react';
+import { CheckCircle, TrendingUp, Users, Target, Briefcase, Zap, ArrowRight, Eye, MailCheck, Building, Workflow, Focus, ShieldCheck, HeartHandshake, Star, HelpCircle, Facebook, Twitter, Youtube, Linkedin, Globe, CreditCard, Search, Lightbulb, Mail, CalendarDays, User as UserIcon } from 'lucide-react';
 import { Logo } from '@/components/icons/Logo';
 import { Badge } from '@/components/ui/badge'; 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -101,44 +101,54 @@ const faqData = [
 function HeroVisual() {
   const mockCardsData = [
     {
-      type: 'JOB OPENING',
       title: 'Software Engineer',
-      description: 'Innovate Inc.', // Using description field for company name or context
+      contextLine: 'Innovate Inc.',
       status: 'Emailed',
-      statusColor: 'bg-green-500 text-green-50 border-transparent', // From JobOpeningCard for 'Emailed'
+      statusColor: 'bg-green-500 text-green-50 border-transparent',
       avatar: 'https://placehold.co/32x32.png',
       dataAiHint: 'office building',
-      icon: <Briefcase className="h-4 w-4 text-muted-foreground" />
+      cardTypeIcon: Briefcase,
+      details: [
+        { icon: CalendarDays, text: 'Next Follow-up: Oct 28' }
+      ]
     },
     {
-      type: 'CONTACT',
       title: 'Alex Chen',
-      description: 'Hiring Manager @ Innovate Inc.',
+      contextLine: 'Hiring Manager @ Innovate Inc.',
       status: 'Connected',
-      statusColor: 'bg-sky-500 text-sky-50 border-transparent', // Custom positive color
+      statusColor: 'bg-sky-500 text-sky-50 border-transparent',
       avatar: 'https://placehold.co/32x32.png',
       dataAiHint: 'person professional',
-      icon: <Users className="h-4 w-4 text-muted-foreground" />
+      cardTypeIcon: Users,
+      details: [
+        { icon: Mail, text: 'alex.chen@innovate.com' }
+      ]
     },
     {
-      type: 'REMINDER',
-      title: 'Follow up: Sarah Lee',
-      description: 'Product Designer @ TechSolutions',
+      title: 'Follow up: Design Lead',
+      contextLine: 'Creative Solutions LLC',
       status: 'Due Today',
-      statusColor: 'bg-amber-500 text-amber-900 border-transparent', // Amber from JobOpeningCard
+      statusColor: 'bg-amber-500 text-amber-900 border-transparent',
       avatar: 'https://placehold.co/32x32.png',
       dataAiHint: 'calendar alert',
-      icon: <MailCheck className="h-4 w-4 text-muted-foreground" />
+      cardTypeIcon: MailCheck,
+      details: [
+        { icon: UserIcon, text: 'Contact: Jane Doe' },
+        { icon: CalendarDays, text: 'Due: Today, Oct 26' }
+      ]
     },
     {
-      type: 'COMPANY',
       title: 'Tech Solutions Ltd.',
-      description: 'Researching new contacts',
-      status: 'Prospecting',
-      statusColor: 'bg-purple-500 text-purple-50 border-transparent', // Purple from JobOpeningCard for 'Watching'
+      contextLine: 'Enterprise Software',
+      status: 'Researching',
+      statusColor: 'bg-purple-500 text-purple-50 border-transparent',
       avatar: 'https://placehold.co/32x32.png',
       dataAiHint: 'modern building',
-      icon: <Building className="h-4 w-4 text-muted-foreground" />
+      cardTypeIcon: Building,
+      details: [
+        { icon: Globe, text: 'techsolutions.com' },
+        { icon: Users, text: '3 Contacts Tracked'}
+      ]
     },
   ];
 
@@ -147,29 +157,50 @@ function HeroVisual() {
       <div className="relative max-w-5xl mx-auto p-1 bg-card rounded-xl shadow-2xl border border-border/20 overflow-hidden">
         <div className="p-4 sm:p-5 lg:p-6 bg-background rounded-[0.6rem]">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {mockCardsData.map((card, index) => (
-              <div 
-                key={index} 
-                className="bg-card p-3 rounded-lg shadow-md border border-border/50 hover:shadow-lg transition-shadow flex flex-col h-40" // Added flex flex-col and h-40
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <Badge variant="secondary" className={`text-xs ${card.statusColor}`}>{card.status}</Badge>
-                  {card.icon}
+            {mockCardsData.map((card, index) => {
+              const CardTypeIconComponent = card.cardTypeIcon;
+              return (
+                <div 
+                  key={index} 
+                  className="bg-card p-3 rounded-lg shadow-md border border-border/50 hover:shadow-lg transition-shadow flex flex-col"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <Badge variant="secondary" className={`text-xs ${card.statusColor}`}>{card.status}</Badge>
+                    <CardTypeIconComponent className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  
+                  <div className="flex flex-col flex-grow space-y-1.5">
+                    <div className="flex items-center">
+                       <Image 
+                        src={card.avatar} 
+                        alt={card.title} 
+                        width={28} 
+                        height={28} 
+                        className="rounded-full mr-2 border border-border/20" 
+                        data-ai-hint={card.dataAiHint}
+                      />
+                      <h4 className="text-sm font-semibold text-card-foreground truncate leading-tight">{card.title}</h4>
+                    </div>
+                    {card.contextLine && (
+                      <p className="text-xs text-muted-foreground truncate">{card.contextLine}</p>
+                    )}
+                    {card.details && card.details.length > 0 && (
+                      <div className="space-y-1 pt-1">
+                        {card.details.map((detail, detailIndex) => {
+                          const DetailIcon = detail.icon;
+                          return (
+                            <div key={detailIndex} className="flex items-center text-xs text-muted-foreground">
+                              <DetailIcon className="mr-1.5 h-3.5 w-3.5 flex-shrink-0" />
+                              <span className="truncate">{detail.text}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center mb-1.5 mt-1">
-                   <Image 
-                    src={card.avatar} 
-                    alt={card.title} 
-                    width={28} 
-                    height={28} 
-                    className="rounded-full mr-2 border border-border/20" 
-                    data-ai-hint={card.dataAiHint}
-                  />
-                  <h4 className="text-sm font-semibold text-card-foreground truncate leading-tight">{card.title}</h4>
-                </div>
-                <p className="text-xs text-muted-foreground truncate mt-auto">{card.description}</p> 
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -718,7 +749,7 @@ export default function LandingPage() {
             <div className="max-w-3xl mx-auto">
               <Accordion type="single" collapsible className="w-full">
                 {faqData.map((faq, index) => (
-                  <AccordionItem value={`item-${index + 1}`} key={index} className="mb-3">
+                  <AccordionItem value={`item-${index + 1}`} key={index}>
                     <AccordionTrigger className="px-6 py-4 text-left font-semibold text-foreground hover:no-underline">
                       {faq.question}
                     </AccordionTrigger>
