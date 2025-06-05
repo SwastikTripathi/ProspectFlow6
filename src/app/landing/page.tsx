@@ -103,9 +103,9 @@ function HeroVisual() {
     {
       type: 'JOB OPENING',
       title: 'Software Engineer',
-      company: 'Innovate Inc.',
-      status: 'Applied',
-      statusColor: 'bg-blue-500 text-blue-50',
+      description: 'Innovate Inc.', // Using description field for company name or context
+      status: 'Emailed',
+      statusColor: 'bg-green-500 text-green-50 border-transparent', // From JobOpeningCard for 'Emailed'
       avatar: 'https://placehold.co/32x32.png',
       dataAiHint: 'office building',
       icon: <Briefcase className="h-4 w-4 text-muted-foreground" />
@@ -113,19 +113,19 @@ function HeroVisual() {
     {
       type: 'CONTACT',
       title: 'Alex Chen',
-      company: 'Hiring Manager @ Innovate Inc.',
-      status: 'Emailed',
-      statusColor: 'bg-green-500 text-green-50',
+      description: 'Hiring Manager @ Innovate Inc.',
+      status: 'Connected',
+      statusColor: 'bg-sky-500 text-sky-50 border-transparent', // Custom positive color
       avatar: 'https://placehold.co/32x32.png',
       dataAiHint: 'person professional',
       icon: <Users className="h-4 w-4 text-muted-foreground" />
     },
     {
       type: 'REMINDER',
-      title: 'Follow up: Sarah K.',
-      company: 'Product Designer Role',
+      title: 'Follow up: Sarah Lee',
+      description: 'Product Designer @ TechSolutions',
       status: 'Due Today',
-      statusColor: 'bg-yellow-500 text-yellow-50',
+      statusColor: 'bg-amber-500 text-amber-900 border-transparent', // Amber from JobOpeningCard
       avatar: 'https://placehold.co/32x32.png',
       dataAiHint: 'calendar alert',
       icon: <MailCheck className="h-4 w-4 text-muted-foreground" />
@@ -133,9 +133,9 @@ function HeroVisual() {
     {
       type: 'COMPANY',
       title: 'Tech Solutions Ltd.',
-      company: 'Next step: Initial Outreach',
-      status: 'Watching',
-      statusColor: 'bg-purple-500 text-purple-50',
+      description: 'Researching new contacts',
+      status: 'Prospecting',
+      statusColor: 'bg-purple-500 text-purple-50 border-transparent', // Purple from JobOpeningCard for 'Watching'
       avatar: 'https://placehold.co/32x32.png',
       dataAiHint: 'modern building',
       icon: <Building className="h-4 w-4 text-muted-foreground" />
@@ -148,12 +148,15 @@ function HeroVisual() {
         <div className="p-4 sm:p-5 lg:p-6 bg-background rounded-[0.6rem]">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {mockCardsData.map((card, index) => (
-              <div key={index} className="bg-card p-3 rounded-lg shadow-md border border-border/50 hover:shadow-lg transition-shadow">
+              <div 
+                key={index} 
+                className="bg-card p-3 rounded-lg shadow-md border border-border/50 hover:shadow-lg transition-shadow flex flex-col h-40" // Added flex flex-col and h-40
+              >
                 <div className="flex justify-between items-start mb-2">
-                  <Badge variant="secondary" className={`text-xs ${card.statusColor} border-transparent`}>{card.status}</Badge>
+                  <Badge variant="secondary" className={`text-xs ${card.statusColor}`}>{card.status}</Badge>
                   {card.icon}
                 </div>
-                <div className="flex items-center mb-1.5">
+                <div className="flex items-center mb-1.5 mt-1">
                    <Image 
                     src={card.avatar} 
                     alt={card.title} 
@@ -164,7 +167,7 @@ function HeroVisual() {
                   />
                   <h4 className="text-sm font-semibold text-card-foreground truncate leading-tight">{card.title}</h4>
                 </div>
-                <p className="text-xs text-muted-foreground truncate">{card.company}</p>
+                <p className="text-xs text-muted-foreground truncate mt-auto">{card.description}</p> 
               </div>
             ))}
           </div>
@@ -715,7 +718,7 @@ export default function LandingPage() {
             <div className="max-w-3xl mx-auto">
               <Accordion type="single" collapsible className="w-full">
                 {faqData.map((faq, index) => (
-                  <AccordionItem value={`item-${index + 1}`} key={index}>
+                  <AccordionItem value={`item-${index + 1}`} key={index} className="mb-3">
                     <AccordionTrigger className="px-6 py-4 text-left font-semibold text-foreground hover:no-underline">
                       {faq.question}
                     </AccordionTrigger>
