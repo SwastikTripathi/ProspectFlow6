@@ -99,22 +99,20 @@ const faqData = [
 
 
 function HeroVisual() {
-  const softwareEngineerCard = {
-    title: 'Software Engineer',
-    contextLine: 'Innovate Inc.',
-    status: 'Emailed',
-    statusColor: 'bg-green-500 text-green-50 border-transparent',
-    avatar: 'https://placehold.co/32x32.png',
-    dataAiHint: 'office building',
-    cardTypeIcon: Briefcase,
-    details: [
-      { icon: UserIcon, text: 'Contact: Jane Doe' },
-      { icon: CalendarDays, text: 'Next Follow-up: Nov 5' }
-    ]
-  };
-
   const mockCardsData = [
-    softwareEngineerCard,
+    {
+      title: 'Software Engineer',
+      contextLine: 'Innovate Inc.',
+      status: 'Emailed',
+      statusColor: 'bg-green-500 text-green-50 border-transparent',
+      avatar: 'https://placehold.co/32x32.png',
+      dataAiHint: 'office building',
+      cardTypeIcon: Briefcase,
+      details: [
+        { icon: UserIcon, text: 'Contact: Jane Doe' },
+        { icon: CalendarDays, text: 'Next Follow-up: Nov 5' }
+      ]
+    },
     {
       title: 'Alex Chen',
       contextLine: 'Hiring Manager @ Innovate Inc.',
@@ -128,7 +126,19 @@ function HeroVisual() {
         { icon: Info, text: 'Met at conference. Likes coffee.', className: 'italic break-words' }
       ]
     },
-    { ...softwareEngineerCard }, // Duplicate of the first card
+    {
+      title: 'Data Analyst',
+      contextLine: 'Acme Corp.',
+      status: 'Applied',
+      statusColor: 'bg-blue-500 text-blue-50 border-transparent',
+      avatar: 'https://placehold.co/32x32.png',
+      dataAiHint: 'corporate office',
+      cardTypeIcon: Briefcase,
+      details: [
+        { icon: UserIcon, text: 'Contact: Sarah Lee' },
+        { icon: CalendarDays, text: 'Next Follow-up: Nov 12' }
+      ]
+    },
     {
       title: 'Tech Solutions Ltd.',
       contextLine: 'Enterprise Software',
@@ -162,20 +172,22 @@ function HeroVisual() {
                   </div>
 
                   <div className="flex flex-col flex-grow space-y-1.5">
-                    <div className="flex items-center">
+                    <div className="flex items-start"> {/* Use items-start for vertical alignment with multi-line text block */}
                        <Image
                         src={card.avatar}
                         alt={card.title}
                         width={28}
                         height={28}
-                        className="rounded-full mr-2 border border-border/20"
+                        className="rounded-full mr-2 border border-border/20 flex-shrink-0 mt-0.5"
                         data-ai-hint={card.dataAiHint}
                       />
-                      <h4 className="text-sm font-semibold text-card-foreground truncate leading-tight">{card.title}</h4>
+                      <div className="flex-grow min-w-0"> {/* This div will hold title and contextLine */}
+                        <h4 className="text-sm font-semibold text-card-foreground truncate leading-tight">{card.title}</h4>
+                        {card.contextLine && (
+                          <p className="text-xs text-muted-foreground truncate">{card.contextLine}</p>
+                        )}
+                      </div>
                     </div>
-                    {card.contextLine && (
-                      <p className="text-xs text-muted-foreground truncate">{card.contextLine}</p>
-                    )}
                     {card.details && card.details.length > 0 && (
                       <div className="space-y-1 pt-1">
                         {card.details.map((detail, detailIndex) => {
@@ -823,4 +835,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
