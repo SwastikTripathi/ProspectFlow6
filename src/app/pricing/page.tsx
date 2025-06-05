@@ -79,7 +79,7 @@ const footerLinks = {
       { name: 'Office Hours', href: '#' }, { name: 'Sales Tools', href: '#' },
     ],
     company: [
-      { name: 'About', href: '#' }, { name: 'Careers', href: '#' }, { name: 'Partner with Close', href: '#' }, { name: 'Brand Guidelines', href: '#' },
+      { name: 'About', href: '/about' }, { name: 'Careers', href: '#' }, { name: 'Partner with Close', href: '#' }, { name: 'Brand Guidelines', href: '#' },
       { name: 'Terms', href: '#' }, { name: 'Privacy', href: '#' }, { name: 'GDPR', href: '#' }, { name: 'CCPA', href: '#' },
     ],
     getHelp: [
@@ -148,14 +148,14 @@ export default function PricingPage() {
             <Logo />
           </Link>
           <nav className="flex items-center space-x-1 sm:space-x-2">
-            <Button variant="ghost" asChild className="rounded-full">
+            <Button variant="ghost" asChild className="rounded-full text-primary font-semibold">
               <Link href="/pricing">Pricing</Link>
             </Button>
             <Button variant="ghost" asChild className="rounded-full">
               <Link href="#">Blog</Link>
             </Button>
             <Button variant="ghost" asChild className="rounded-full">
-              <Link href="#">About</Link>
+              <Link href="/about">About</Link>
             </Button>
             <Around
               toggled={theme === 'dark'}
@@ -340,3 +340,6 @@ export default function PricingPage() {
     </div>
   );
 }
+
+
+    

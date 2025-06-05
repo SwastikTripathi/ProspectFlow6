@@ -127,7 +127,7 @@ function HeroVisual() {
       ]
     },
      {
-      title: 'Data Analyst', // Changed from duplicate "Software Engineer"
+      title: 'Data Analyst',
       contextLine: 'Acme Corp.',
       status: 'Applied',
       statusColor: 'bg-blue-500 text-blue-50 border-transparent',
@@ -375,7 +375,7 @@ export default function LandingPage() {
       { name: 'Sales Tools', href: '#' },
     ],
     company: [
-      { name: 'About', href: '#' },
+      { name: 'About', href: '/about' },
       { name: 'Careers', href: '#' },
       { name: 'Partner with Close', href: '#' },
       { name: 'Brand Guidelines', href: '#' },
@@ -411,7 +411,7 @@ export default function LandingPage() {
               <Link href="#">Blog</Link>
             </Button>
             <Button variant="ghost" asChild className="rounded-full">
-              <Link href="#">About</Link>
+              <Link href="/about">About</Link>
             </Button>
             <Around
               toggled={theme === 'dark'}
@@ -856,3 +856,6 @@ export default function LandingPage() {
   );
 }
 
+
+
+    
