@@ -6,12 +6,10 @@ import Image, { type ImageProps } from 'next/image';
 import { cn } from '@/lib/utils';
 
 interface AnimatedSectionImageProps extends Omit<ImageProps, 'alt' | 'src'> {
-  src: string; // Ensure src is always a string for direct use
+  src: string;
   alt: string;
   animationDirection: 'left' | 'right' | 'up';
   wrapperClassName?: string;
-  // layout prop is implicitly handled by ImageProps, common values are 'fill', 'responsive', 'intrinsic'
-  // width and height might be required by Image depending on layout
 }
 
 export function AnimatedSectionImage({
@@ -19,19 +17,51 @@ export function AnimatedSectionImage({
   alt,
   animationDirection,
   wrapperClassName = '',
-  className, // className for the Next/Image component itself
-  ...imageProps // Spread remaining ImageProps (like width, height, layout, priority, quality, etc.)
+  className,
+  ...imageProps
 }: AnimatedSectionImageProps) {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [scrollDirection, setScrollDirection] = useState<'down' | 'up' | null>(null);
+
+  useEffect(() => {
+    // Initialize lastScrollY to the current scroll position on mount
+    // to avoid incorrect direction detection on first interaction.
+    if (typeof window !== 'undefined') {
+        setLastScrollY(window.scrollY);
+    }
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY) {
+        setScrollDirection('down');
+      } else if (currentScrollY < lastScrollY) {
+        setScrollDirection('up');
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [lastScrollY]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setIsVisible(entry.isIntersecting);
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+        // Optional: Reset if it scrolls out of view and you want it to re-animate
+        // else {
+        //   setIsVisible(false);
+        // }
       },
       {
-        threshold: 0.1, // Trigger when 10% of the element is visible
+        threshold: 0.4, 
+        rootMargin: "-0.1px 0px -0.1px 0px",
       }
     );
 
@@ -53,30 +83,35 @@ export function AnimatedSectionImage({
   } else if (animationDirection === 'right') {
     initialTransform = 'translate-x-full';
   } else if (animationDirection === 'up') {
-    initialTransform = 'translate-y-24'; // Increased from translate-y-16
+    // When animationDirection is "up", it means a vertical entrance.
+    // The actual direction (from top or from bottom) depends on scroll.
+    if (scrollDirection === 'down') {
+      // Scrolling down, image should come from top (animates downwards)
+      initialTransform = '-translate-y-24';
+    } else {
+      // Scrolling up (or initial load, where scrollDirection might be null), image should come from bottom (animates upwards)
+      initialTransform = 'translate-y-24';
+    }
   }
 
   const dynamicClasses = isVisible
-    ? 'opacity-100 translate-x-0 translate-y-0' // Final state for all
-    : `opacity-0 ${initialTransform}`; // Initial state based on direction
+    ? 'opacity-100 translate-x-0 translate-y-0'
+    : `opacity-0 ${initialTransform}`;
 
-  // For layout="fill", the parent needs to be relative and have dimensions.
-  // For other layouts, the Image component itself dictates dimensions.
-  // The wrapperClassName is applied to the div that holds the Image.
   return (
     <div
       ref={ref}
       className={cn(
-        'transition-all duration-700 ease-out transform', // Base transition classes
-        wrapperClassName, // User-provided wrapper classes (e.g., for aspect-ratio, relative positioning for fill)
-        dynamicClasses // Apply dynamic visibility and transform
+        'transition-all duration-700 ease-out transform',
+        wrapperClassName,
+        dynamicClasses
       )}
     >
       <Image
         src={src}
         alt={alt}
-        className={className} // Classes for the Image component itself
-        {...imageProps} // Pass all other ImageProps down
+        className={className}
+        {...imageProps}
       />
     </div>
   );
