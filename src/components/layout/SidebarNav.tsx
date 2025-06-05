@@ -39,9 +39,8 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
   const pathname = usePathname();
   const { state: sidebarState, isMobile } = useSidebar();
 
-  // console.log('[SidebarNav] State:', { sidebarState, isMobile });
-  // console.log('[SidebarNav] Favorite Openings Prop:', favoriteJobOpenings);
-
+  const isCollapsedDesktop = sidebarState === 'collapsed' && !isMobile;
+  const isExpandedDesktop = sidebarState === 'expanded' && !isMobile;
 
   const renderNavItems = (items: NavItem[], groupLabel?: string) => (
     <SidebarGroup>
@@ -53,43 +52,42 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
       <SidebarMenu>
         {items.map((item) => (
           <SidebarMenuItem key={item.label}>
-            <Link href={item.href} passHref>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
-                className={cn(item.disabled && "cursor-not-allowed opacity-50")}
+            <SidebarMenuButton
+              asChild
+              isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
+              className={cn(item.disabled && "cursor-not-allowed opacity-50")}
+              tooltip={item.label} 
+            >
+              <Link
+                href={item.href}
                 aria-disabled={item.disabled}
                 tabIndex={item.disabled ? -1 : undefined}
-                onClick={(e) => item.disabled && e.preventDefault()}
-                tooltip={item.label} 
+                onClick={(e) => {
+                  if (item.disabled) {
+                    e.preventDefault();
+                  }
+                }}
               >
-                <a>
-                  <item.icon />
-                  <span>{item.label}</span>
-                </a>
-              </SidebarMenuButton>
-            </Link>
+                <item.icon />
+                <span>{item.label}</span>
+              </Link>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         ))}
       </SidebarMenu>
     </SidebarGroup>
   );
 
-  const isCollapsedDesktop = sidebarState === 'collapsed' && !isMobile;
-  const isExpandedDesktop = sidebarState === 'expanded' && !isMobile;
-
   return (
     <div className="flex flex-col h-full">
-      {/* Main Navigation - Fixed */}
       <div>
         {renderNavItems(mainNavItems)}
       </div>
 
-      {/* Favorites Section - Scrollable */}
       {favoriteJobOpenings && favoriteJobOpenings.length > 0 && (
         <>
           <SidebarSeparator />
-          <div className="flex-1 min-h-0 overflow-y-auto"> {/* Scrollable container for favorites */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <SidebarGroup>
               <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only">
                 Favorites
@@ -98,34 +96,29 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
                 {favoriteJobOpenings.map((opening) => {
                   const favoriteDisplayName = `${opening.role_title} @ ${opening.company_name_cache}`;
                   
-                  const buttonTooltipProp = isCollapsedDesktop
-                    ? { children: favoriteDisplayName, side: "right" as const, align: "center" as const, className: "whitespace-normal max-w-xs" }
-                    : undefined;
-
                   return (
                     <SidebarMenuItem key={opening.id} className="group/favorite-item">
-                      <TooltipProvider>
-                        <Tooltip delayDuration={isExpandedDesktop ? 0 : 100}> {/* No delay for expanded view custom tooltip */}
+                      <TooltipProvider delayDuration={0}>
+                        <Tooltip>
                           <TooltipTrigger asChild>
-                            <Link href={`/job-openings?view=${opening.id}`} passHref>
-                              <SidebarMenuButton
-                                asChild
-                                tooltip={buttonTooltipProp} // Only for collapsed state
-                                className="w-full"
-                              >
-                                <a className="flex items-center w-full">
-                                  <Star className="text-yellow-500 fill-yellow-400 flex-shrink-0" />
-                                  <span className={cn("truncate ml-2", isCollapsedDesktop ? "hidden" : "group-data-[collapsible=icon]:hidden")}>
-                                    {favoriteDisplayName}
-                                  </span>
-                                </a>
-                              </SidebarMenuButton>
-                            </Link>
+                            <SidebarMenuButton
+                              asChild
+                              className="w-full"
+                              // Do not pass 'tooltip' prop here; use the outer Tooltip for all cases
+                            >
+                              <Link href={`/job-openings?view=${opening.id}`}>
+                                <Star className="text-yellow-500 fill-yellow-400 flex-shrink-0" />
+                                <span className={cn("truncate ml-2", isCollapsedDesktop ? "hidden" : "group-data-[collapsible=icon]:hidden")}>
+                                  {favoriteDisplayName}
+                                </span>
+                              </Link>
+                            </SidebarMenuButton>
                           </TooltipTrigger>
-                          {isExpandedDesktop && ( // Custom tooltip for expanded state
+                          {/* This TooltipContent handles both expanded (bottom) and collapsed (right) states */}
+                          {(!isMobile) && ( // Only show tooltips on desktop
                             <TooltipContent
-                              side="bottom"
-                              align="start"
+                              side={isExpandedDesktop ? "bottom" : "right"}
+                              align={isExpandedDesktop ? "start" : "center"}
                               className="whitespace-normal max-w-xs z-50 bg-popover text-popover-foreground"
                               sideOffset={5}
                             >
@@ -145,4 +138,3 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
     </div>
   );
 }
-
