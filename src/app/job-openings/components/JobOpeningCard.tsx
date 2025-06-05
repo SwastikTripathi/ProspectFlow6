@@ -27,6 +27,32 @@ const logDebug = (...args: any[]) => {
   }
 };
 
+const getStatusBadgeClass = (status: JobOpening['status']): string => {
+  switch (status) {
+    case 'Applied':
+      return 'bg-blue-500 hover:bg-blue-500/90 text-blue-50 border-transparent';
+    case 'Emailed':
+    case '1st Follow Up':
+    case '2nd Follow Up':
+    case '3rd Follow Up':
+      return 'bg-green-500 hover:bg-green-500/90 text-green-50 border-transparent';
+    case 'Watching':
+      return 'bg-purple-500 hover:bg-purple-500/90 text-purple-50 border-transparent';
+    case 'Replied - Positive':
+    case 'Interviewing':
+    case 'Offer':
+      return 'bg-teal-500 hover:bg-teal-500/90 text-teal-50 border-transparent';
+    case 'No Response':
+      return 'bg-amber-500 hover:bg-amber-500/90 text-amber-900 border-transparent';
+    case 'Replied - Negative':
+    case 'Rejected':
+    case 'Closed':
+      return 'bg-slate-500 hover:bg-slate-500/90 text-slate-50 border-transparent';
+    default:
+      return 'bg-secondary text-secondary-foreground hover:bg-secondary/80 border-transparent';
+  }
+};
+
 
 export function JobOpeningCard({
     opening,
@@ -240,7 +266,7 @@ export function JobOpeningCard({
                   <Star className={cn("h-5 w-5", opening.is_favorite ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground")} />
                 )}
               </Button>
-            <Badge variant={['Hot Lead', 'Interviewing', 'Offer', 'Replied - Positive'].includes(opening.status) ? 'default' : 'secondary'} className="capitalize">
+            <Badge className={cn("capitalize", getStatusBadgeClass(opening.status))}>
               {opening.status}
             </Badge>
           </div>
