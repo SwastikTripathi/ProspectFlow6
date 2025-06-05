@@ -53,7 +53,7 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
       <SidebarMenu>
         {items.map((item) => (
           <SidebarMenuItem key={item.label}>
-            <Link href={item.href} passHref legacyBehavior>
+            <Link href={item.href} passHref>
               <SidebarMenuButton
                 asChild
                 isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
@@ -75,13 +75,21 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
     </SidebarGroup>
   );
 
+  const isCollapsedDesktop = sidebarState === 'collapsed' && !isMobile;
+  const isExpandedDesktop = sidebarState === 'expanded' && !isMobile;
+
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1">
+      {/* Main Navigation - Fixed */}
+      <div>
         {renderNavItems(mainNavItems)}
-        {favoriteJobOpenings && favoriteJobOpenings.length > 0 && (
-          <>
-            <SidebarSeparator />
+      </div>
+
+      {/* Favorites Section - Scrollable */}
+      {favoriteJobOpenings && favoriteJobOpenings.length > 0 && (
+        <>
+          <SidebarSeparator />
+          <div className="flex-1 min-h-0 overflow-y-auto"> {/* Scrollable container for favorites */}
             <SidebarGroup>
               <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only">
                 Favorites
@@ -89,50 +97,38 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
               <SidebarMenu>
                 {favoriteJobOpenings.map((opening) => {
                   const favoriteDisplayName = `${opening.role_title} @ ${opening.company_name_cache}`;
-                  const isCollapsedDesktop = sidebarState === 'collapsed' && !isMobile;
-                  const isExpandedDesktop = sidebarState === 'expanded' && !isMobile;
                   
-                  // console.log(`[SidebarNav Favorite Item: ${opening.id}] DisplayName: "${favoriteDisplayName}"`, {isCollapsedDesktop, isExpandedDesktop});
-
-                  const sidebarMenuButtonTooltipProp = isCollapsedDesktop 
+                  const buttonTooltipProp = isCollapsedDesktop
                     ? { children: favoriteDisplayName, side: "right" as const, align: "center" as const, className: "whitespace-normal max-w-xs" }
                     : undefined;
-                  
-                  // if (isCollapsedDesktop) {
-                  //   console.log(`[SidebarNav Favorite Item: ${opening.id}] Providing tooltip to SidebarMenuButton:`, sidebarMenuButtonTooltipProp);
-                  // } else {
-                  //   console.log(`[SidebarNav Favorite Item: ${opening.id}] NOT providing tooltip to SidebarMenuButton.`);
-                  // }
 
                   return (
                     <SidebarMenuItem key={opening.id} className="group/favorite-item">
-                      <TooltipProvider key={`tp-${opening.id}`}>
-                        <Tooltip key={`t-${opening.id}`} delayDuration={100}>
+                      <TooltipProvider>
+                        <Tooltip delayDuration={isExpandedDesktop ? 0 : 100}> {/* No delay for expanded view custom tooltip */}
                           <TooltipTrigger asChild>
-                            <Link href={`/job-openings?view=${opening.id}`} passHref legacyBehavior>
+                            <Link href={`/job-openings?view=${opening.id}`} passHref>
                               <SidebarMenuButton
                                 asChild
-                                tooltip={sidebarMenuButtonTooltipProp}
+                                tooltip={buttonTooltipProp} // Only for collapsed state
                                 className="w-full"
                               >
-                                <a className="flex items-center w-full overflow-hidden">
+                                <a className="flex items-center w-full">
                                   <Star className="text-yellow-500 fill-yellow-400 flex-shrink-0" />
-                                  <span className="truncate group-data-[collapsible=icon]:hidden ml-2">
+                                  <span className={cn("truncate ml-2", isCollapsedDesktop ? "hidden" : "group-data-[collapsible=icon]:hidden")}>
                                     {favoriteDisplayName}
                                   </span>
                                 </a>
                               </SidebarMenuButton>
                             </Link>
                           </TooltipTrigger>
-                          {/* Custom Tooltip for EXPANDED sidebar desktop */}
-                          {isExpandedDesktop && (
+                          {isExpandedDesktop && ( // Custom tooltip for expanded state
                             <TooltipContent
                               side="bottom"
                               align="start"
                               className="whitespace-normal max-w-xs z-50 bg-popover text-popover-foreground"
                               sideOffset={5}
                             >
-                              {/* {console.log(`[SidebarNav Favorite Item: ${opening.id}] Rendering EXPANDED tooltip content.`)} */}
                               {favoriteDisplayName}
                             </TooltipContent>
                           )}
@@ -143,9 +139,10 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
                 })}
               </SidebarMenu>
             </SidebarGroup>
-          </>
-        )}
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
+
