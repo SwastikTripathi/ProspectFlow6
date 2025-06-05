@@ -26,8 +26,6 @@ export function AnimatedSectionImage({
   const [scrollDirection, setScrollDirection] = useState<'down' | 'up' | null>(null);
 
   useEffect(() => {
-    // Initialize lastScrollY to the current scroll position on mount
-    // to avoid incorrect direction detection on first interaction.
     if (typeof window !== 'undefined') {
         setLastScrollY(window.scrollY);
     }
@@ -53,11 +51,10 @@ export function AnimatedSectionImage({
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
+        } else {
+          // Reset visibility when the element is not intersecting to allow re-animation
+          setIsVisible(false);
         }
-        // Optional: Reset if it scrolls out of view and you want it to re-animate
-        // else {
-        //   setIsVisible(false);
-        // }
       },
       {
         threshold: 0.4, 
@@ -83,14 +80,10 @@ export function AnimatedSectionImage({
   } else if (animationDirection === 'right') {
     initialTransform = 'translate-x-full';
   } else if (animationDirection === 'up') {
-    // When animationDirection is "up", it means a vertical entrance.
-    // The actual direction (from top or from bottom) depends on scroll.
     if (scrollDirection === 'down') {
-      // Scrolling down, image should come from top (animates downwards)
-      initialTransform = '-translate-y-24';
+      initialTransform = '-translate-y-24'; // Animate from top to bottom
     } else {
-      // Scrolling up (or initial load, where scrollDirection might be null), image should come from bottom (animates upwards)
-      initialTransform = 'translate-y-24';
+      initialTransform = 'translate-y-24';  // Animate from bottom to top (scrolling up or initial)
     }
   }
 
