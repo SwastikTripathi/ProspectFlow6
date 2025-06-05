@@ -336,7 +336,7 @@ export default function LandingPage() {
               <Link href="/auth">Sign In</Link>
             </Button>
             <Button asChild className="shadow-md rounded-full">
-              <Link href="/auth?action=signup">Try for Free</Link>
+              <Link href="/auth?action=signup">Try for free.</Link>
             </Button>
           </nav>
         </div>
@@ -741,3 +741,4 @@ export default function LandingPage() {
     </div>
   );
 }
+
