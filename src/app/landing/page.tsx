@@ -134,7 +134,7 @@ function HeroVisual() {
       avatar: 'https://placehold.co/32x32.png',
       dataAiHint: 'corporate office',
       cardTypeIcon: Briefcase,
-      details: [
+       details: [
         { icon: UserIcon, text: 'Contact: Sarah Lee' },
         { icon: CalendarDays, text: 'Next Follow-up: Nov 5', highlight: 'red-alert' }
       ]
@@ -255,7 +255,7 @@ const AnimatedWordsSection = () => {
 
   return (
     <section className="py-16 md:py-24 bg-slate-900 text-slate-100 overflow-hidden">
-      <div className="container px-[10vw] text-center">
+      <div className="container mx-auto px-[10vw] text-center">
         <h2 className="text-4xl sm:text-5xl font-bold mb-4 font-headline">
           Email is the <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">biggest problem</span>
         </h2>
@@ -433,7 +433,7 @@ export default function LandingPage() {
       <main className="flex-1">
         {/* Hero Section */}
         <section className="py-20 md:py-28 text-center bg-background">
-          <div className="container px-[10vw]">
+          <div className="container mx-auto px-[10vw]">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter mb-6 font-headline text-foreground">
               Stop losing leads and<br className="hidden sm:inline" /> missing <span className="text-primary">follow-ups</span>.
             </h1>
@@ -490,7 +490,7 @@ export default function LandingPage() {
 
         {/* Section: Why Professionals Streamline with ProspectFlow */}
         <section className="py-16 md:py-24 bg-background">
-          <div className="container px-[10vw]">
+          <div className="container mx-auto px-[10vw]">
             <div className="text-left max-w-3xl mx-auto md:mx-0 mb-12 md:mb-16">
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight font-headline text-foreground">
                 Why Professionals Streamline with ProspectFlow
@@ -544,7 +544,7 @@ export default function LandingPage() {
 
         {/* New Section 1: Everything you need */}
         <section className="py-16 md:py-24 bg-secondary/30">
-          <div className="container px-[10vw]">
+          <div className="container mx-auto px-[10vw]">
             <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
               <div className="order-last md:order-first">
                 <AnimatedSectionImage
@@ -589,7 +589,7 @@ export default function LandingPage() {
 
         {/* New Section 2: Automations */}
         <section className="py-16 md:py-24 bg-background">
-          <div className="container px-[10vw]">
+          <div className="container mx-auto px-[10vw]">
             <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
               <div className="space-y-6">
                 <h3 className="text-2xl md:text-3xl font-semibold font-headline text-foreground">Automations that keep you laser-focused on connecting, not admin work.</h3>
@@ -619,7 +619,7 @@ export default function LandingPage() {
         </section>
 
         <section className="py-16 md:py-24 bg-secondary/50">
-          <div className="container px-[10vw] mb-12 md:mb-16">
+          <div className="container mx-auto px-[10vw] mb-12 md:mb-16">
             <div className="grid md:grid-cols-2 gap-10 items-center">
               <div>
                 <h2 className="text-3xl md:text-4xl font-bold mb-4 font-headline text-foreground">
@@ -639,7 +639,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="container px-[10vw]">
+          <div className="container mx-auto px-[10vw]">
             <div className="grid md:grid-cols-3 gap-0 text-left max-w-6xl mx-auto border border-border rounded-lg overflow-hidden">
               {newTestimonialsData.map((testimonial, index) => (
                 <div
@@ -666,7 +666,7 @@ export default function LandingPage() {
         </section>
 
         <section className="py-16 md:py-24 bg-background">
-          <div className="container px-[10vw]">
+          <div className="container mx-auto px-[10vw]">
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 font-headline text-foreground">
               Stop juggling spreadsheets &amp; missed chances. <br className="hidden sm:inline" />
               Choose <span className="text-primary">ProspectFlow</span> for these reasons:
@@ -711,7 +711,7 @@ export default function LandingPage() {
 
         {/* New Hero-style CTA Section */}
         <section className="py-20 md:py-28 text-center bg-gradient-to-br from-slate-900 to-slate-800 text-slate-50">
-          <div className="container px-[10vw]">
+          <div className="container mx-auto px-[10vw]">
             <div className="flex justify-center mb-8">
               <Logo />
             </div>
@@ -759,7 +759,7 @@ export default function LandingPage() {
 
         {/* FAQ Section */}
         <section className="py-16 md:py-24 bg-secondary/30">
-          <div className="container px-[10vw]">
+          <div className="container mx-auto px-[10vw]">
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 font-headline text-foreground">
               Frequently Asked Questions
             </h2>
