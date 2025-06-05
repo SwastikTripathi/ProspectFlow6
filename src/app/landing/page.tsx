@@ -99,19 +99,22 @@ const faqData = [
 
 
 function HeroVisual() {
+  const softwareEngineerCard = {
+    title: 'Software Engineer',
+    contextLine: 'Innovate Inc.',
+    status: 'Emailed',
+    statusColor: 'bg-green-500 text-green-50 border-transparent',
+    avatar: 'https://placehold.co/32x32.png',
+    dataAiHint: 'office building',
+    cardTypeIcon: Briefcase,
+    details: [
+      { icon: UserIcon, text: 'Contact: Jane Doe' },
+      { icon: CalendarDays, text: 'Next Follow-up: Nov 5' }
+    ]
+  };
+
   const mockCardsData = [
-    {
-      title: 'Software Engineer',
-      contextLine: 'Innovate Inc.',
-      status: 'Emailed',
-      statusColor: 'bg-green-500 text-green-50 border-transparent',
-      avatar: 'https://placehold.co/32x32.png',
-      dataAiHint: 'office building',
-      cardTypeIcon: Briefcase,
-      details: [
-        { icon: CalendarDays, text: 'Next Follow-up: Nov 5' }
-      ]
-    },
+    softwareEngineerCard,
     {
       title: 'Alex Chen',
       contextLine: 'Hiring Manager @ Innovate Inc.',
@@ -125,19 +128,7 @@ function HeroVisual() {
         { icon: Info, text: 'Met at conference. Likes coffee.', className: 'italic break-words' }
       ]
     },
-    {
-      title: 'Follow up: Design Lead',
-      contextLine: 'Creative Solutions LLC',
-      status: 'Due Today',
-      statusColor: 'bg-amber-500 text-amber-900 border-transparent',
-      avatar: 'https://placehold.co/32x32.png',
-      dataAiHint: 'calendar alert',
-      cardTypeIcon: MailCheck, // This is the top-right icon for the card
-      details: [
-        { icon: UserIcon, text: 'Contact: Jane Doe' },
-        { icon: CalendarDays, text: 'Due: Today, Oct 26' }
-      ]
-    },
+    { ...softwareEngineerCard }, // Duplicate of the first card
     {
       title: 'Tech Solutions Ltd.',
       contextLine: 'Enterprise Software',
@@ -747,11 +738,11 @@ export default function LandingPage() {
             <div className="max-w-3xl mx-auto">
               <Accordion type="single" collapsible className="w-full">
                 {faqData.map((faq, index) => (
-                  <AccordionItem value={`item-${index + 1}`} key={index} className="bg-transparent shadow-none rounded-none">
-                    <AccordionTrigger className="px-6 py-4 text-left font-semibold text-foreground hover:no-underline">
+                  <AccordionItem value={`item-${index + 1}`} key={index} className="border-b">
+                    <AccordionTrigger className="px-0 py-4 text-left font-semibold text-foreground hover:no-underline">
                       {faq.question}
                     </AccordionTrigger>
-                    <AccordionContent className="px-6 pb-4 text-muted-foreground">
+                    <AccordionContent className="px-0 pb-4 text-muted-foreground">
                       {faq.answer}
                     </AccordionContent>
                   </AccordionItem>
@@ -832,3 +823,4 @@ export default function LandingPage() {
     </div>
   );
 }
+
