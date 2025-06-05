@@ -49,7 +49,7 @@ const footerLinks = {
       { name: 'Customer Stories', href: '#' }, { name: 'Inbound Sales', href: '#' }, { name: 'Outbound Sales', href: '#' },
     ],
     resources: [
-      { name: 'Blog', href: '#' }, { name: 'Ebooks + Templates', href: '#' }, { name: 'Guides', href: '#' }, { name: 'See a demo video', href: '#' },
+      { name: 'Blog', href: '/blog' }, { name: 'Ebooks + Templates', href: '#' }, { name: 'Guides', href: '#' }, { name: 'See a demo video', href: '#' },
       { name: 'Office Hours', href: '#' }, { name: 'Sales Tools', href: '#' },
     ],
     company: [
@@ -96,7 +96,7 @@ export default function AboutPage() {
               <Link href="/pricing">Pricing</Link>
             </Button>
             <Button variant="ghost" asChild className="rounded-full">
-              <Link href="#">Blog</Link>
+              <Link href="/blog">Blog</Link>
             </Button>
             <Button variant="ghost" asChild className="rounded-full text-primary font-semibold">
               <Link href="/about">About</Link>
@@ -116,7 +116,7 @@ export default function AboutPage() {
               <Link href="/auth">Sign In</Link>
             </Button>
             <Button asChild className="shadow-md rounded-full">
-              <Link href="/auth?action=signup">Try for free.</Link>
+              <Link href="/auth?action=signup">Try for free</Link>
             </Button>
           </nav>
         </div>
@@ -315,5 +315,3 @@ export default function AboutPage() {
     </div>
   );
 }
-
-    

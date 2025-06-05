@@ -367,7 +367,7 @@ export default function LandingPage() {
       { name: 'Outbound Sales', href: '#' },
     ],
     resources: [
-      { name: 'Blog', href: '#' },
+      { name: 'Blog', href: '/blog' },
       { name: 'Ebooks + Templates', href: '#' },
       { name: 'Guides', href: '#' },
       { name: 'See a demo video', href: '#' },
@@ -408,7 +408,7 @@ export default function LandingPage() {
               <Link href="/pricing">Pricing</Link>
             </Button>
             <Button variant="ghost" asChild className="rounded-full">
-              <Link href="#">Blog</Link>
+              <Link href="/blog">Blog</Link>
             </Button>
             <Button variant="ghost" asChild className="rounded-full">
               <Link href="/about">About</Link>
@@ -428,7 +428,7 @@ export default function LandingPage() {
               <Link href="/auth">Sign In</Link>
             </Button>
             <Button asChild className="shadow-md rounded-full">
-              <Link href="/auth?action=signup">Try for free.</Link>
+              <Link href="/auth?action=signup">Try for free</Link>
             </Button>
           </nav>
         </div>
@@ -855,7 +855,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-
-
-    

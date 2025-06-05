@@ -117,7 +117,9 @@ export type Database = {
       follow_ups: {
         Row: {
           created_at: string
-          email_content: string | null
+          email_content: string | null // Deprecated: use email_subject and email_body
+          email_subject: string | null
+          email_body: string | null
           follow_up_date: string
           id: string
           job_opening_id: string
@@ -128,6 +130,8 @@ export type Database = {
         Insert: {
           created_at?: string
           email_content?: string | null
+          email_subject?: string | null
+          email_body?: string | null
           follow_up_date: string
           id?: string
           job_opening_id: string
@@ -138,6 +142,8 @@ export type Database = {
         Update: {
           created_at?: string
           email_content?: string | null
+          email_subject?: string | null
+          email_body?: string | null
           follow_up_date?: string
           id?: string
           job_opening_id?: string
@@ -264,6 +270,59 @@ export type Database = {
           },
           {
             foreignKeyName: "job_openings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      posts: {
+        Row: {
+          id: string
+          user_id: string
+          created_at: string
+          updated_at: string
+          title: string
+          slug: string
+          content: string
+          excerpt: string | null
+          cover_image_url: string | null
+          status: "draft" | "published"
+          published_at: string | null
+          author_name_cache: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          created_at?: string
+          updated_at?: string
+          title: string
+          slug: string
+          content: string
+          excerpt?: string | null
+          cover_image_url?: string | null
+          status?: "draft" | "published"
+          published_at?: string | null
+          author_name_cache?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          created_at?: string
+          updated_at?: string
+          title?: string
+          slug?: string
+          content?: string
+          excerpt?: string | null
+          cover_image_url?: string | null
+          status?: "draft" | "published"
+          published_at?: string | null
+          author_name_cache?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -482,6 +541,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-    
-
-    

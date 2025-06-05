@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Briefcase, Users, Building2, Star } from 'lucide-react';
+import { Home, Briefcase, Users, Building2, Star, Edit3, Rss } from 'lucide-react'; // Added Edit3, Rss
 import { cn } from '@/lib/utils';
 import {
   SidebarMenu,
@@ -22,6 +22,7 @@ interface NavItem {
   label: string;
   icon: React.ElementType;
   disabled?: boolean;
+  separator?: boolean; // Optional separator before this item
 }
 
 const mainNavItems: NavItem[] = [
@@ -30,6 +31,12 @@ const mainNavItems: NavItem[] = [
   { href: '/contacts', label: 'Contacts', icon: Users },
   { href: '/companies', label: 'Companies', icon: Building2 },
 ];
+
+const blogNavItems: NavItem[] = [
+  { href: '/blog', label: 'View Blog', icon: Rss, separator: true },
+  { href: '/blog/create', label: 'Create New Post', icon: Edit3 },
+];
+
 
 interface SidebarNavProps {
   favoriteJobOpenings?: JobOpening[];
@@ -51,28 +58,31 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
       )}
       <SidebarMenu>
         {items.map((item) => (
-          <SidebarMenuItem key={item.label}>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
-              className={cn(item.disabled && "cursor-not-allowed opacity-50")}
-              tooltip={isCollapsedDesktop ? { children: item.label, side: "right", align: "center" } : undefined}
-            >
-              <Link
-                href={item.href}
-                aria-disabled={item.disabled}
-                tabIndex={item.disabled ? -1 : undefined}
-                onClick={(e) => {
-                  if (item.disabled) {
-                    e.preventDefault();
-                  }
-                }}
+          <React.Fragment key={item.label}>
+            {item.separator && <SidebarSeparator className="my-1" />}
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
+                className={cn(item.disabled && "cursor-not-allowed opacity-50")}
+                tooltip={isCollapsedDesktop ? { children: item.label, side: "right", align: "center" } : undefined}
               >
-                <item.icon />
-                <span>{item.label}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+                <Link
+                  href={item.href}
+                  aria-disabled={item.disabled}
+                  tabIndex={item.disabled ? -1 : undefined}
+                  onClick={(e) => {
+                    if (item.disabled) {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  <item.icon />
+                  <span>{item.label}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </React.Fragment>
         ))}
       </SidebarMenu>
     </SidebarGroup>
@@ -82,19 +92,16 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
     <div className="flex flex-col h-full">
       <div> {/* Container for main navigation items */}
         {renderNavItems(mainNavItems)}
+        {renderNavItems(blogNavItems, "Blog Management")}
       </div>
 
       {favoriteJobOpenings && favoriteJobOpenings.length > 0 && (
         <>
           <SidebarSeparator />
-          {/* Make SidebarGroup a flex container that allows its children to manage flex growth.
-              It takes up the remaining space due to the outer div's flex-1 on its parent.
-              min-h-0 on SidebarGroup allows it to shrink if necessary. */}
           <SidebarGroup className="flex flex-col flex-1 min-h-0">
             <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only shrink-0">
               Favorites
             </SidebarGroupLabel>
-            {/* This div now specifically makes the SidebarMenu scrollable */}
             <div className="flex-1 min-h-0 overflow-y-auto">
               <SidebarMenu>
                 {favoriteJobOpenings.map((opening) => {
@@ -104,12 +111,9 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
                       <TooltipProvider delayDuration={0}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            {/* SidebarMenuButton now correctly contains the Link as its child with asChild */}
                             <SidebarMenuButton
                               asChild
                               className="w-full"
-                              // Tooltip for collapsed state is handled by SidebarMenuButton's internal logic if 'tooltip' prop is passed.
-                              // For expanded state, we use the explicit TooltipContent below.
                               tooltip={isCollapsedDesktop ? { children: favoriteDisplayName, side: "right", align: "center" } : undefined}
                             >
                               <Link href={`/job-openings?view=${opening.id}`}>
@@ -120,7 +124,6 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
                               </Link>
                             </SidebarMenuButton>
                           </TooltipTrigger>
-                          {/* Conditionally render TooltipContent for expanded desktop view */}
                           {isExpandedDesktop && (
                             <TooltipContent
                               side="bottom"
