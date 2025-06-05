@@ -88,20 +88,24 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
                         <SidebarMenuButton
                           asChild
                           tooltip={favoriteDisplayName}
-                          className="group" // Add group for hover effect on children
+                          className="group" 
                         >
                           <a>
                             <Star className="text-yellow-500 fill-yellow-400 flex-shrink-0" />
+                            {/* Viewport for marquee when expanded */}
                             <div className="overflow-hidden whitespace-nowrap w-full group-data-[collapsible=icon]:hidden">
-                              <span className="inline-block group-data-[collapsible=expanded]:group-hover:animate-marquee-sidebar">
-                                <span className="pr-4">{favoriteDisplayName}</span>
-                                {/* Duplicate for seamless marquee only when expanded */}
-                                <span className="pr-4 group-data-[collapsible=expanded]:inline hidden" aria-hidden="true">
+                              {/* Animated container: 200% width of viewport, flex to arrange children */}
+                              <div className="flex w-[200%] group-data-[collapsible=expanded]:group-hover:animate-marquee-sidebar">
+                                {/* Each child span takes 50% of the 200% width (i.e., 100% of viewport), ensuring text starts at the beginning */}
+                                <span className="w-[50%] whitespace-nowrap pr-4 block"> {/* pr-4 for spacing before duplicate starts */}
                                   {favoriteDisplayName}
                                 </span>
-                              </span>
+                                <span className="w-[50%] whitespace-nowrap pl-4 block" aria-hidden="true"> {/* pl-4 to match spacing if text is short */}
+                                  {favoriteDisplayName}
+                                </span>
+                              </div>
                             </div>
-                             {/* For collapsed view, just show a hint or rely on tooltip */}
+                             {/* Text for collapsed view (icon only sidebar) */}
                             <span className="group-data-[collapsible=expanded]:hidden truncate">
                               {opening.role_title}
                             </span>
