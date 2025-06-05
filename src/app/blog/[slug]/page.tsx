@@ -11,7 +11,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, CalendarDays, UserCircle as UserIcon, Edit3, Trash2, ArrowRight, Facebook, Twitter, Linkedin, Globe as FooterGlobeIcon } from 'lucide-react'; // Renamed Globe to FooterGlobeIcon
+import { Loader2, ArrowLeft, CalendarDays, UserCircle as UserIcon, Edit3, Trash2, ArrowRight, Facebook, Twitter, Youtube, Linkedin, Globe as FooterGlobeIcon } from 'lucide-react'; // Added Youtube here
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Logo } from '@/components/icons/Logo';
 import { Around } from "@theme-toggles/react";
@@ -164,13 +164,11 @@ export default function BlogPostPage() {
       const articleHeight = articleElement.scrollHeight;
       const viewportHeight = window.innerHeight;
       
-      // Calculate how much of the article content has been scrolled past its starting point
       let scrolledPastArticleStart = Math.max(0, scrollTop - articleTop);
       
-      // Total scrollable distance within the article content itself
       let scrollableDistanceInArticle = articleHeight - viewportHeight;
-      if (scrollableDistanceInArticle <=0) { // If article content is shorter than viewport
-        setScrollPercentage(scrollTop > articleTop ? 100: 0); // If past top, show 100%, else 0
+      if (scrollableDistanceInArticle <=0) { 
+        setScrollPercentage(scrollTop > articleTop ? 100: 0); 
         return;
       }
 
@@ -180,9 +178,8 @@ export default function BlogPostPage() {
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Initial calculation
+    handleScroll(); 
 
-    // Re-calculate on resize too, as viewportHeight might change
     window.addEventListener('resize', handleScroll, { passive: true });
 
 
@@ -190,7 +187,7 @@ export default function BlogPostPage() {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
     };
-  }, [post?.content, isLoading]); // Re-run if content or loading state changes
+  }, [post?.content, isLoading]); 
 
 
   useEffect(() => {
@@ -372,7 +369,7 @@ export default function BlogPostPage() {
             </div>
 
             <div className="lg:grid lg:grid-cols-[1fr_260px] lg:gap-10 xl:gap-16">
-                <div className="min-w-0 order-first">
+                <div className="min-w-0 order-first"> {/* Changed order */}
                     <article>
                         <header className="mb-8">
                         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 font-headline text-foreground">
@@ -443,7 +440,7 @@ export default function BlogPostPage() {
                         </div>
                     </section>
                 </div>
-                <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-12rem)] overflow-y-auto pl-4 border-l border-border/60 py-2 order-last">
+                <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-12rem)] overflow-y-auto pl-4 border-l border-border/60 py-2 order-last"> {/* Changed order */}
                     <TableOfContents tocItems={tocItems} isLoading={isLoading} scrollPercentage={scrollPercentage} postTitle={post.title || ''} />
                 </aside>
             </div>
