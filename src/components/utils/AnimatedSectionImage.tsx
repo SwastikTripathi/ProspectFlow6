@@ -53,7 +53,7 @@ export function AnimatedSectionImage({
   } else if (animationDirection === 'right') {
     initialTransform = 'translate-x-full';
   } else if (animationDirection === 'up') {
-    initialTransform = 'translate-y-16'; // Slide up from 16 units below
+    initialTransform = 'translate-y-24'; // Increased from translate-y-16
   }
 
   const dynamicClasses = isVisible
