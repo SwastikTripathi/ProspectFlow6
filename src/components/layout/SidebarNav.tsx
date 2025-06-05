@@ -12,7 +12,11 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarSeparator,
+  // useSidebar not strictly needed for this CSS-only hover effect visualization,
+  // as we rely on data-attributes set by the Sidebar component itself.
 } from '@/components/ui/sidebar';
+// TooltipProvider and related components are not needed here for the custom "show below" effect,
+// as the SidebarMenuButton's own 'tooltip' prop handles the collapsed state.
 import type { JobOpening } from '@/lib/types';
 
 interface NavItem {
@@ -54,7 +58,7 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
                 aria-disabled={item.disabled}
                 tabIndex={item.disabled ? -1 : undefined}
                 onClick={(e) => item.disabled && e.preventDefault()}
-                tooltip={item.label}
+                tooltip={item.label} // Use built-in tooltip for collapsed state
               >
                 <a>
                   <item.icon />
@@ -83,35 +87,41 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
                 {favoriteJobOpenings.map((opening) => {
                   const favoriteDisplayName = `${opening.role_title} @ ${opening.company_name_cache}`;
                   return (
-                    <SidebarMenuItem key={opening.id}>
+                    <SidebarMenuItem key={opening.id} className="relative group/favorite-item">
                       <Link href={`/job-openings?view=${opening.id}`} passHref legacyBehavior>
                         <SidebarMenuButton
                           asChild
-                          tooltip={favoriteDisplayName}
-                          className="group" 
+                          tooltip={favoriteDisplayName} // This tooltip handles the collapsed state (shows on the right)
+                          className="w-full" // Ensure button takes full width to correctly trigger hover for the custom div
                         >
-                          <a>
+                          <a className="flex items-center w-full overflow-hidden"> {/* Anchor needs full width too */}
                             <Star className="text-yellow-500 fill-yellow-400 flex-shrink-0" />
-                            {/* Viewport for marquee when expanded */}
-                            <div className="overflow-hidden whitespace-nowrap w-full group-data-[collapsible=icon]:hidden">
-                              {/* Animated container: 200% width of viewport, flex to arrange children */}
-                              <div className="flex w-[200%] group-data-[collapsible=expanded]:group-hover:animate-marquee-sidebar">
-                                {/* Each child span takes 50% of the 200% width (i.e., 100% of viewport), ensuring text starts at the beginning */}
-                                <span className="w-[50%] whitespace-nowrap pr-4 block"> {/* pr-4 for spacing before duplicate starts */}
-                                  {favoriteDisplayName}
-                                </span>
-                                <span className="w-[50%] whitespace-nowrap pl-4 block" aria-hidden="true"> {/* pl-4 to match spacing if text is short */}
-                                  {favoriteDisplayName}
-                                </span>
-                              </div>
-                            </div>
-                             {/* Text for collapsed view (icon only sidebar) */}
-                            <span className="group-data-[collapsible=expanded]:hidden truncate">
-                              {opening.role_title}
+                            <span className="truncate group-data-[collapsible=icon]:hidden ml-2">
+                              {favoriteDisplayName}
+                            </span>
+                            {/* Screen reader text for collapsed state if main text is hidden */}
+                            <span className="sr-only group-data-[collapsible=expanded]:hidden">
+                              {favoriteDisplayName}
                             </span>
                           </a>
                         </SidebarMenuButton>
                       </Link>
+                      {/* Custom "tooltip" div for expanded sidebar, shown below on hover */}
+                      <div
+                        className={cn(
+                          "absolute left-2 right-2 top-full z-20 mt-1 p-2", // Positioned below, slight margin, takes available width
+                          "bg-popover text-popover-foreground shadow-lg rounded-md text-xs",
+                          "opacity-0 invisible pointer-events-none", // Base hidden state
+                          // Conditional visibility:
+                          // Only when the main sidebar ('peer') is expanded AND this item ('group/favorite-item') is hovered
+                          "group-data-[state=expanded]/peer:group-hover/favorite-item:opacity-100",
+                          "group-data-[state=expanded]/peer:group-hover/favorite-item:visible",
+                          "group-data-[state=expanded]/peer:group-hover/favorite-item:pointer-events-auto",
+                          "transition-opacity duration-150 ease-in-out"
+                        )}
+                      >
+                        {favoriteDisplayName}
+                      </div>
                     </SidebarMenuItem>
                   );
                 })}
