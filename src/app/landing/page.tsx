@@ -6,9 +6,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CheckCircle, TrendingUp, Users, Target, Briefcase, Zap, ArrowRight, Eye, MailCheck, Building, Workflow, Focus, ShieldCheck, HeartHandshake, Star, HelpCircle, Facebook, Twitter, Youtube, Linkedin, Globe, CreditCard, Search, Lightbulb, Mail, CalendarDays, User as UserIcon } from 'lucide-react';
+import { CheckCircle, TrendingUp, Users, Target, Briefcase, Zap, ArrowRight, Eye, MailCheck, Building, Workflow, Focus, ShieldCheck, HeartHandshake, Star, HelpCircle, Facebook, Twitter, Youtube, Linkedin, Globe, CreditCard, Search, Lightbulb, Mail, CalendarDays, User as UserIcon, Info } from 'lucide-react';
 import { Logo } from '@/components/icons/Logo';
-import { Badge } from '@/components/ui/badge'; 
+import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AnimatedSectionImage } from '@/components/utils/AnimatedSectionImage';
 import { Around } from "@theme-toggles/react";
@@ -47,14 +47,14 @@ const newTestimonialsData = [
     quote: "ProspectFlow revolutionized how I manage my job search. I'm more organized and follow up more effectively!",
     name: 'Alex P.',
     role: 'Software Engineer',
-    avatar: 'https://placehold.co/100x100.png', 
+    avatar: 'https://placehold.co/100x100.png',
     dataAiHint: 'person portrait'
   },
   {
     quote: "As a sales professional, keeping track of leads and follow-ups is crucial. ProspectFlow makes it effortless.",
     name: 'Sarah K.',
     role: 'Sales Manager',
-    avatar: 'https://placehold.co/100x100.png', 
+    avatar: 'https://placehold.co/100x100.png',
     dataAiHint: 'professional woman'
   },
   {
@@ -109,7 +109,7 @@ function HeroVisual() {
       dataAiHint: 'office building',
       cardTypeIcon: Briefcase,
       details: [
-        { icon: CalendarDays, text: 'Next Follow-up: Oct 28' }
+        { icon: CalendarDays, text: 'Next Follow-up: Nov 5' }
       ]
     },
     {
@@ -121,7 +121,8 @@ function HeroVisual() {
       dataAiHint: 'person professional',
       cardTypeIcon: Users,
       details: [
-        { icon: Mail, text: 'alex.chen@innovate.com' }
+        { icon: Mail, text: 'alex.c@innovate.com' },
+        { icon: Info, text: 'Met at conference. Likes coffee.', className: 'italic break-words' }
       ]
     },
     {
@@ -131,7 +132,7 @@ function HeroVisual() {
       statusColor: 'bg-amber-500 text-amber-900 border-transparent',
       avatar: 'https://placehold.co/32x32.png',
       dataAiHint: 'calendar alert',
-      cardTypeIcon: MailCheck,
+      cardTypeIcon: MailCheck, // This is the top-right icon for the card
       details: [
         { icon: UserIcon, text: 'Contact: Jane Doe' },
         { icon: CalendarDays, text: 'Due: Today, Oct 26' }
@@ -160,23 +161,23 @@ function HeroVisual() {
             {mockCardsData.map((card, index) => {
               const CardTypeIconComponent = card.cardTypeIcon;
               return (
-                <div 
-                  key={index} 
+                <div
+                  key={index}
                   className="bg-card p-3 rounded-lg shadow-md border border-border/50 hover:shadow-lg transition-shadow flex flex-col"
                 >
                   <div className="flex justify-between items-start mb-2">
                     <Badge variant="secondary" className={`text-xs ${card.statusColor}`}>{card.status}</Badge>
                     <CardTypeIconComponent className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  
+
                   <div className="flex flex-col flex-grow space-y-1.5">
                     <div className="flex items-center">
-                       <Image 
-                        src={card.avatar} 
-                        alt={card.title} 
-                        width={28} 
-                        height={28} 
-                        className="rounded-full mr-2 border border-border/20" 
+                       <Image
+                        src={card.avatar}
+                        alt={card.title}
+                        width={28}
+                        height={28}
+                        className="rounded-full mr-2 border border-border/20"
                         data-ai-hint={card.dataAiHint}
                       />
                       <h4 className="text-sm font-semibold text-card-foreground truncate leading-tight">{card.title}</h4>
@@ -189,9 +190,9 @@ function HeroVisual() {
                         {card.details.map((detail, detailIndex) => {
                           const DetailIcon = detail.icon;
                           return (
-                            <div key={detailIndex} className="flex items-center text-xs text-muted-foreground">
-                              <DetailIcon className="mr-1.5 h-3.5 w-3.5 flex-shrink-0" />
-                              <span className="truncate">{detail.text}</span>
+                            <div key={detailIndex} className={cn("flex text-xs text-muted-foreground", detail.className ? "items-start" : "items-center")}>
+                              <DetailIcon className="mr-1.5 h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                              <span className={cn(detail.className ? detail.className : "truncate")}>{detail.text}</span>
                             </div>
                           );
                         })}
@@ -396,7 +397,7 @@ export default function LandingPage() {
               aria-label="Toggle theme"
               className={cn(
                 "theme-toggle text-foreground/70 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-                "h-7 w-7 p-0.5" 
+                "h-7 w-7 p-0.5"
               )}
               style={{ '--theme-toggle__around--duration': '500ms' } as React.CSSProperties}
             />
@@ -424,10 +425,10 @@ export default function LandingPage() {
                 <Button size="lg" className="text-lg px-8 py-6 shadow-xl w-full sm:w-auto rounded-full" asChild>
                 <Link href="/auth?action=signup">Get Started for Free <ArrowRight className="ml-2 h-5 w-5" /></Link>
                 </Button>
-                <Button 
-                  size="lg" 
-                  variant="link" 
-                  className="text-lg px-8 py-6 w-full sm:w-auto rounded-full text-muted-foreground underline underline-offset-4 hover:text-primary/90 hover:decoration-primary/90" 
+                <Button
+                  size="lg"
+                  variant="link"
+                  className="text-lg px-8 py-6 w-full sm:w-auto rounded-full text-muted-foreground underline underline-offset-4 hover:text-primary/90 hover:decoration-primary/90"
                   asChild
                 >
                   <Link href="#features">Explore Features</Link>
@@ -464,7 +465,7 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-        
+
         {/* Newly Added AnimatedWordsSection */}
         <AnimatedWordsSection />
 
@@ -491,13 +492,13 @@ export default function LandingPage() {
                     "{newTestimonialsData[0].quote}"
                   </blockquote>
                   <div className="flex items-center">
-                    <Image 
-                      data-ai-hint={newTestimonialsData[0].dataAiHint} 
-                      src={newTestimonialsData[0].avatar} 
-                      alt={newTestimonialsData[0].name} 
-                      width={40} 
-                      height={40} 
-                      className="rounded-full mr-3" 
+                    <Image
+                      data-ai-hint={newTestimonialsData[0].dataAiHint}
+                      src={newTestimonialsData[0].avatar}
+                      alt={newTestimonialsData[0].name}
+                      width={40}
+                      height={40}
+                      className="rounded-full mr-3"
                     />
                     <div>
                       <p className="font-semibold text-sm text-foreground">{newTestimonialsData[0].name}</p>
@@ -510,7 +511,6 @@ export default function LandingPage() {
                  <AnimatedSectionImage
                     src="https://placehold.co/600x450.png"
                     alt="ProspectFlow App Dashboard Mockup"
-                    layout="responsive"
                     width={600}
                     height={450}
                     className="rounded-xl bg-muted object-cover"
@@ -531,7 +531,6 @@ export default function LandingPage() {
                 <AnimatedSectionImage
                     src="https://placehold.co/1200x900.png"
                     alt="ProspectFlow unified platform illustration"
-                    layout="responsive"
                     width={1200}
                     height={900}
                     className="rounded-xl bg-muted object-cover"
@@ -550,13 +549,13 @@ export default function LandingPage() {
                     "{newTestimonialsData[1].quote}"
                   </blockquote>
                   <div className="flex items-center">
-                    <Image 
-                      data-ai-hint={newTestimonialsData[1].dataAiHint} 
-                      src={newTestimonialsData[1].avatar} 
-                      alt={newTestimonialsData[1].name} 
-                      width={40} 
-                      height={40} 
-                      className="rounded-full mr-3" 
+                    <Image
+                      data-ai-hint={newTestimonialsData[1].dataAiHint}
+                      src={newTestimonialsData[1].avatar}
+                      alt={newTestimonialsData[1].name}
+                      width={40}
+                      height={40}
+                      className="rounded-full mr-3"
                     />
                     <div>
                       <p className="font-semibold text-sm text-foreground">{newTestimonialsData[1].name}</p>
@@ -588,7 +587,6 @@ export default function LandingPage() {
                 <AnimatedSectionImage
                     src="https://placehold.co/1200x900.png"
                     alt="ProspectFlow automations illustration"
-                    layout="responsive"
                     width={1200}
                     height={900}
                     className="rounded-xl bg-muted object-cover"
@@ -600,7 +598,7 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-        
+
         <section className="py-16 md:py-24 bg-secondary/50">
           <div className="container px-[10vw] mb-12 md:mb-16">
             <div className="grid md:grid-cols-2 gap-10 items-center">
@@ -610,10 +608,10 @@ export default function LandingPage() {
                 </h2>
               </div>
               <div className="flex justify-center md:justify-end items-center">
-                <Image 
-                  src="https://placehold.co/300x150.png" 
-                  alt="CRM Benefits Graphic" 
-                  width={300} 
+                <Image
+                  src="https://placehold.co/300x150.png"
+                  alt="CRM Benefits Graphic"
+                  width={300}
                   height={150}
                   className="rounded-lg shadow-md"
                   data-ai-hint="chart graph"
@@ -624,9 +622,9 @@ export default function LandingPage() {
 
           <div className="container px-[10vw]">
             <div className="grid md:grid-cols-3 gap-0 text-left max-w-6xl mx-auto border border-border rounded-lg overflow-hidden">
-              {newTestimonialsData.map((testimonial, index) => ( 
-                <div 
-                  key={testimonial.name + index} 
+              {newTestimonialsData.map((testimonial, index) => (
+                <div
+                  key={testimonial.name + index}
                   className={`bg-card p-6 flex flex-col ${index < newTestimonialsData.length - 1 ? 'border-b md:border-b-0 md:border-r border-border' : ''}`}
                 >
                   <p className="text-muted-foreground mb-6 flex-grow text-base leading-relaxed">"{testimonial.quote}"</p>
@@ -640,7 +638,7 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
-            <div className="text-center"> 
+            <div className="text-center">
                 <Button size="lg" className="mt-12 text-base px-8 py-6 shadow-md rounded-full" asChild>
                 <Link href="/auth?action=signup">Discover How ProspectFlow Can Help You <ArrowRight className="ml-2 h-5 w-5" /></Link>
                 </Button>
@@ -701,9 +699,9 @@ export default function LandingPage() {
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-10 font-headline">
               Join the thousands of <span className="text-primary">professionals</span> that trust ProspectFlow to <span className="text-primary">land opportunities</span>.
             </h2>
-            <Button 
-              size="lg" 
-              className="text-lg px-10 py-7 shadow-xl rounded-full bg-slate-50 text-slate-900 hover:bg-slate-200 font-semibold" 
+            <Button
+              size="lg"
+              className="text-lg px-10 py-7 shadow-xl rounded-full bg-slate-50 text-slate-900 hover:bg-slate-200 font-semibold"
               asChild
             >
               <Link href="/auth?action=signup">Try ProspectFlow for Free</Link>
@@ -727,14 +725,14 @@ export default function LandingPage() {
                   <span className="block w-3 h-3 rounded-full bg-green-500"></span>
                 </div>
               </div>
-              <Image 
-                src="https://placehold.co/1200x750.png" 
-                alt="ProspectFlow Application Screenshot" 
-                width={1200} 
-                height={750} 
-                className="block w-full h-auto border-x border-b border-slate-600/50 rounded-b-xl shadow-2xl" 
+              <Image
+                src="https://placehold.co/1200x750.png"
+                alt="ProspectFlow Application Screenshot"
+                width={1200}
+                height={750}
+                className="block w-full h-auto border-x border-b border-slate-600/50 rounded-b-xl shadow-2xl"
                 data-ai-hint="app interface dashboard"
-                priority 
+                priority
               />
             </div>
           </div>
@@ -749,7 +747,7 @@ export default function LandingPage() {
             <div className="max-w-3xl mx-auto">
               <Accordion type="single" collapsible className="w-full">
                 {faqData.map((faq, index) => (
-                  <AccordionItem value={`item-${index + 1}`} key={index}>
+                  <AccordionItem value={`item-${index + 1}`} key={index} className="bg-transparent shadow-none rounded-none">
                     <AccordionTrigger className="px-6 py-4 text-left font-semibold text-foreground hover:no-underline">
                       {faq.question}
                     </AccordionTrigger>
@@ -834,4 +832,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
