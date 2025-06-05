@@ -127,7 +127,7 @@ function HeroVisual() {
       ]
     },
     {
-      title: 'Data Analyst',
+      title: 'Data Analyst', // Changed from duplicate
       contextLine: 'Acme Corp.',
       status: 'Applied',
       statusColor: 'bg-blue-500 text-blue-50 border-transparent',
@@ -195,7 +195,7 @@ function HeroVisual() {
                           return (
                             <div key={detailIndex} className={cn("flex text-xs text-muted-foreground", detail.className ? "items-start" : "items-center")}>
                               <DetailIcon className="mr-1.5 h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-                              <span className={cn(detail.className ? detail.className : "truncate")}>{detail.text}</span>
+                              <span className={cn("min-w-0", detail.className ? detail.className : "truncate")}>{detail.text}</span>
                             </div>
                           );
                         })}
