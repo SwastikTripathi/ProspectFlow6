@@ -92,3 +92,5 @@ export const ALL_AVAILABLE_PLANS: AvailablePlan[] = [
     isPopular: false,
   },
 ];
+
+export const OWNER_EMAIL = 'swastiktripathi.space@gmail.com';

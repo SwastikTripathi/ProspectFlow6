@@ -1,13 +1,13 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams, notFound } from 'next/navigation';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,12 +15,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Edit, ShieldAlert } from 'lucide-react';
+import { Loader2, Edit3, ShieldAlert, Trash2 } from 'lucide-react';
 import { slugify } from '@/lib/utils';
-import type { TablesInsert } from '@/lib/database.types';
+import type { Tables, TablesUpdate } from '@/lib/database.types';
 import { OWNER_EMAIL } from '@/lib/config';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
-const createPostSchema = z.object({
+const editPostSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200, 'Title too long'),
   slug: z.string().min(3, 'Slug must be at least 3 characters').max(250, 'Slug too long').regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Invalid slug format'),
   content: z.string().min(10, 'Content is too short'),
@@ -28,46 +29,81 @@ const createPostSchema = z.object({
   cover_image_url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
 });
 
-type CreatePostFormValues = z.infer<typeof createPostSchema>;
+type EditPostFormValues = z.infer<typeof editPostSchema>;
 
-export default function CreatePostPage() {
+export default function EditPostPage() {
   const router = useRouter();
+  const params = useParams();
+  const postSlug = params?.slug as string | undefined;
   const { toast } = useToast();
+
   const [user, setUser] = useState<User | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const [post, setPost] = useState<Tables<'posts'> | null>(null);
+  const [isLoadingPost, setIsLoadingPost] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const form = useForm<CreatePostFormValues>({
-    resolver: zodResolver(createPostSchema),
-    defaultValues: {
-      title: '',
-      slug: '',
-      content: '',
-      excerpt: '',
-      cover_image_url: '',
-    },
+  const form = useForm<EditPostFormValues>({
+    resolver: zodResolver(editPostSchema),
   });
 
+  const fetchPost = useCallback(async (slug: string) => {
+    setIsLoadingPost(true);
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('slug', slug)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') notFound();
+        throw error;
+      }
+      setPost(data);
+      form.reset({
+        title: data.title,
+        slug: data.slug,
+        content: data.content,
+        excerpt: data.excerpt || '',
+        cover_image_url: data.cover_image_url || '',
+      });
+    } catch (err: any) {
+      toast({ title: 'Error Fetching Post', description: err.message, variant: 'destructive' });
+      router.push('/blog');
+    } finally {
+      setIsLoadingPost(false);
+    }
+  }, [form, router, toast]);
+
   useEffect(() => {
-    const fetchUserAndCheckOwnership = async () => {
+    const checkUserAndPermissions = async () => {
+      setIsLoadingAuth(true);
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       setUser(currentUser);
       if (currentUser && currentUser.email === OWNER_EMAIL) {
         setIsOwner(true);
+        if (postSlug) {
+          fetchPost(postSlug);
+        } else {
+          notFound(); // No slug provided
+        }
       } else {
         setIsOwner(false);
-        if (currentUser) { // Logged in but not owner
-          toast({ title: 'Access Denied', description: 'You are not authorized to create posts.', variant: 'destructive' });
-          router.replace('/');
-        } else { // Not logged in
+        if (currentUser) {
+          toast({ title: 'Access Denied', description: 'You are not authorized to edit posts.', variant: 'destructive' });
+          router.replace('/blog');
+        } else {
           router.replace('/auth');
         }
       }
       setIsLoadingAuth(false);
     };
-    fetchUserAndCheckOwnership();
-  }, [router, toast]);
+    checkUserAndPermissions();
+  }, [postSlug, router, toast, fetchPost]);
+
 
   const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = event.target.value;
@@ -77,43 +113,66 @@ export default function CreatePostPage() {
     }
   };
 
-  const onSubmit = async (values: CreatePostFormValues) => {
-    if (!user || !isOwner) {
-      toast({ title: 'Authorization Error', description: 'You are not authorized to perform this action.', variant: 'destructive' });
+  const onSubmit = async (values: EditPostFormValues) => {
+    if (!user || !isOwner || !post) {
+      toast({ title: 'Authorization Error', description: 'Cannot update post.', variant: 'destructive' });
       return;
     }
     setIsSubmitting(true);
     try {
-      const postToInsert: TablesInsert<'posts'> = {
-        user_id: user.id,
-        author_name_cache: user.user_metadata?.full_name || user.email || 'ProspectFlow Team',
+      const postToUpdate: TablesUpdate<'posts'> = {
         title: values.title,
         slug: values.slug,
         content: values.content,
         excerpt: values.excerpt || null,
         cover_image_url: values.cover_image_url || null,
-        status: 'published', 
-        published_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        // status and published_at remain unchanged unless explicitly modified
       };
 
       const { data, error } = await supabase
         .from('posts')
-        .insert(postToInsert)
+        .update(postToUpdate)
+        .eq('id', post.id)
         .select()
         .single();
 
       if (error) throw error;
 
-      toast({ title: 'Post Created!', description: `"${data.title}" has been published.` });
-      router.push(`/blog/${data.slug}`);
+      toast({ title: 'Post Updated!', description: `"${data.title}" has been saved.` });
+      router.push(`/blog/${data.slug}`); // Redirect to the potentially new slug
     } catch (error: any) {
-      toast({ title: 'Error Creating Post', description: error.message || 'Could not save the post.', variant: 'destructive' });
+      toast({ title: 'Error Updating Post', description: error.message, variant: 'destructive' });
+    } finally {
       setIsSubmitting(false);
     }
   };
+  
+  const handleDeletePost = async () => {
+    if (!user || !isOwner || !post) {
+      toast({ title: 'Authorization Error', description: 'Cannot delete post.', variant: 'destructive' });
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', post.id);
 
-  if (isLoadingAuth) {
+      if (error) throw error;
+
+      toast({ title: 'Post Deleted', description: `"${post.title}" has been deleted.` });
+      router.push('/blog');
+    } catch (error: any) {
+      toast({ title: 'Error Deleting Post', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+
+  if (isLoadingAuth || (isOwner && isLoadingPost)) {
     return (
       <AppLayout>
         <div className="flex justify-center items-center h-full">
@@ -124,27 +183,36 @@ export default function CreatePostPage() {
   }
 
   if (!isOwner) {
-    return (
+     return (
       <AppLayout>
         <div className="flex flex-col items-center justify-center h-full text-center">
           <ShieldAlert className="h-16 w-16 text-destructive mb-4" />
           <h1 className="text-2xl font-bold text-destructive">Access Denied</h1>
-          <p className="text-muted-foreground">You do not have permission to create blog posts.</p>
-          <Button onClick={() => router.push('/')} className="mt-6">Go to Dashboard</Button>
+          <p className="text-muted-foreground">You do not have permission to edit this page.</p>
+           <Button onClick={() => router.push('/blog')} className="mt-6">Back to Blog</Button>
         </div>
       </AppLayout>
     );
   }
+  
+  if (!post && !isLoadingPost) { // Should be caught by fetchPost error handling or notFound
+    return (
+        <AppLayout>
+            <div className="text-center py-10">Post not found.</div>
+        </AppLayout>
+    )
+  }
+
 
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto">
         <header className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center">
-            <Edit className="mr-3 h-7 w-7 text-primary" />
-            Create New Blog Post
+            <Edit3 className="mr-3 h-7 w-7 text-primary" />
+            Edit Blog Post
           </h1>
-          <p className="text-muted-foreground">Share your insights with the world.</p>
+          <p className="text-muted-foreground">Refine your article details and content.</p>
         </header>
 
         <Form {...form}>
@@ -221,10 +289,33 @@ export default function CreatePostPage() {
                   )}
                 />
               </CardContent>
-              <CardFooter>
-                <Button type="submit" disabled={isSubmitting} className="w-full md:w-auto">
+              <CardFooter className="flex justify-between">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" type="button" disabled={isDeleting || isSubmitting}>
+                      {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                      Delete Post
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the post titled "{post?.title}".
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeletePost} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Confirm Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button type="submit" disabled={isSubmitting || isDeleting} className="w-full md:w-auto ml-auto">
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Publish Post
+                  Save Changes
                 </Button>
               </CardFooter>
             </Card>

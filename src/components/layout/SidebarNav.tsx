@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Briefcase, Users, Building2, Star, Edit3, Rss } from 'lucide-react'; // Added Edit3, Rss
+import { Home, Briefcase, Users, Building2, Star, Edit3, Rss } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   SidebarMenu,
@@ -16,13 +16,17 @@ import {
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { JobOpening } from '@/lib/types';
+import { supabase } from '@/lib/supabaseClient'; // Added for user check
+import { useEffect, useState } from 'react'; // Added for user check
+import { OWNER_EMAIL } from '@/lib/config'; // Added for owner email
 
 interface NavItem {
   href: string;
   label: string;
   icon: React.ElementType;
   disabled?: boolean;
-  separator?: boolean; // Optional separator before this item
+  separator?: boolean; 
+  ownerOnly?: boolean; 
 }
 
 const mainNavItems: NavItem[] = [
@@ -34,7 +38,7 @@ const mainNavItems: NavItem[] = [
 
 const blogNavItems: NavItem[] = [
   { href: '/blog', label: 'View Blog', icon: Rss, separator: true },
-  { href: '/blog/create', label: 'Create New Post', icon: Edit3 },
+  { href: '/blog/create', label: 'Create New Post', icon: Edit3, ownerOnly: true },
 ];
 
 
@@ -45,48 +49,96 @@ interface SidebarNavProps {
 export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
   const pathname = usePathname();
   const { state: sidebarState, isMobile } = useSidebar();
+  const [isOwner, setIsOwner] = useState(false);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      setIsLoadingUser(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && user.email === OWNER_EMAIL) {
+        setIsOwner(true);
+      } else {
+        setIsOwner(false);
+      }
+      setIsLoadingUser(false);
+    };
+    checkUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+        const currentUser = session?.user;
+        if (currentUser && currentUser.email === OWNER_EMAIL) {
+            setIsOwner(true);
+        } else {
+            setIsOwner(false);
+        }
+    });
+
+    return () => {
+        authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   const isCollapsedDesktop = sidebarState === 'collapsed' && !isMobile;
   const isExpandedDesktop = sidebarState === 'expanded' && !isMobile;
 
-  const renderNavItems = (items: NavItem[], groupLabel?: string) => (
-    <SidebarGroup>
-      {groupLabel && (
-        <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only">
-          {groupLabel}
-        </SidebarGroupLabel>
-      )}
-      <SidebarMenu>
-        {items.map((item) => (
-          <React.Fragment key={item.label}>
-            {item.separator && <SidebarSeparator className="my-1" />}
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
-                className={cn(item.disabled && "cursor-not-allowed opacity-50")}
-                tooltip={isCollapsedDesktop ? { children: item.label, side: "right", align: "center" } : undefined}
-              >
-                <Link
-                  href={item.href}
-                  aria-disabled={item.disabled}
-                  tabIndex={item.disabled ? -1 : undefined}
-                  onClick={(e) => {
-                    if (item.disabled) {
-                      e.preventDefault();
-                    }
-                  }}
+  const renderNavItems = (items: NavItem[], groupLabel?: string) => {
+    const filteredItems = items.filter(item => !item.ownerOnly || (item.ownerOnly && isOwner));
+    if (filteredItems.length === 0 && groupLabel) return null; // Don't render group if no items visible
+
+    return (
+        <SidebarGroup>
+        {groupLabel && (
+            <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only">
+            {groupLabel}
+            </SidebarGroupLabel>
+        )}
+        <SidebarMenu>
+            {filteredItems.map((item) => (
+            <React.Fragment key={item.label}>
+                {item.separator && <SidebarSeparator className="my-1" />}
+                <SidebarMenuItem>
+                <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
+                    className={cn(item.disabled && "cursor-not-allowed opacity-50")}
+                    tooltip={isCollapsedDesktop ? { children: item.label, side: "right", align: "center" } : undefined}
                 >
-                  <item.icon />
-                  <span>{item.label}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </React.Fragment>
+                    <Link
+                    href={item.href}
+                    aria-disabled={item.disabled}
+                    tabIndex={item.disabled ? -1 : undefined}
+                    onClick={(e) => {
+                        if (item.disabled) {
+                        e.preventDefault();
+                        }
+                    }}
+                    >
+                    <item.icon />
+                    <span>{item.label}</span>
+                    </Link>
+                </SidebarMenuButton>
+                </SidebarMenuItem>
+            </React.Fragment>
+            ))}
+        </SidebarMenu>
+        </SidebarGroup>
+    );
+  };
+  
+  if (isLoadingUser && !isCollapsedDesktop) { // Show skeleton only if expanded and loading
+    return (
+      <div className="space-y-2 p-2">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="flex items-center gap-2 p-2 rounded-md bg-muted/50 animate-pulse">
+            <div className="h-5 w-5 rounded bg-muted"></div>
+            <div className="h-4 w-3/4 rounded bg-muted"></div>
+          </div>
         ))}
-      </SidebarMenu>
-    </SidebarGroup>
-  );
+      </div>
+    );
+  }
+
 
   return (
     <div className="flex flex-col h-full">

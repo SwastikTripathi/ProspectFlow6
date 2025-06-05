@@ -4,20 +4,24 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams, notFound } from 'next/navigation';
+import { useParams, notFound, useRouter } from 'next/navigation'; // Added useRouter
 import { supabase } from '@/lib/supabaseClient';
 import type { Tables } from '@/lib/database.types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, CalendarDays, UserCircle as UserIcon } from 'lucide-react';
+import { Loader2, ArrowLeft, CalendarDays, UserCircle as UserIcon, Edit3, Trash2 } from 'lucide-react'; // Added Edit3, Trash2
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Logo } from '@/components/icons/Logo';
 import { Around } from "@theme-toggles/react";
 import "@theme-toggles/react/css/Around.css";
 import { cn } from '@/lib/utils';
 import { Facebook, Twitter, Youtube, Linkedin, Globe } from 'lucide-react';
+import type { User } from '@supabase/supabase-js'; // Added for user check
+import { OWNER_EMAIL } from '@/lib/config'; // Added for owner email
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'; // Added for delete confirmation
+import { useToast } from '@/hooks/use-toast'; // Added for toast
 
 type PostWithAuthor = Tables<'posts'>;
 
@@ -49,11 +53,43 @@ const footerLinks = {
 export default function BlogPostPage() {
   const params = useParams();
   const slug = params?.slug as string | undefined;
+  const router = useRouter();
+  const { toast } = useToast();
 
   const [post, setPost] = useState<PostWithAuthor | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+      if (user && user.email === OWNER_EMAIL) {
+        setIsOwner(true);
+      } else {
+        setIsOwner(false);
+      }
+    };
+    checkUser();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+        const user = session?.user ?? null;
+        setCurrentUser(user);
+        if (user && user.email === OWNER_EMAIL) {
+            setIsOwner(true);
+        } else {
+            setIsOwner(false);
+        }
+    });
+    
+    return () => {
+        authListener.subscription.unsubscribe();
+    };
+  }, []);
 
 
   useEffect(() => {
@@ -109,6 +145,29 @@ export default function BlogPostPage() {
     });
   };
 
+  const handleDeletePost = async () => {
+    if (!post || !isOwner) {
+      toast({ title: 'Error', description: 'Cannot delete post.', variant: 'destructive' });
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      const { error: deleteError } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', post.id);
+
+      if (deleteError) throw deleteError;
+
+      toast({ title: 'Post Deleted', description: `"${post.title}" has been successfully deleted.` });
+      router.push('/blog');
+    } catch (error: any) {
+      toast({ title: 'Deletion Failed', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -133,8 +192,6 @@ export default function BlogPostPage() {
   }
 
   if (!post) {
-    // This case should ideally be handled by notFound() called in useEffect,
-    // but as a fallback:
     return (
          <div className="flex flex-col min-h-screen">
             <div className="flex-grow text-center text-muted-foreground py-20">
@@ -189,12 +246,47 @@ export default function BlogPostPage() {
 
       <main className="flex-1 py-12 md:py-16">
         <div className="container mx-auto px-[5vw] md:px-[10vw] max-w-4xl">
-          <Button variant="outline" asChild className="mb-8 group">
-            <Link href="/blog">
-              <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-              Back to Blog
-            </Link>
-          </Button>
+          <div className="mb-8 flex justify-between items-center">
+            <Button variant="outline" asChild className="group">
+              <Link href="/blog">
+                <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Blog
+              </Link>
+            </Button>
+            {isOwner && (
+              <div className="flex gap-2">
+                <Button variant="outline" asChild>
+                  <Link href={`/blog/edit/${post.slug}`}>
+                    <Edit3 className="mr-2 h-4 w-4" /> Edit
+                  </Link>
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={isDeleting}>
+                      {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the post "{post.title}".
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeletePost} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Confirm Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            )}
+          </div>
+
 
           <article>
             <header className="mb-8">
