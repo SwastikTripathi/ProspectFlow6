@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -127,7 +127,7 @@ function HeroVisual() {
       ]
     },
      {
-      title: 'Data Analyst',
+      title: 'Data Analyst', // Changed from duplicate "Software Engineer"
       contextLine: 'Acme Corp.',
       status: 'Applied',
       statusColor: 'bg-blue-500 text-blue-50 border-transparent',
@@ -143,7 +143,7 @@ function HeroVisual() {
       title: 'Tech Solutions Ltd.',
       contextLine: 'Enterprise Software',
       status: 'Researching',
-      statusColor: 'bg-purple-500 text-purple-50 border-transparent',
+      statusColor: 'bg-purple-600/30 text-purple-50 border-transparent',
       avatar: 'https://placehold.co/32x32.png',
       dataAiHint: 'modern building',
       cardTypeIcon: Building,
@@ -172,7 +172,7 @@ function HeroVisual() {
                   </div>
 
                   <div className="flex flex-col flex-grow space-y-1.5">
-                    <div className="flex items-start">
+                     <div className="flex items-start">
                        <Image
                         src={card.avatar}
                         alt={card.title}
@@ -192,23 +192,27 @@ function HeroVisual() {
                       <div className="space-y-1 pt-1">
                         {card.details.map((detail, detailIndex) => {
                           const DetailIcon = detail.icon;
-                          const isRedAlert = detail.highlight === 'red-alert';
-                          return (
+                           const isRedAlert = detail.highlight === 'red-alert';
+                           return (
                             <div
                               key={detailIndex}
                               className={cn(
                                 "flex text-xs items-center",
                                 isRedAlert
-                                  ? "border border-destructive px-2 py-1 rounded-md" 
+                                  ? "border border-destructive px-2 py-1 rounded-md"
                                   : "",
-                                detail.className 
+                                detail.className
                               )}
                             >
-                              <DetailIcon className={cn("mr-1.5 h-3.5 w-3.5 flex-shrink-0", isRedAlert ? "text-destructive" : "text-muted-foreground")} />
+                              <DetailIcon className={cn(
+                                "mr-1.5 h-3.5 w-3.5 flex-shrink-0",
+                                isRedAlert ? "text-destructive" : "text-muted-foreground"
+                                )}
+                              />
                               <span className={cn(
                                 "min-w-0",
                                 isRedAlert ? "text-muted-foreground" : "text-muted-foreground truncate",
-                                detail.className 
+                                detail.className
                               )}>
                                 {detail.text}
                               </span>
@@ -355,7 +359,7 @@ export default function LandingPage() {
       { name: 'Security', href: '#' },
     ],
     pricing: [
-      { name: 'Pricing', href: '#' },
+      { name: 'Pricing', href: '/pricing' },
       { name: 'Close vs Other CRMs', href: '#' },
       { name: 'Close for Startups', href: '#' },
       { name: 'Customer Stories', href: '#' },
@@ -401,7 +405,7 @@ export default function LandingPage() {
           </Link>
           <nav className="flex items-center space-x-1 sm:space-x-2">
             <Button variant="ghost" asChild className="rounded-full">
-              <Link href="#">Pricing</Link>
+              <Link href="/pricing">Pricing</Link>
             </Button>
             <Button variant="ghost" asChild className="rounded-full">
               <Link href="#">Blog</Link>
@@ -640,7 +644,7 @@ export default function LandingPage() {
           </div>
 
           <div className="container mx-auto px-[10vw]">
-            <div className="grid md:grid-cols-3 gap-0 text-left max-w-6xl mx-auto">
+             <div className="grid md:grid-cols-3 gap-0 text-left max-w-6xl mx-auto">
               {newTestimonialsData.map((testimonial, index) => (
                 <div
                   key={testimonial.name + index}
@@ -789,7 +793,7 @@ export default function LandingPage() {
               <h5 className="font-bold text-slate-50 mb-4">Product</h5>
               <ul className="space-y-2">
                 {footerLinks.product.map((link) => (
-                  <li key={link.name}><a href={link.href} className="hover:text-primary transition-colors">{link.name}</a></li>
+                  <li key={link.name}><Link href={link.href} className="hover:text-primary transition-colors">{link.name}</Link></li>
                 ))}
               </ul>
             </div>
@@ -797,7 +801,7 @@ export default function LandingPage() {
               <h5 className="font-bold text-slate-50 mb-4">Pricing & Use Cases</h5>
               <ul className="space-y-2">
                 {footerLinks.pricing.map((link) => (
-                  <li key={link.name}><a href={link.href} className="hover:text-primary transition-colors">{link.name}</a></li>
+                  <li key={link.name}><Link href={link.href} className="hover:text-primary transition-colors">{link.name}</Link></li>
                 ))}
               </ul>
             </div>
@@ -805,7 +809,7 @@ export default function LandingPage() {
               <h5 className="font-bold text-slate-50 mb-4">Resources</h5>
               <ul className="space-y-2">
                 {footerLinks.resources.map((link) => (
-                  <li key={link.name}><a href={link.href} className="hover:text-primary transition-colors">{link.name}</a></li>
+                  <li key={link.name}><Link href={link.href} className="hover:text-primary transition-colors">{link.name}</Link></li>
                 ))}
               </ul>
             </div>
@@ -813,7 +817,7 @@ export default function LandingPage() {
               <h5 className="font-bold text-slate-50 mb-4">Company</h5>
               <ul className="space-y-2">
                 {footerLinks.company.map((link) => (
-                  <li key={link.name}><a href={link.href} className="hover:text-primary transition-colors">{link.name}</a></li>
+                  <li key={link.name}><Link href={link.href} className="hover:text-primary transition-colors">{link.name}</Link></li>
                 ))}
               </ul>
             </div>
@@ -821,7 +825,7 @@ export default function LandingPage() {
               <h5 className="font-bold text-slate-50 mb-4">Get Help</h5>
               <ul className="space-y-2">
                 {footerLinks.getHelp.map((link) => (
-                  <li key={link.name}><a href={link.href} className="hover:text-primary transition-colors">{link.name}</a></li>
+                  <li key={link.name}><Link href={link.href} className="hover:text-primary transition-colors">{link.name}</Link></li>
                 ))}
               </ul>
               <div className="mt-4">
