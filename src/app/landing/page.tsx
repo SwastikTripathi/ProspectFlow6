@@ -123,10 +123,10 @@ function HeroVisual() {
       cardTypeIcon: Users,
       details: [
         { icon: Mail, text: 'alex.c@innovate.com' },
-        { icon: Info, text: 'Met at conference. Likes coffee, discussed upcoming roles.', className: 'italic break-words' }
+        { icon: Info, text: 'Loves coffee', className: 'italic break-words' }
       ]
     },
-    {
+     {
       title: 'Data Analyst', 
       contextLine: 'Acme Corp.',
       status: 'Applied',
