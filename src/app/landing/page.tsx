@@ -198,7 +198,7 @@ const AnimatedWordsSection = () => {
 
   return (
     <section className="py-16 md:py-24 bg-slate-900 text-slate-100 overflow-hidden">
-      <div className="container px-4 md:px-6 text-center">
+      <div className="container px-[10vw] text-center">
         <h2 className="text-4xl sm:text-5xl font-bold mb-4 font-headline">
           Email is the <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">biggest problem</span>
         </h2>
@@ -319,7 +319,7 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-background to-secondary/10">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 md:px-6">
+        <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-[10vw]">
           <Link href="/landing" className="mr-6 flex items-center space-x-2">
             <Logo />
           </Link>
@@ -346,7 +346,7 @@ export default function LandingPage() {
       <main className="flex-1">
         {/* Hero Section */}
         <section className="py-20 md:py-28 text-center bg-background">
-          <div className="container px-4 md:px-6">
+          <div className="container px-[10vw]">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter mb-6 font-headline text-foreground">
               Stop losing leads and<br className="hidden sm:inline" /> missing <span className="text-primary">follow-ups</span>.
             </h1>
@@ -377,7 +377,7 @@ export default function LandingPage() {
 
         {/* Features Section */}
         <section id="features" className="py-16 md:py-24 bg-secondary/50">
-          <div className="container px-4 md:px-6">
+          <div className="container px-[10vw]">
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 font-headline text-foreground">Why Choose ProspectFlow?</h2>
             <p className="text-center text-muted-foreground mb-12 md:mb-16 max-w-2xl mx-auto">
                 Focus on what matters: building connections and landing opportunities. We'll handle the organization.
@@ -403,7 +403,7 @@ export default function LandingPage() {
 
         {/* Section: Why Professionals Streamline with ProspectFlow */}
         <section className="py-16 md:py-24 bg-background">
-          <div className="container px-4 md:px-6">
+          <div className="container px-[10vw]">
             <div className="text-left max-w-3xl mx-auto md:mx-0 mb-12 md:mb-16">
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight font-headline text-foreground">
                 Why Professionals Streamline with ProspectFlow
@@ -458,7 +458,7 @@ export default function LandingPage() {
 
         {/* New Section 1: Everything you need */}
         <section className="py-16 md:py-24 bg-secondary/30">
-          <div className="container px-4 md:px-6">
+          <div className="container px-[10vw]">
             <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
               <div className="order-last md:order-first">
                 <AnimatedSectionImage
@@ -504,7 +504,7 @@ export default function LandingPage() {
 
         {/* New Section 2: Automations */}
         <section className="py-16 md:py-24 bg-background">
-          <div className="container px-4 md:px-6">
+          <div className="container px-[10vw]">
             <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
               <div className="space-y-6">
                 <h3 className="text-2xl md:text-3xl font-semibold font-headline text-foreground">Automations that keep you laser-focused on connecting, not admin work.</h3>
@@ -535,13 +535,33 @@ export default function LandingPage() {
         </section>
         
         <section className="py-16 md:py-24 bg-secondary/50">
-          <div className="container px-4 md:px-6 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-12 font-headline text-foreground">
-              Trusted by <span className="text-primary">Proactive Professionals</span> with <span className="text-accent">Ambitious Goals</span>
-            </h2>
-            <div className="grid md:grid-cols-3 gap-8 text-left max-w-6xl mx-auto">
+          <div className="container mx-auto px-[10vw] mb-12 md:mb-16"> {/* Apply vw padding here */}
+            <div className="grid md:grid-cols-2 gap-10 items-center">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-bold mb-4 font-headline text-foreground">
+                  Trusted by <span className="text-primary">Proactive Professionals</span> with <span className="text-accent">Ambitious Goals</span>
+                </h2>
+              </div>
+              <div className="flex justify-center md:justify-end items-center">
+                <Image 
+                  src="https://placehold.co/300x150.png" 
+                  alt="CRM Benefits Graphic" 
+                  width={300} 
+                  height={150}
+                  className="rounded-lg shadow-md"
+                  data-ai-hint="chart graph"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="container mx-auto px-[10vw]"> {/* Apply vw padding here too */}
+            <div className="grid md:grid-cols-3 gap-0 text-left max-w-6xl mx-auto border border-border rounded-lg overflow-hidden">
               {newTestimonialsData.map((testimonial, index) => ( 
-                <div key={testimonial.name + index} className="bg-card p-6 rounded-lg shadow-lg flex flex-col">
+                <div 
+                  key={testimonial.name + index} 
+                  className={`bg-card p-6 flex flex-col ${index < newTestimonialsData.length - 1 ? 'border-b md:border-b-0 md:border-r border-border' : ''}`}
+                >
                   <p className="text-muted-foreground mb-6 flex-grow text-base leading-relaxed">"{testimonial.quote}"</p>
                   <div className="flex items-center mt-auto">
                     <Image data-ai-hint={testimonial.dataAiHint} src={testimonial.avatar} alt={testimonial.name} width={40} height={40} className="rounded-full mr-3 border" />
@@ -553,14 +573,16 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
-            <Button size="lg" className="mt-12 text-base px-8 py-6 shadow-md rounded-full" asChild>
-              <Link href="/auth?action=signup">Discover How ProspectFlow Can Help You <ArrowRight className="ml-2 h-5 w-5" /></Link>
-            </Button>
+            <div className="text-center"> {/* Centering the button */}
+                <Button size="lg" className="mt-12 text-base px-8 py-6 shadow-md rounded-full" asChild>
+                <Link href="/auth?action=signup">Discover How ProspectFlow Can Help You <ArrowRight className="ml-2 h-5 w-5" /></Link>
+                </Button>
+            </div>
           </div>
         </section>
 
         <section className="py-16 md:py-24 bg-background">
-          <div className="container px-4 md:px-6">
+          <div className="container px-[10vw]">
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 font-headline text-foreground">
               Stop juggling spreadsheets &amp; missed chances. <br className="hidden sm:inline" />
               Choose <span className="text-primary">ProspectFlow</span> for these reasons:
@@ -605,7 +627,7 @@ export default function LandingPage() {
 
         {/* New Hero-style CTA Section */}
         <section className="py-20 md:py-28 text-center bg-gradient-to-br from-slate-900 to-slate-800 text-slate-50">
-          <div className="container px-4 md:px-6">
+          <div className="container px-[10vw]">
             <div className="flex justify-center mb-8">
               <Logo />
             </div>
@@ -653,7 +675,7 @@ export default function LandingPage() {
 
         {/* FAQ Section */}
         <section className="py-16 md:py-24 bg-secondary/30">
-          <div className="container px-4 md:px-6">
+          <div className="container px-[10vw]">
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 font-headline text-foreground">
               Frequently Asked Questions
             </h2>
@@ -677,7 +699,7 @@ export default function LandingPage() {
       </main>
 
       <footer className="bg-slate-900 text-slate-300">
-        <div className="container mx-auto px-4 md:px-6 py-12 md:py-16">
+        <div className="container mx-auto px-[10vw] py-12 md:py-16">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 mb-12">
             <div>
               <h5 className="font-bold text-slate-50 mb-4">Product</h5>
