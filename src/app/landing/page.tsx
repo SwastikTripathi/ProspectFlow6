@@ -123,7 +123,7 @@ function HeroVisual() {
       cardTypeIcon: Users,
       details: [
         { icon: Mail, text: 'alex.c@innovate.com' },
-        { icon: Info, text: 'Loves coffee', className: 'italic break-words' }
+        { icon: Info, text: 'Loves coffee', className: 'italic break-words min-w-0' }
       ]
     },
      {
@@ -464,7 +464,7 @@ export default function LandingPage() {
 
         {/* Features Section */}
         <section id="features" className="py-16 md:py-24 bg-secondary/50">
-          <div className="container px-[10vw]">
+          <div className="container mx-auto px-[10vw]">
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 font-headline text-foreground">Why Choose ProspectFlow?</h2>
             <p className="text-center text-muted-foreground mb-12 md:mb-16 max-w-2xl mx-auto">
                 Focus on what matters: building connections and landing opportunities. We'll handle the organization.
