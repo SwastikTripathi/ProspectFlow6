@@ -215,6 +215,8 @@ export type Database = {
           status: string
           tags: Json | null
           user_id: string
+          is_favorite: boolean | null
+          favorited_at: string | null
         }
         Insert: {
           company_id?: string | null
@@ -228,6 +230,8 @@ export type Database = {
           status: string
           tags?: Json | null
           user_id: string
+          is_favorite?: boolean | null
+          favorited_at?: string | null
         }
         Update: {
           company_id?: string | null
@@ -241,6 +245,8 @@ export type Database = {
           status?: string
           tags?: Json | null
           user_id?: string
+          is_favorite?: boolean | null
+          favorited_at?: string | null
         }
         Relationships: [
           {

@@ -14,6 +14,7 @@ import {
   SidebarFooter,
   SidebarTrigger,
   SidebarInset,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { SidebarNav } from './SidebarNav';
 import { Logo } from '../icons/Logo';
@@ -25,7 +26,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Around } from "@theme-toggles/react"
 import "@theme-toggles/react/css/Around.css"
 import { cn } from '@/lib/utils';
-import { SidebarUsageProgress } from './SidebarUsageProgress'; // Added import
+import { SidebarUsageProgress } from './SidebarUsageProgress';
+import type { JobOpening } from '@/lib/types';
 
 const PUBLIC_PATHS = ['/landing', '/auth'];
 
@@ -57,6 +59,25 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
+  const [favoriteJobOpenings, setFavoriteJobOpenings] = useState<JobOpening[]>([]);
+  
+  const fetchFavoriteJobOpenings = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('job_openings')
+        .select('id, role_title, company_name_cache, favorited_at, is_favorite')
+        .eq('user_id', userId)
+        .eq('is_favorite', true)
+        .order('favorited_at', { ascending: true, nulls: 'last' });
+
+      if (error) throw error;
+      setFavoriteJobOpenings(data as JobOpening[] || []);
+    } catch (error: any) {
+      console.error("Error fetching favorite job openings:", error);
+      toast({ title: 'Error Fetching Favorites', description: error.message, variant: 'destructive' });
+      setFavoriteJobOpenings([]);
+    }
+  }, [toast]);
   
   useEffect(() => {
     setIsLoadingAuth(true);
@@ -65,6 +86,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
       (event, currentSession) => {
         const newCurrentUser = currentSession?.user ?? null;
         setUser(newCurrentUser);
+        
+        if (newCurrentUser) {
+          fetchFavoriteJobOpenings(newCurrentUser.id);
+        } else {
+          setFavoriteJobOpenings([]);
+        }
+
         setIsLoadingAuth(false); 
 
         if (event === 'SIGNED_OUT') {
@@ -76,13 +104,20 @@ export function AppLayout({ children }: { children: ReactNode }) {
     );
     
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-        if (!initialSession?.user && !isLoadingAuth && !PUBLIC_PATHS.includes(pathname)) {
+        const initialUser = initialSession?.user ?? null;
+        setUser(initialUser);
+        if (initialUser) {
+          fetchFavoriteJobOpenings(initialUser.id);
+        } else {
+          setFavoriteJobOpenings([]);
+        }
+
+        if (!initialUser && !isLoadingAuth && !PUBLIC_PATHS.includes(pathname)) {
              router.push('/landing');
-        } else if (initialSession?.user && !isLoadingAuth && PUBLIC_PATHS.includes(pathname)) {
+        } else if (initialUser && !isLoadingAuth && PUBLIC_PATHS.includes(pathname)) {
             router.push('/');
         }
         if (isLoadingAuth) { 
-            setUser(initialSession?.user ?? null);
             setIsLoadingAuth(false);
         }
     });
@@ -98,7 +133,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     return () => {
       subscription?.unsubscribe();
     };
-  }, []); 
+  }, [fetchFavoriteJobOpenings, pathname, router]); 
 
   useEffect(() => {
     if (isLoadingAuth) {
@@ -121,6 +156,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       toast({ title: 'Sign Out Failed', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Signed Out Successfully' });
+      setFavoriteJobOpenings([]);
     }
   };
 
@@ -150,7 +186,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
         );
      }
      if (user && !isLoadingAuth) {
-         // This case should ideally redirect via useEffect, but as a fallback:
          return (
             <div className="flex h-screen w-screen items-center justify-center bg-background">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -161,7 +196,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }
 
   if (!user && !isLoadingAuth) { 
-     // This case should ideally redirect via useEffect, but as a fallback:
      return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -193,7 +227,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <SidebarTrigger className="group-data-[collapsible=icon]:hidden md:hidden" />
         </SidebarHeader>
         <SidebarContent>
-          <SidebarNav />
+          <SidebarNav favoriteJobOpenings={favoriteJobOpenings} />
         </SidebarContent>
         <SidebarFooter
           className={cn(
@@ -276,3 +310,4 @@ export function AppLayout({ children }: { children: ReactNode }) {
   );
 }
 
+    

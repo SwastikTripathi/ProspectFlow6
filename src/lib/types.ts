@@ -33,9 +33,8 @@ export interface FollowUp {
   created_at?: string;
   follow_up_date: Date;
   original_due_date?: Date | null;
-  email_subject?: string | null; // New field
-  email_body?: string | null;    // New field
-  // email_content field is deprecated in favor of subject/body
+  email_subject?: string | null; 
+  email_body?: string | null;    
   status: 'Pending' | 'Sent' | 'Skipped';
 }
 
@@ -73,6 +72,8 @@ export interface JobOpening {
   tags?: string[] | null;
   job_description_url?: string | null;
   notes?: string | null;
+  is_favorite?: boolean | null;
+  favorited_at?: string | Date | null;
 }
 
 export type Tag = {
@@ -119,7 +120,6 @@ export interface AvailablePlan {
 export interface FollowUpTemplateContent {
   subject: string;
   openingLine: string;
-  // signature field removed
 }
 
 export interface DefaultFollowUpTemplates {
@@ -143,3 +143,5 @@ export interface ContactFormEntry {
   contactName: string;
   contactEmail: string;
 }
+
+    

@@ -3,16 +3,17 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Briefcase, Users, Building2 } from 'lucide-react'; // Removed Settings, CreditCard
+import { Home, Briefcase, Users, Building2, Star } from 'lucide-react'; 
 import { cn } from '@/lib/utils';
 import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarGroup,
-  // SidebarGroupLabel, // No longer needed if settings group removed
-  // SidebarSeparator, // No longer needed if settings group removed
+  SidebarGroupLabel, 
+  SidebarSeparator, 
 } from '@/components/ui/sidebar';
+import type { JobOpening } from '@/lib/types';
 
 interface NavItem {
   href: string;
@@ -28,18 +29,20 @@ const mainNavItems: NavItem[] = [
   { href: '/companies', label: 'Companies', icon: Building2 },
 ];
 
-// Removed settingsNavItems array
+interface SidebarNavProps {
+  favoriteJobOpenings?: JobOpening[];
+}
 
-export function SidebarNav() {
+export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
   const pathname = usePathname();
 
-  const renderNavItems = (items: NavItem[]) => ( // Removed groupLabel param
+  const renderNavItems = (items: NavItem[], groupLabel?: string) => (
     <SidebarGroup>
-      {/* {groupLabel && ( // Conditional rendering for groupLabel removed
+      {groupLabel && (
         <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only">
           {groupLabel}
         </SidebarGroupLabel>
-      )} */}
+      )}
       <SidebarMenu>
         {items.map((item) => (
           <SidebarMenuItem key={item.label}>
@@ -69,9 +72,43 @@ export function SidebarNav() {
     <div className="flex flex-col h-full">
       <div className="flex-1">
         {renderNavItems(mainNavItems)}
+        {favoriteJobOpenings && favoriteJobOpenings.length > 0 && (
+          <>
+            <SidebarSeparator />
+            <SidebarGroup>
+              <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only">
+                Favorites
+              </SidebarGroupLabel>
+              <SidebarMenu>
+                {favoriteJobOpenings.map((opening) => (
+                  <SidebarMenuItem key={opening.id}>
+                    <Link href={`/job-openings?view=${opening.id}`} passHref legacyBehavior>
+                      <SidebarMenuButton
+                        asChild
+                        // No direct isActive check for dynamic items unless path matches exactly
+                        // isActive={pathname === `/job-openings?view=${opening.id}`}
+                        tooltip={`${opening.role_title} at ${opening.company_name_cache}`}
+                      >
+                        <a>
+                          <Star className="text-yellow-500 fill-yellow-400" />
+                          <span className="truncate">
+                            {opening.role_title}
+                            <span className="text-xs text-sidebar-foreground/70 ml-1 truncate hidden sm:group-data-[collapsible=expanded]:inline">
+                              @ {opening.company_name_cache}
+                            </span>
+                          </span>
+                        </a>
+                      </SidebarMenuButton>
+                    </Link>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroup>
+          </>
+        )}
       </div>
-      {/* <SidebarSeparator /> // Removed separator */}
-      {/* {renderNavItems(settingsNavItems, "Settings")} // Removed rendering of settingsNavItems */}
     </div>
   );
 }
+
+    
