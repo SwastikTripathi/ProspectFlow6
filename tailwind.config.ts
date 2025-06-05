@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -88,10 +89,20 @@ export default {
             height: '0',
           },
         },
+        'marquee-left': {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-50%)' }, // Animate by half the duplicated content width
+        },
+        'marquee-right': {
+          '0%': { transform: 'translateX(-50%)' }, // Start from the "end" of the first set
+          '100%': { transform: 'translateX(0%)' },  // Animate to the "start" of the first set
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'marquee-left': 'marquee-left 40s linear infinite', // Adjust duration as needed
+        'marquee-right': 'marquee-right 40s linear infinite', // Adjust duration as needed
       },
     },
   },

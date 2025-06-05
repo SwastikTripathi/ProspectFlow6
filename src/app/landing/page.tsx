@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CheckCircle, TrendingUp, Users, Target, Briefcase, Zap, ArrowRight, Eye, MailCheck, Building, Workflow, Focus, ShieldCheck, HeartHandshake, Star, HelpCircle, Facebook, Twitter, Youtube, Linkedin, Globe } from 'lucide-react';
+import { CheckCircle, TrendingUp, Users, Target, Briefcase, Zap, ArrowRight, Eye, MailCheck, Building, Workflow, Focus, ShieldCheck, HeartHandshake, Star, HelpCircle, Facebook, Twitter, Youtube, Linkedin, Globe, CreditCard, Search, Lightbulb } from 'lucide-react';
 import { Logo } from '@/components/icons/Logo';
 import { Badge } from '@/components/ui/badge'; 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -171,6 +171,80 @@ function HeroVisual() {
 }
 
 
+const AnimatedWordsSection = () => {
+  const topWords = [
+    { name: "Security", color: "bg-slate-700/80" },
+    { name: "Strategy", color: "bg-slate-700/80" },
+    { name: "Product", color: "bg-purple-600/30" },
+    { name: "People", color: "bg-sky-600/30" },
+    { name: "Design", color: "bg-pink-600/30" },
+    { name: "Sales", color: "bg-slate-700/80" },
+    { name: "Finance", icon: <CreditCard className="inline-block h-4 w-4 ml-1" />, color: "bg-green-600/30" },
+    { name: "Customer Success", color: "bg-slate-700/80" },
+  ];
+
+  const bottomWords = [
+    { name: "Business Development", color: "bg-purple-600/30" },
+    { name: "Analytics", icon: <Search className="inline-block h-4 w-4 ml-1" />, color: "bg-slate-700/80" },
+    { name: "Engineering", color: "bg-orange-600/30" },
+    { name: "Operations", color: "bg-teal-600/30" },
+    { name: "Marketing", color: "bg-indigo-600/30" },
+    { name: "Leadership", icon: <Lightbulb className="inline-block h-4 w-4 ml-1" />, color: "bg-yellow-500/30" },
+  ];
+
+  const duplicatedTopWords = [...topWords, ...topWords];
+  const duplicatedBottomWords = [...bottomWords, ...bottomWords];
+
+  return (
+    <section className="py-16 md:py-24 bg-slate-900 text-slate-100 overflow-hidden">
+      <div className="container px-4 md:px-6 text-center">
+        <h2 className="text-4xl sm:text-5xl font-bold mb-4 font-headline">
+          Email is the <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">biggest problem</span>
+        </h2>
+        <h3 className="text-3xl sm:text-4xl font-bold mb-8 font-headline text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
+          hiding in plain sight
+        </h3>
+        <div className="max-w-2xl mx-auto space-y-4 text-slate-300 mb-12">
+          <p>We all spend hours on email. But we often reply late, and sometimes don't even reply.</p>
+          <p>We then end up losing deals, blocking our teams, and missing our goals.</p>
+          <p>It's not anybody's fault. Email itself has not changed in decades.</p>
+          <p>With ProspectFlow, this all changes.</p>
+        </div>
+
+        <div className="relative space-y-3">
+          {/* Top Row - Moving Left */}
+          <div className="overflow-hidden whitespace-nowrap py-2 mask-gradient-horizontal">
+            <div className="inline-block animate-marquee-left">
+              {duplicatedTopWords.map((item, index) => (
+                <span key={`top-${index}`} className={`inline-flex items-center text-sm sm:text-base mx-2 px-4 py-2 rounded-lg shadow-md ${item.color} text-slate-50`}>
+                  {item.name} {item.icon}
+                </span>
+              ))}
+            </div>
+          </div>
+          {/* Bottom Row - Moving Right */}
+          <div className="overflow-hidden whitespace-nowrap py-2 mask-gradient-horizontal">
+            <div className="inline-block animate-marquee-right">
+              {duplicatedBottomWords.map((item, index) => (
+                <span key={`bottom-${index}`} className={`inline-flex items-center text-sm sm:text-base mx-2 px-4 py-2 rounded-lg shadow-md ${item.color} text-slate-50`}>
+                  {item.name} {item.icon}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <style jsx>{`
+        .mask-gradient-horizontal {
+          mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+          -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+        }
+      `}</style>
+    </section>
+  );
+};
+
+
 export default function LandingPage() {
   const fourReasons = [
     {
@@ -322,6 +396,9 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+        
+        {/* Newly Added AnimatedWordsSection */}
+        <AnimatedWordsSection />
 
         {/* Section: Why Professionals Streamline with ProspectFlow */}
         <section className="py-16 md:py-24 bg-background">
@@ -664,5 +741,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-
