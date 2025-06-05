@@ -10,6 +10,7 @@ import { CheckCircle, TrendingUp, Users, Target, Briefcase, Zap, ArrowRight, Eye
 import { Logo } from '@/components/icons/Logo';
 import { Badge } from '@/components/ui/badge'; 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { AnimatedSectionImage } from '@/components/utils/AnimatedSectionImage';
 
 const features = [
   {
@@ -439,16 +440,17 @@ export default function LandingPage() {
                 </div>
               </div>
               <div>
-                <div className="relative aspect-[4/3] rounded-xl shadow-2xl overflow-hidden border border-border/20">
-                  <Image 
-                    src="https://placehold.co/600x450.png" 
-                    alt="ProspectFlow App Dashboard Mockup" 
-                    layout="fill"
-                    objectFit="cover"
-                    className="bg-muted"
-                    data-ai-hint="app dashboard" 
+                 <AnimatedSectionImage
+                    src="https://placehold.co/600x450.png"
+                    alt="ProspectFlow App Dashboard Mockup"
+                    layout="responsive"
+                    width={600}
+                    height={450}
+                    className="rounded-xl bg-muted object-cover"
+                    data-ai-hint="app dashboard"
+                    animationDirection="up"
+                    wrapperClassName="relative aspect-[4/3] rounded-xl shadow-2xl overflow-hidden border border-border/20"
                   />
-                </div>
               </div>
             </div>
           </div>
@@ -459,16 +461,17 @@ export default function LandingPage() {
           <div className="container px-4 md:px-6">
             <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
               <div className="order-last md:order-first">
-                <div className="relative aspect-[3/2] rounded-xl shadow-2xl overflow-hidden border border-border/20">
-                  <Image 
-                    src="https://placehold.co/1200x900.png" 
-                    alt="ProspectFlow unified platform illustration" 
-                    layout="fill"
-                    objectFit="cover"
-                    className="bg-muted"
-                    data-ai-hint="email marketing tool" 
+                <AnimatedSectionImage
+                    src="https://placehold.co/1200x900.png"
+                    alt="ProspectFlow unified platform illustration"
+                    layout="responsive"
+                    width={1200}
+                    height={900}
+                    className="rounded-xl bg-muted object-cover"
+                    data-ai-hint="email marketing tool"
+                    animationDirection="up"
+                    wrapperClassName="relative aspect-[4/3] rounded-xl shadow-2xl overflow-hidden border border-border/20"
                   />
-                </div>
               </div>
               <div className="space-y-6">
                 <h3 className="text-2xl md:text-3xl font-semibold font-headline text-foreground">Everything you need to manage outreach, all in one spot.</h3>
@@ -515,16 +518,17 @@ export default function LandingPage() {
                 </div>
               </div>
               <div>
-                <div className="relative aspect-[3/2] rounded-xl shadow-2xl overflow-hidden border border-border/20">
-                  <Image 
-                    src="https://placehold.co/1200x900.png" 
-                    alt="ProspectFlow automations illustration" 
-                    layout="fill"
-                    objectFit="cover"
-                    className="bg-muted"
-                    data-ai-hint="workflow automation app" 
+                <AnimatedSectionImage
+                    src="https://placehold.co/1200x900.png"
+                    alt="ProspectFlow automations illustration"
+                    layout="responsive"
+                    width={1200}
+                    height={900}
+                    className="rounded-xl bg-muted object-cover"
+                    data-ai-hint="workflow automation app"
+                    animationDirection="up"
+                    wrapperClassName="relative aspect-[4/3] rounded-xl shadow-2xl overflow-hidden border border-border/20"
                   />
-                </div>
               </div>
             </div>
           </div>
@@ -741,4 +745,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
