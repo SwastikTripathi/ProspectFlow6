@@ -12,7 +12,9 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarSeparator,
+  useSidebar, // Import useSidebar
 } from '@/components/ui/sidebar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'; // Import Tooltip components
 import type { JobOpening } from '@/lib/types';
 
 interface NavItem {
@@ -35,6 +37,7 @@ interface SidebarNavProps {
 
 export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
   const pathname = usePathname();
+  const { state: sidebarState, isMobile } = useSidebar(); // Get sidebar state
 
   const renderNavItems = (items: NavItem[], groupLabel?: string) => (
     <SidebarGroup>
@@ -54,7 +57,7 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
                 aria-disabled={item.disabled}
                 tabIndex={item.disabled ? -1 : undefined}
                 onClick={(e) => item.disabled && e.preventDefault()}
-                tooltip={item.label}
+                tooltip={item.label} // Standard tooltip for collapsed state
               >
                 <a>
                   <item.icon />
@@ -83,39 +86,39 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
                 {favoriteJobOpenings.map((opening) => {
                   const favoriteDisplayName = `${opening.role_title} @ ${opening.company_name_cache}`;
                   return (
-                    <SidebarMenuItem key={opening.id} className="relative group/favorite-item">
-                      <Link href={`/job-openings?view=${opening.id}`} passHref legacyBehavior>
-                        <SidebarMenuButton
-                          asChild
-                          tooltip={favoriteDisplayName} 
-                          className="w-full"
-                        >
-                          <a className="flex items-center w-full overflow-hidden">
-                            <Star className="text-yellow-500 fill-yellow-400 flex-shrink-0" />
-                            <span className="truncate group-data-[collapsible=icon]:hidden ml-2">
+                    <SidebarMenuItem key={opening.id} className="group/favorite-item">
+                      <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Link href={`/job-openings?view=${opening.id}`} passHref legacyBehavior>
+                              <SidebarMenuButton
+                                asChild
+                                // Pass tooltip object for SidebarMenuButton's internal collapsed state handling
+                                tooltip={isMobile ? undefined : { children: favoriteDisplayName, side: "right", align: "center" }}
+                                className="w-full"
+                              >
+                                <a className="flex items-center w-full overflow-hidden">
+                                  <Star className="text-yellow-500 fill-yellow-400 flex-shrink-0" />
+                                  <span className="truncate group-data-[collapsible=icon]:hidden ml-2">
+                                    {favoriteDisplayName}
+                                  </span>
+                                </a>
+                              </SidebarMenuButton>
+                            </Link>
+                          </TooltipTrigger>
+                          {/* This TooltipContent is for the EXPANDED sidebar state hover */}
+                          {!isMobile && sidebarState === 'expanded' && (
+                            <TooltipContent
+                              side="bottom"
+                              align="start"
+                              className="whitespace-normal max-w-[calc(var(--sidebar-width)-2rem)] z-30 bg-popover text-popover-foreground"
+                              sideOffset={5}
+                            >
                               {favoriteDisplayName}
-                            </span>
-                            <span className="sr-only group-data-[collapsible=expanded]:hidden">
-                              {favoriteDisplayName}
-                            </span>
-                          </a>
-                        </SidebarMenuButton>
-                      </Link>
-                      {/* Custom tooltip for expanded sidebar */}
-                      <div
-                        className={cn(
-                          "absolute left-2 right-2 top-full z-20 mt-1 p-2",
-                          "bg-popover text-popover-foreground shadow-lg rounded-md text-xs",
-                          "opacity-0 invisible pointer-events-none", 
-                          // Show when sidebar ('peer') is expanded AND this item ('group/favorite-item') is hovered
-                          "group-data-[state=expanded]/peer:group-hover/favorite-item:opacity-100",
-                          "group-data-[state=expanded]/peer:group-hover/favorite-item:visible",
-                          "group-data-[state=expanded]/peer:group-hover/favorite-item:pointer-events-auto",
-                          "transition-opacity duration-150 ease-in-out"
-                        )}
-                      >
-                        {favoriteDisplayName}
-                      </div>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
                     </SidebarMenuItem>
                   );
                 })}
