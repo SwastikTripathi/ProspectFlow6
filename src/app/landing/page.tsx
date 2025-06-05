@@ -110,7 +110,7 @@ function HeroVisual() {
       cardTypeIcon: Briefcase,
       details: [
         { icon: UserIcon, text: 'Contact: Jane Doe' },
-        { icon: CalendarDays, text: 'Next Follow-up: Nov 5' }
+        { icon: CalendarDays, text: 'Next Follow-up: Nov 5', highlight: 'red-alert' }
       ]
     },
     {
@@ -127,7 +127,7 @@ function HeroVisual() {
       ]
     },
     {
-      title: 'Data Analyst', // Changed from duplicate
+      title: 'Data Analyst', 
       contextLine: 'Acme Corp.',
       status: 'Applied',
       statusColor: 'bg-blue-500 text-blue-50 border-transparent',
@@ -136,7 +136,7 @@ function HeroVisual() {
       cardTypeIcon: Briefcase,
       details: [
         { icon: UserIcon, text: 'Contact: Sarah Lee' },
-        { icon: CalendarDays, text: 'Next Follow-up: Nov 12' }
+        { icon: CalendarDays, text: 'Next Follow-up: Nov 5', highlight: 'red-alert' }
       ]
     },
     {
@@ -192,10 +192,20 @@ function HeroVisual() {
                       <div className="space-y-1 pt-1">
                         {card.details.map((detail, detailIndex) => {
                           const DetailIcon = detail.icon;
+                          const isRedAlert = detail.highlight === 'red-alert';
                           return (
-                            <div key={detailIndex} className={cn("flex text-xs text-muted-foreground", detail.className ? "items-start" : "items-center")}>
+                            <div
+                              key={detailIndex}
+                              className={cn(
+                                "flex text-xs",
+                                isRedAlert ? "bg-destructive text-destructive-foreground px-2 py-1 rounded-md items-center" : "text-muted-foreground items-start",
+                                detail.className && !isRedAlert ? "items-start" : "items-center"
+                              )}
+                            >
                               <DetailIcon className="mr-1.5 h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-                              <span className={cn("min-w-0", detail.className ? detail.className : "truncate")}>{detail.text}</span>
+                              <span className={cn("min-w-0", detail.className && !isRedAlert ? detail.className : "truncate", isRedAlert ? "font-semibold" : "")}>
+                                {detail.text}
+                              </span>
                             </div>
                           );
                         })}
@@ -750,7 +760,7 @@ export default function LandingPage() {
             <div className="max-w-3xl mx-auto">
               <Accordion type="single" collapsible className="w-full">
                 {faqData.map((faq, index) => (
-                  <AccordionItem value={`item-${index + 1}`} key={index} className="border-b">
+                  <AccordionItem value={`item-${index + 1}`} key={index} className="border-b bg-transparent shadow-none rounded-none">
                     <AccordionTrigger className="px-0 py-4 text-left font-semibold text-foreground hover:no-underline">
                       {faq.question}
                     </AccordionTrigger>
@@ -835,3 +845,4 @@ export default function LandingPage() {
     </div>
   );
 }
+
