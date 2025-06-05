@@ -4,24 +4,26 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams, notFound, useRouter } from 'next/navigation'; // Added useRouter
+import { useParams, notFound, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import type { Tables } from '@/lib/database.types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, CalendarDays, UserCircle as UserIcon, Edit3, Trash2 } from 'lucide-react'; // Added Edit3, Trash2
+import { Loader2, ArrowLeft, CalendarDays, UserCircle as UserIcon, Edit3, Trash2, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Logo } from '@/components/icons/Logo';
 import { Around } from "@theme-toggles/react";
 import "@theme-toggles/react/css/Around.css";
-import { cn } from '@/lib/utils';
+import { cn, slugify } from '@/lib/utils';
 import { Facebook, Twitter, Youtube, Linkedin, Globe } from 'lucide-react';
-import type { User } from '@supabase/supabase-js'; // Added for user check
-import { OWNER_EMAIL } from '@/lib/config'; // Added for owner email
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'; // Added for delete confirmation
-import { useToast } from '@/hooks/use-toast'; // Added for toast
+import type { User } from '@supabase/supabase-js';
+import { OWNER_EMAIL } from '@/lib/config';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { TableOfContents, type TocItem } from '../components/TableOfContents'; // New import
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // For Author Bio
 
 type PostWithAuthor = Tables<'posts'>;
 
@@ -63,6 +65,7 @@ export default function BlogPostPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [tocItems, setTocItems] = useState<TocItem[]>([]);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -111,7 +114,7 @@ export default function BlogPostPage() {
           .single();
 
         if (dbError) {
-          if (dbError.code === 'PGRST116') { // Not found
+          if (dbError.code === 'PGRST116') { 
             notFound();
           }
           throw dbError;
@@ -127,6 +130,28 @@ export default function BlogPostPage() {
 
     fetchPost();
   }, [slug]);
+
+  useEffect(() => {
+    if (post?.content) {
+      const newTocItems: TocItem[] = [];
+      const headingRegex = /^(#{1,4})\s+(.*)/gm; // Matches H1 to H4
+      let match;
+      const tempContent = post.content.replace(/```[\s\S]*?```/g, ''); // Remove code blocks
+
+      while ((match = headingRegex.exec(tempContent)) !== null) {
+        const level = match[1].length;
+        const text = match[2].trim();
+        const id = slugify(text);
+        if (text) { // Ensure heading text is not empty
+            newTocItems.push({ id, level, text });
+        }
+      }
+      setTocItems(newTocItems);
+    } else {
+      setTocItems([]);
+    }
+  }, [post?.content, slug]);
+
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -168,7 +193,22 @@ export default function BlogPostPage() {
     }
   };
 
-  if (isLoading) {
+  const headingRenderer = (level: number) => ({ node, children, ...props }: any) => {
+    const text = node.children.map((child: any) => child.value || '').join('');
+    const id = slugify(text);
+    return React.createElement(`h${level}`, { id, ...props }, children);
+  };
+  
+  const markdownComponents = {
+    h1: headingRenderer(1),
+    h2: headingRenderer(2),
+    h3: headingRenderer(3),
+    h4: headingRenderer(4),
+    h5: headingRenderer(5),
+    h6: headingRenderer(6),
+  };
+
+  if (isLoading && !post) { // Changed condition to only show full page loader if post is not yet available
     return (
       <div className="flex flex-col min-h-screen">
         <div className="flex-grow flex justify-center items-center py-20">
@@ -245,86 +285,128 @@ export default function BlogPostPage() {
       </header>
 
       <main className="flex-1 py-12 md:py-16">
-        <div className="container mx-auto px-[5vw] md:px-[10vw] max-w-4xl">
-          <div className="mb-8 flex justify-between items-center">
-            <Button variant="outline" asChild className="group">
-              <Link href="/blog">
-                <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-                Back to Blog
-              </Link>
-            </Button>
-            {isOwner && (
-              <div className="flex gap-2">
-                <Button variant="outline" asChild>
-                  <Link href={`/blog/edit/${post.slug}`}>
-                    <Edit3 className="mr-2 h-4 w-4" /> Edit
-                  </Link>
+        <div className="container mx-auto px-[5vw] md:px-[10vw] max-w-6xl"> {/* Max width increased for two columns */}
+            <div className="mb-8 flex justify-between items-center">
+                <Button variant="outline" asChild className="group">
+                <Link href="/blog">
+                    <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                    Back to Blog
+                </Link>
                 </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={isDeleting}>
-                      {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                      Delete
+                {isOwner && (
+                <div className="flex gap-2">
+                    <Button variant="outline" asChild>
+                    <Link href={`/blog/edit/${post.slug}`}>
+                        <Edit3 className="mr-2 h-4 w-4" /> Edit
+                    </Link>
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the post "{post.title}".
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDeletePost} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Confirm Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            )}
-          </div>
-
-
-          <article>
-            <header className="mb-8">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 font-headline text-foreground">
-                {post.title}
-              </h1>
-              <div className="flex items-center space-x-3 text-sm text-muted-foreground">
-                <div className="flex items-center">
-                  <UserIcon className="mr-1.5 h-4 w-4" />
-                  <span>{post.author_name_cache || 'ProspectFlow Team'}</span>
+                    <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" disabled={isDeleting}>
+                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                        Delete
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the post "{post.title}".
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeletePost} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                            {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Confirm Delete
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                    </AlertDialog>
                 </div>
-                <div className="flex items-center">
-                  <CalendarDays className="mr-1.5 h-4 w-4" />
-                  <span>{displayDate}</span>
-                </div>
-              </div>
-            </header>
-
-            {post.cover_image_url && (
-              <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden shadow-lg mb-8">
-                <Image
-                  src={post.cover_image_url}
-                  alt={post.title || 'Blog post cover image'}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover"
-                  priority
-                  data-ai-hint="article content visual"
-                />
-              </div>
-            )}
-
-            <div className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-headline prose-headings:text-foreground prose-p:text-foreground/90 prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground prose-blockquote:border-primary prose-blockquote:text-muted-foreground prose-code:bg-muted prose-code:text-foreground prose-code:p-1 prose-code:rounded-sm prose-code:font-code">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {post.content}
-              </ReactMarkdown>
+                )}
             </div>
-          </article>
+
+            <div className="lg:grid lg:grid-cols-[260px_1fr] lg:gap-10 xl:gap-16"> {/* Two column layout */}
+                <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-12rem)] overflow-y-auto pr-4 border-r border-border/60 py-2">
+                    <TableOfContents tocItems={tocItems} isLoading={isLoading} />
+                </aside>
+
+                <div className="min-w-0"> {/* Main article content column */}
+                    <article>
+                        <header className="mb-8">
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 font-headline text-foreground">
+                            {post.title}
+                        </h1>
+                        <div className="flex items-center space-x-3 text-sm text-muted-foreground">
+                            <div className="flex items-center">
+                            <UserIcon className="mr-1.5 h-4 w-4" />
+                            <span>{post.author_name_cache || 'ProspectFlow Team'}</span>
+                            </div>
+                            <div className="flex items-center">
+                            <CalendarDays className="mr-1.5 h-4 w-4" />
+                            <span>{displayDate}</span>
+                            </div>
+                        </div>
+                        </header>
+
+                        {post.cover_image_url && (
+                        <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden shadow-lg mb-8">
+                            <Image
+                            src={post.cover_image_url}
+                            alt={post.title || 'Blog post cover image'}
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            className="object-cover"
+                            priority
+                            data-ai-hint="article content visual"
+                            />
+                        </div>
+                        )}
+
+                        <div className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-headline prose-headings:text-foreground prose-p:text-foreground/90 prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground prose-blockquote:border-primary prose-blockquote:text-muted-foreground prose-code:bg-muted prose-code:text-foreground prose-code:p-1 prose-code:rounded-sm prose-code:font-code">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                            {post.content}
+                        </ReactMarkdown>
+                        </div>
+                    </article>
+
+                    {/* CTA Section */}
+                    <section className="mt-12 py-10 border-t border-border">
+                        <p className="text-lg text-center text-muted-foreground mb-6">
+                        Eager to test it all out? If you liked what you heard out of ProspectFlow&apos;s features, you can poke around the software by signing up for a free trial.
+                        </p>
+                        <div className="flex justify-center">
+                        <Button size="lg" asChild className="shadow-md rounded-full">
+                            <Link href="/auth?action=signup">
+                            START YOUR FREE 14-DAY TRIAL <ArrowRight className="ml-2 h-5 w-5" />
+                            </Link>
+                        </Button>
+                        </div>
+                    </section>
+
+                    {/* Author Bio Section */}
+                    <section className="mt-10 py-8 border-t border-border">
+                        <div className="flex items-start gap-6">
+                        <Avatar className="h-20 w-20 flex-shrink-0">
+                            <AvatarImage src="https://placehold.co/80x80.png" alt={post.author_name_cache || "Author"} data-ai-hint="professional portrait" />
+                            <AvatarFallback>{post.author_name_cache ? post.author_name_cache.substring(0,2).toUpperCase() : "AU"}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <p className="text-sm text-muted-foreground mb-1">Article written by</p>
+                            <h4 className="text-xl font-bold font-headline text-foreground mb-2">{post.author_name_cache || 'ProspectFlow Team'}</h4>
+                            <p className="text-muted-foreground text-sm leading-relaxed">
+                            {post.author_name_cache === 'Swastik Tripathi' 
+                             ? "Founder of ProspectFlow. Passionate about helping professionals connect and achieve their goals through streamlined outreach and productivity tools." 
+                             : "A valued contributor to the ProspectFlow blog, sharing insights on professional development and outreach strategies."
+                            }
+                            </p>
+                            {/* Add social links here if available, e.g., <X className="h-4 w-4 text-muted-foreground mt-2" /> */}
+                        </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
         </div>
       </main>
       
