@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,9 @@ import { Logo } from '@/components/icons/Logo';
 import { Badge } from '@/components/ui/badge'; 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AnimatedSectionImage } from '@/components/utils/AnimatedSectionImage';
+import { Around } from "@theme-toggles/react";
+import "@theme-toggles/react/css/Around.css";
+import { cn } from '@/lib/utils';
 
 const features = [
   {
@@ -247,6 +250,25 @@ const AnimatedWordsSection = () => {
 
 
 export default function LandingPage() {
+  const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const initialTheme = storedTheme || (systemPrefersDark ? 'dark' : 'light');
+    setTheme(initialTheme);
+    document.documentElement.classList.toggle('dark', initialTheme === 'dark');
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme(prevTheme => {
+      const newTheme = prevTheme === 'light' ? 'dark' : 'light';
+      document.documentElement.classList.toggle('dark', newTheme === 'dark');
+      localStorage.setItem('theme', newTheme);
+      return newTheme;
+    });
+  };
+
   const fourReasons = [
     {
       icon: Zap,
@@ -333,6 +355,17 @@ export default function LandingPage() {
             <Button variant="ghost" asChild className="rounded-full">
               <Link href="#">About</Link>
             </Button>
+            <Around
+              toggled={theme === 'dark'}
+              onClick={toggleTheme}
+              title="Toggle theme"
+              aria-label="Toggle theme"
+              className={cn(
+                "theme-toggle text-foreground/70 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+                "h-7 w-7 p-0.5" 
+              )}
+              style={{ '--theme-toggle__around--duration': '500ms' } as React.CSSProperties}
+            />
             <Button variant="ghost" asChild className="rounded-full">
               <Link href="/auth">Sign In</Link>
             </Button>
@@ -535,7 +568,7 @@ export default function LandingPage() {
         </section>
         
         <section className="py-16 md:py-24 bg-secondary/50">
-          <div className="container mx-auto px-[10vw] mb-12 md:mb-16"> {/* Apply vw padding here */}
+          <div className="container px-[10vw] mb-12 md:mb-16">
             <div className="grid md:grid-cols-2 gap-10 items-center">
               <div>
                 <h2 className="text-3xl md:text-4xl font-bold mb-4 font-headline text-foreground">
@@ -555,7 +588,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="container mx-auto px-[10vw]"> {/* Apply vw padding here too */}
+          <div className="container px-[10vw]">
             <div className="grid md:grid-cols-3 gap-0 text-left max-w-6xl mx-auto border border-border rounded-lg overflow-hidden">
               {newTestimonialsData.map((testimonial, index) => ( 
                 <div 
@@ -573,7 +606,7 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
-            <div className="text-center"> {/* Centering the button */}
+            <div className="text-center"> 
                 <Button size="lg" className="mt-12 text-base px-8 py-6 shadow-md rounded-full" asChild>
                 <Link href="/auth?action=signup">Discover How ProspectFlow Can Help You <ArrowRight className="ml-2 h-5 w-5" /></Link>
                 </Button>
