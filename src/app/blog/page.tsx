@@ -9,8 +9,8 @@ import { PostCard } from './components/PostCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Loader2, Rss, Search as SearchIcon, XCircle, ArrowRight } from 'lucide-react'; // Added ArrowRight here
-import { PublicNavbar } from '@/components/layout/PublicNavbar'; // Corrected path
+import { Loader2, Rss, Search as SearchIcon, XCircle, ArrowRight } from 'lucide-react';
+import { PublicNavbar } from '@/components/layout/PublicNavbar';
 import { cn } from '@/lib/utils';
 
 
@@ -37,7 +37,6 @@ export default function BlogPage() {
 
         if (dbError) {
           console.error("Supabase error fetching posts:", dbError);
-          // Construct a more detailed error message
           const message = `Database error: ${dbError.message} (Code: ${dbError.code}). Hint: ${dbError.hint || 'No hint'}. Details: ${dbError.details || 'No details'}`;
           throw new Error(message);
         }
@@ -68,14 +67,14 @@ export default function BlogPage() {
     }
   }, [searchTerm, allPosts]);
   
-  const firstPost = filteredPosts.length > 0 ? filteredPosts[0] : null;
-  const remainingPosts = filteredPosts.length > 0 ? filteredPosts.slice(1) : [];
+  const firstPostToDisplay = filteredPosts.length > 0 ? filteredPosts[0] : null;
+  const remainingPostsToDisplay = filteredPosts.length > 1 ? filteredPosts.slice(1) : [];
 
   // Conditions for rendering different states
   const showInitialLoading = isLoading;
   const showErrorState = !isLoading && error;
-  const showNoPostsPublishedState = !isLoading && !error && allPosts.length === 0 && searchTerm === '';
-  const showContentArea = !isLoading && !error && !showNoPostsPublishedState;
+  const showNoPostsPublishedEverState = !isLoading && !error && allPosts.length === 0 && searchTerm === '';
+  const showContentArea = !isLoading && !error && !showNoPostsPublishedEverState;
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-background to-secondary/10">
@@ -102,29 +101,30 @@ export default function BlogPage() {
               <p>Error loading posts: {error}</p>
               <Button onClick={() => window.location.reload()} className="mt-4">Try Again</Button>
             </div>
-          ) : showNoPostsPublishedState ? (
+          ) : showNoPostsPublishedEverState ? (
             <div className="text-center text-muted-foreground py-20">
               <p className="text-xl mb-4">No blog posts published yet.</p>
               <p>Check back soon for updates!</p>
             </div>
           ) : (
-            // showContentArea is true here
+            // showContentArea is true here, meaning allPosts.length > 0 OR searchTerm is active
             <>
               <div className="grid md:grid-cols-3 gap-8 mb-12 items-start">
-                {/* Column for the first post OR "no search results" message */}
                 <div className="md:col-span-2">
-                  {firstPost ? (
-                    <PostCard post={firstPost} />
-                  ) : (searchTerm !== '' && filteredPosts.length === 0) ? ( 
-                    // This block renders if search is active and yields no results for the firstPost slot
+                  {firstPostToDisplay ? (
+                    <PostCard post={firstPostToDisplay} />
+                  ) : (
+                    // This means filteredPosts is empty.
+                    // Since showNoPostsPublishedEverState is false, it means allPosts.length > 0.
+                    // Therefore, searchTerm must be active and yielded no results.
                     <div className="text-center text-muted-foreground py-10 md:py-20 border border-border/40 border-dashed rounded-lg h-full flex flex-col justify-center items-center bg-card shadow-sm">
                       <p className="text-xl mb-4">No posts match your search criteria.</p>
                       <p>Try a different search term or clear your search.</p>
                     </div>
-                  ) : null}
+                  )}
                 </div>
 
-                {/* Column for Search, Promotion, CTA - always visible in this content area */}
+                {/* Column for Search, Promotion, CTA - this should always be rendered if showContentArea is true */}
                 <div className="md:col-span-1 space-y-6">
                      <Card className="shadow-md">
                         <CardHeader>
@@ -172,10 +172,9 @@ export default function BlogPage() {
                   </div>
               </div>
               
-              {/* Grid for remaining posts (if any) */}
-              {remainingPosts.length > 0 && (
+              {remainingPostsToDisplay.length > 0 && (
                 <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                  {remainingPosts.map((post) => (
+                  {remainingPostsToDisplay.map((post) => (
                     <PostCard key={post.id} post={post} />
                   ))}
                 </div>
