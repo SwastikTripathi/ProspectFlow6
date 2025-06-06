@@ -14,6 +14,8 @@ import { AnimatedSectionImage } from '@/components/utils/AnimatedSectionImage';
 import { PublicNavbar } from '@/components/layout/PublicNavbar';
 import { PublicFooter } from '@/components/layout/PublicFooter'; // Added import
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 const newTestimonialsData = [
   {
@@ -84,7 +86,8 @@ function HeroVisual() {
       details: [
         { icon: UserIcon, text: 'Contact: Jane Doe' },
         { icon: CalendarDays, text: 'Next Follow-up: Nov 5', highlight: 'red-alert' }
-      ]
+      ],
+      tooltipText: "Track job applications. Never miss a follow-up and manage status all in one place."
     },
     {
       title: 'Alex Chen',
@@ -97,7 +100,8 @@ function HeroVisual() {
       details: [
         { icon: Mail, text: 'alex.c@innovate.com' },
         { icon: Info, text: 'Loves coffee', className: 'italic break-words min-w-0' }
-      ]
+      ],
+      tooltipText: "Manage professional contacts. Store details and notes to build stronger connections."
     },
      {
       title: 'Data Analyst',
@@ -110,7 +114,8 @@ function HeroVisual() {
        details: [
         { icon: UserIcon, text: 'Contact: Sarah Lee' },
         { icon: CalendarDays, text: 'Next Follow-up: Nov 5', highlight: 'red-alert' }
-      ]
+      ],
+      tooltipText: "Keep your job search organized. See key contact info and crucial follow-up dates at a glance."
     },
     {
       title: 'Tech Solutions Ltd.',
@@ -123,7 +128,8 @@ function HeroVisual() {
       details: [
         { icon: Globe, text: 'techsolutions.com' },
         { icon: Users, text: '3 Contacts Tracked'}
-      ]
+      ],
+      tooltipText: "Organize target companies. Track websites, associated contacts, and important notes."
     },
   ];
 
@@ -131,74 +137,82 @@ function HeroVisual() {
     <div className="mt-12 lg:mt-20">
       <div className="relative max-w-5xl mx-auto p-1 bg-card rounded-xl shadow-2xl border border-border/20 overflow-hidden">
         <div className="p-4 sm:p-5 lg:p-6 bg-background rounded-[0.6rem]">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {mockCardsData.map((card, index) => {
-              const CardTypeIconComponent = card.cardTypeIcon;
-              return (
-                <div
-                  key={index}
-                  className="bg-card p-3 rounded-lg shadow-md border border-border/50 hover:shadow-lg transition-shadow flex flex-col"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <Badge variant="secondary" className={`text-xs ${card.statusColor}`}>{card.status}</Badge>
-                    <CardTypeIconComponent className="h-4 w-4 text-muted-foreground" />
-                  </div>
+          <TooltipProvider delayDuration={0}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              {mockCardsData.map((card, index) => {
+                const CardTypeIconComponent = card.cardTypeIcon;
+                return (
+                  <Tooltip key={index}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className="bg-card p-3 rounded-lg shadow-md border border-border/50 hover:shadow-xl hover:scale-105 transition-all duration-200 flex flex-col"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <Badge variant="secondary" className={`text-xs ${card.statusColor}`}>{card.status}</Badge>
+                          <CardTypeIconComponent className="h-4 w-4 text-muted-foreground" />
+                        </div>
 
-                  <div className="flex flex-col flex-grow space-y-1.5">
-                     <div className="flex items-start">
-                       <Image
-                        src={card.avatar}
-                        alt={card.title}
-                        width={28}
-                        height={28}
-                        className="rounded-full mr-2 border border-border/20 flex-shrink-0 mt-0.5"
-                        data-ai-hint={card.dataAiHint}
-                      />
-                      <div className="flex-grow min-w-0 text-left">
-                        <h4 className="text-sm font-semibold text-card-foreground truncate leading-tight">{card.title}</h4>
-                        {card.contextLine && (
-                          <p className="text-xs text-muted-foreground truncate -mt-1">{card.contextLine}</p>
-                        )}
-                      </div>
-                    </div>
-                    {card.details && card.details.length > 0 && (
-                      <div className="space-y-1 pt-1">
-                        {card.details.map((detail, detailIndex) => {
-                          const DetailIcon = detail.icon;
-                           const isRedAlert = detail.highlight === 'red-alert';
-                           return (
-                            <div
-                              key={detailIndex}
-                              className={cn(
-                                "flex text-xs items-center",
-                                isRedAlert
-                                  ? "border border-destructive px-2 py-1 rounded-md"
-                                  : "",
-                                detail.className
+                        <div className="flex flex-col flex-grow space-y-1.5">
+                          <div className="flex items-start">
+                            <Image
+                              src={card.avatar}
+                              alt={card.title}
+                              width={28}
+                              height={28}
+                              className="rounded-full mr-2 border border-border/20 flex-shrink-0 mt-0.5"
+                              data-ai-hint={card.dataAiHint}
+                            />
+                            <div className="flex-grow min-w-0 text-left">
+                              <h4 className="text-sm font-semibold text-card-foreground truncate leading-tight">{card.title}</h4>
+                              {card.contextLine && (
+                                <p className="text-xs text-muted-foreground truncate -mt-1">{card.contextLine}</p>
                               )}
-                            >
-                              <DetailIcon className={cn(
-                                "mr-1.5 h-3.5 w-3.5 flex-shrink-0",
-                                isRedAlert ? "text-destructive" : "text-muted-foreground"
-                                )}
-                              />
-                              <span className={cn(
-                                "min-w-0",
-                                isRedAlert ? "text-muted-foreground" : "text-muted-foreground truncate",
-                                detail.className
-                              )}>
-                                {detail.text}
-                              </span>
                             </div>
-                          );
-                        })}
+                          </div>
+                          {card.details && card.details.length > 0 && (
+                            <div className="space-y-1 pt-1">
+                              {card.details.map((detail, detailIndex) => {
+                                const DetailIcon = detail.icon;
+                                const isRedAlert = detail.highlight === 'red-alert';
+                                return (
+                                  <div
+                                    key={detailIndex}
+                                    className={cn(
+                                      "flex text-xs items-center",
+                                      isRedAlert
+                                        ? "border border-destructive px-2 py-1 rounded-md"
+                                        : "",
+                                      detail.className
+                                    )}
+                                  >
+                                    <DetailIcon className={cn(
+                                      "mr-1.5 h-3.5 w-3.5 flex-shrink-0",
+                                      isRedAlert ? "text-destructive" : "text-muted-foreground"
+                                      )}
+                                    />
+                                    <span className={cn(
+                                      "min-w-0",
+                                      isRedAlert ? "text-muted-foreground" : "text-muted-foreground truncate",
+                                      detail.className
+                                    )}>
+                                      {detail.text}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs text-center">
+                      <p>{card.tooltipText}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </div>
+          </TooltipProvider>
         </div>
       </div>
     </div>
