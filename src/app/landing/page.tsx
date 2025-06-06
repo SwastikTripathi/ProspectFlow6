@@ -303,7 +303,7 @@ export default function LandingPage() {
                 <Button
                   size="lg"
                   variant="link"
-                  className="text-lg px-8 py-6 w-full sm:w-auto rounded-full text-muted-foreground underline underline-offset-4 hover:text-primary/90 hover:decoration-primary/90"
+                  className="text-lg px-8 py-6 w-full sm:w-auto rounded-full text-muted-foreground hover:underline hover:underline-offset-4 hover:text-primary/90 hover:decoration-primary/90"
                   asChild
                 >
                   <Link href="#streamline-section">Explore Features</Link>
@@ -592,3 +592,4 @@ export default function LandingPage() {
     </div>
   );
 }
+
