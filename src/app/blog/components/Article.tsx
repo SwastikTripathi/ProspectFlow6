@@ -3,7 +3,6 @@
 
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
-// Ensure this is imported in globals.css or here <-- REMOVED FROM HERE
 import { cn } from '@/lib/utils';
 
 interface ArticleProps {
@@ -11,26 +10,26 @@ interface ArticleProps {
   className?: string;
 }
 
-// Define NAVBAR_HEIGHT_OFFSET here as well if not globally accessible,
-// or ideally pass it as a prop if it can vary. For simplicity now, hardcoded.
 const NAVBAR_HEIGHT_OFFSET = 80;
 
 export default function Article({ content, className }: ArticleProps) {
   return (
-    <article 
+    <article
       className={cn(
-        "prose prose-medium lg:prose-xl dark:prose-invert font-sans break-words",
-        // Specific overrides based on the user's image of a Medium-like article
-        "prose-p:text-gray-700 prose-p:dark:text-gray-300 prose-p:leading-relaxed prose-p:text-base md:prose-p:text-[1.05rem]", 
+        "prose prose-medium lg:prose-xl dark:prose-invert break-words", // Removed font-sans, will inherit Inter from body
+        // Specific overrides for typography elements
+        "prose-p:text-gray-700 prose-p:dark:text-gray-300 prose-p:leading-relaxed prose-p:text-base md:prose-p:text-[1.05rem] prose-p:mb-5", // Added mb-5 for paragraph spacing
         "prose-headings:text-gray-900 prose-headings:dark:text-gray-100",
-        "prose-h1:text-3xl prose-h1:sm:text-4xl prose-h1:md:text-[2.5rem] prose-h1:font-bold prose-h1:tracking-tight prose-h1:leading-tight prose-h1:mb-3", // Matching title style from image
-        "prose-h2:text-2xl prose-h2:md:text-3xl prose-h2:font-bold prose-h2:mt-10 prose-h2:mb-4", // Styling for "Step X" headings
-        "prose-h3:text-xl prose-h3:md:text-2xl prose-h3:font-semibold prose-h3:mt-8 prose-h3:mb-3",
-        "prose-h4:text-lg prose-h4:md:text-xl prose-h4:font-semibold prose-h4:mt-6 prose-h4:mb-2",
-        "prose-a:text-sky-600 prose-a:dark:text-sky-500 prose-a:no-underline hover:prose-a:underline", // Link styling
-        "prose-blockquote:border-l-primary prose-blockquote:text-gray-600 prose-blockquote:dark:text-gray-400 prose-blockquote:pl-4 prose-blockquote:italic",
+        "prose-h1:text-3xl prose-h1:sm:text-4xl prose-h1:md:text-[2.5rem] prose-h1:font-bold prose-h1:tracking-tight prose-h1:leading-tight prose-h1:mt-12 prose-h1:mb-6", // Adjusted margins
+        "prose-h2:text-2xl prose-h2:md:text-3xl prose-h2:font-bold prose-h2:mt-12 prose-h2:mb-5", // Adjusted margins
+        "prose-h3:text-xl prose-h3:md:text-2xl prose-h3:font-semibold prose-h3:mt-10 prose-h3:mb-4", // Adjusted margins
+        "prose-h4:text-lg prose-h4:md:text-xl prose-h4:font-semibold prose-h4:mt-8 prose-h4:mb-3", // Adjusted margins
+        "prose-ul:my-6 prose-ul:list-disc prose-ul:pl-6 prose-ol:my-6 prose-ol:list-decimal prose-ol:pl-6", // Added list styling and spacing
+        "prose-li:my-2 prose-li:leading-relaxed", // Added list item spacing
+        "prose-a:text-sky-600 prose-a:dark:text-sky-500 prose-a:no-underline hover:prose-a:underline",
+        "prose-blockquote:border-l-primary prose-blockquote:text-gray-600 prose-blockquote:dark:text-gray-400 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:my-6",
         "prose-code:bg-gray-100 prose-code:dark:bg-gray-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-normal",
-        "prose-pre:bg-gray-900 prose-pre:dark:bg-gray-900 prose-pre:text-gray-100 prose-pre:dark:text-gray-200 prose-pre:p-4 prose-pre:rounded-md prose-pre:overflow-x-auto",
+        "prose-pre:bg-gray-900 prose-pre:dark:bg-gray-900 prose-pre:text-gray-100 prose-pre:dark:text-gray-200 prose-pre:p-4 prose-pre:rounded-md prose-pre:overflow-x-auto prose-pre:my-6",
         className
       )}
     >
