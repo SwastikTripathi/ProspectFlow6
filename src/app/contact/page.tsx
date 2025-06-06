@@ -4,7 +4,7 @@
 import { PublicNavbar } from '@/components/layout/PublicNavbar';
 import { PublicFooter } from '@/components/layout/PublicFooter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, Users, MessageSquareQuestion } from 'lucide-react';
+import { Mail, Users, MessageSquareQuote } from 'lucide-react'; // Corrected Icon
 import Link from 'next/link';
 
 export default function ContactPage() {
@@ -70,7 +70,7 @@ export default function ContactPage() {
             </Card>
           </div>
            <div className="text-center mt-16">
-             <MessageSquareQuestion className="h-12 w-12 text-primary mx-auto mb-4" />
+             <MessageSquareQuote className="h-12 w-12 text-primary mx-auto mb-4" />
              <h2 className="text-2xl font-semibold font-headline mb-3">Have Other Questions?</h2>
              <p className="text-muted-foreground max-w-md mx-auto">
                Check out our <Link href="/blog" className="text-primary hover:underline">Blog</Link> for tips and updates, 
