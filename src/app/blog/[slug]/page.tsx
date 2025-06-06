@@ -1,29 +1,14 @@
 
 'use client';
 
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { useParams, notFound, useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
-import type { Tables } from '@/lib/database.types';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, CalendarDays, UserCircle as UserIcon, Edit3, Trash2, ArrowRight, Facebook, Twitter, Youtube, Linkedin, Globe as FooterGlobeIcon } from 'lucide-react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Logo } from '@/components/icons/Logo';
 import { Around } from "@theme-toggles/react";
 import "@theme-toggles/react/css/Around.css";
 import { cn } from '@/lib/utils';
-import type { User } from '@supabase/supabase-js';
-import { OWNER_EMAIL } from '@/lib/config';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { useToast } from '@/hooks/use-toast';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-
-type PostWithAuthor = Tables<'posts'>;
+import { Facebook, Twitter, Youtube, Linkedin, Globe as FooterGlobeIcon } from 'lucide-react';
 
 const footerLinks = {
     product: [
@@ -49,86 +34,9 @@ const footerLinks = {
     ],
 };
 
-const NAVBAR_HEIGHT_OFFSET = 80; // Approx navbar height for potential future scroll-to-offset usage
-
 export default function BlogPostPage() {
-  const params = useParams();
-  const slug = params?.slug as string | undefined;
-  const router = useRouter();
-  const { toast } = useToast();
-
-  const [post, setPost] = useState<PostWithAuthor | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isOwner, setIsOwner] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUser(user);
-      if (user && user.email === OWNER_EMAIL) {
-        setIsOwner(true);
-      } else {
-        setIsOwner(false);
-      }
-    };
-    checkUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-        const user = session?.user ?? null;
-        setCurrentUser(user);
-        if (user && user.email === OWNER_EMAIL) {
-            setIsOwner(true);
-        } else {
-            setIsOwner(false);
-        }
-    });
-
-    return () => {
-        authListener.subscription.unsubscribe();
-    };
-  }, []);
-
-
-  useEffect(() => {
-    if (!slug) {
-      setError('No slug provided.');
-      setIsLoading(false);
-      return;
-    }
-
-    const fetchPost = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const { data, error: dbError } = await supabase
-          .from('posts')
-          .select('*')
-          .eq('slug', slug)
-          .eq('status', 'published')
-          .single();
-
-        if (dbError) {
-          if (dbError.code === 'PGRST116') {
-            notFound();
-          }
-          throw dbError;
-        }
-        setPost(data);
-      } catch (err: any) {
-        setError(err.message || 'Failed to fetch post.');
-        console.error(`Error fetching post with slug "${slug}":`, err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPost();
-  }, [slug]);
-  
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -145,67 +53,6 @@ export default function BlogPostPage() {
       return newTheme;
     });
   };
-
-  const handleDeletePost = async () => {
-    if (!post || !isOwner) {
-      toast({ title: 'Error', description: 'Cannot delete post.', variant: 'destructive' });
-      return;
-    }
-    setIsDeleting(true);
-    try {
-      const { error: deleteError } = await supabase
-        .from('posts')
-        .delete()
-        .eq('id', post.id);
-
-      if (deleteError) throw deleteError;
-
-      toast({ title: 'Post Deleted', description: `"${post.title}" has been successfully deleted.` });
-      router.push('/blog');
-    } catch (error: any) {
-      toast({ title: 'Deletion Failed', description: error.message, variant: 'destructive' });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  if (isLoading && !post) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <div className="flex-grow flex justify-center items-center py-20">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <div className="flex-grow text-center text-destructive py-20">
-          <p>Error: {error}</p>
-          <Link href="/blog" passHref>
-            <Button className="mt-4">Back to Blog</Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (!post) {
-    return (
-         <div className="flex flex-col min-h-screen">
-            <div className="flex-grow text-center text-muted-foreground py-20">
-            <p>Post not found.</p>
-            <Link href="/blog" passHref>
-                <Button className="mt-4">Back to Blog</Button>
-            </Link>
-            </div>
-        </div>
-    );
-  }
-
-  const displayDate = post.published_at ? format(parseISO(post.published_at), 'PPP') : format(parseISO(post.created_at), 'PPP');
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-background to-secondary/10">
@@ -246,118 +93,8 @@ export default function BlogPostPage() {
       </header>
 
       <main className="flex-1 py-12 md:py-16">
-        <div className="container mx-auto px-[5vw] md:px-[10vw] max-w-6xl">
-            <div className="mb-8 flex justify-between items-center">
-                <Button variant="outline" asChild className="group">
-                <Link href="/blog">
-                    <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-                    Back to Blog
-                </Link>
-                </Button>
-                {isOwner && (
-                <div className="flex gap-2">
-                    <Button variant="outline" asChild>
-                    <Link href={`/blog/edit/${post.slug}`}>
-                        <Edit3 className="mr-2 h-4 w-4" /> Edit
-                    </Link>
-                    </Button>
-                    <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive" disabled={isDeleting}>
-                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                        Delete
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the post "{post.title}".
-                        </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeletePost} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                            {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Confirm Delete
-                        </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-                )}
-            </div>
-
-            <div className="min-w-0"> {/* Article Content Wrapper */}
-                <article>
-                    <header className="mb-8">
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 font-headline text-foreground">
-                        {post.title}
-                    </h1>
-                    <div className="flex items-center space-x-3 text-sm text-muted-foreground">
-                        <div className="flex items-center">
-                        <UserIcon className="mr-1.5 h-4 w-4" />
-                        <span>{post.author_name_cache || 'ProspectFlow Team'}</span>
-                        </div>
-                        <div className="flex items-center">
-                        <CalendarDays className="mr-1.5 h-4 w-4" />
-                        <span>{displayDate}</span>
-                        </div>
-                    </div>
-                    </header>
-
-                    {post.cover_image_url && (
-                    <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden shadow-lg mb-8">
-                        <Image
-                        src={post.cover_image_url}
-                        alt={post.title || 'Blog post cover image'}
-                        fill
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        className="object-cover"
-                        priority
-                        data-ai-hint="article content visual"
-                        />
-                    </div>
-                    )}
-
-                    <div 
-                        className="prose prose-lg dark:prose-invert prose-headings:font-headline prose-headings:text-foreground prose-p:text-foreground/90 prose-p:leading-relaxed prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground prose-blockquote:border-primary prose-blockquote:text-muted-foreground prose-code:bg-muted prose-code:text-foreground prose-code:p-1 prose-code:rounded-sm prose-code:font-code break-words"
-                    >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {post.content}
-                    </ReactMarkdown>
-                    </div>
-                </article>
-
-                <section className="mt-4 py-4"> {/* CTA - Reduced margin-top */}
-                    <div className="flex justify-center">
-                    <Button size="lg" asChild className="shadow-md rounded-full">
-                        <Link href="/auth?action=signup">
-                        START YOUR FREE 14-DAY TRIAL <ArrowRight className="ml-2 h-5 w-5" />
-                        </Link>
-                    </Button>
-                    </div>
-                </section>
-
-                <section className="mt-10 py-8 border-t border-border">
-                    <div className="flex items-start gap-6">
-                    <Avatar className="h-20 w-20 flex-shrink-0">
-                        <AvatarImage src="https://placehold.co/80x80.png" alt={post.author_name_cache || "Author"} data-ai-hint="professional portrait" />
-                        <AvatarFallback>{post.author_name_cache ? post.author_name_cache.substring(0,2).toUpperCase() : "AU"}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                        <p className="text-sm text-muted-foreground mb-1">Article written by</p>
-                        <h4 className="text-xl font-bold font-headline text-foreground mb-2">{post.author_name_cache || 'ProspectFlow Team'}</h4>
-                        <p className="text-muted-foreground text-sm leading-relaxed">
-                        {post.author_name_cache === 'Swastik Tripathi'
-                            ? "Founder of ProspectFlow. Passionate about helping professionals connect and achieve their goals through streamlined outreach and productivity tools."
-                            : "A valued contributor to the ProspectFlow blog, sharing insights on professional development and outreach strategies."
-                        }
-                        </p>
-                    </div>
-                    </div>
-                </section>
-            </div>
+        <div className="container mx-auto px-[5vw] md:px-[10vw] max-w-4xl">
+          {/* Content Removed */}
         </div>
       </main>
 
@@ -430,3 +167,5 @@ export default function BlogPostPage() {
     </div>
   );
 }
+
+    
