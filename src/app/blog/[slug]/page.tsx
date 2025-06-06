@@ -8,10 +8,10 @@ import { useParams, notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import type { Tables } from '@/lib/database.types';
 import { format, parseISO } from 'date-fns';
-import { Loader2, Tag, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe, ArrowRight, UserCircle2 } from 'lucide-react';
+import { Loader2, Tag, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe, ArrowRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import Article from '../components/Article'; // Keep Article component for content rendering
+import Article from '../components/Article';
 import { TableOfContents, type TocItem } from '../components/TableOfContents';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -120,16 +120,16 @@ export default function BlogPostPage() {
       return;
     }
 
-    // Generate TOC from H2 headings, as per the new image showing "Step 1", "Step 2" etc.
+    // Generate TOC from H1 headings
     const headings = Array.from(
-      mainContentRef.current.querySelectorAll('h2') 
+      mainContentRef.current.querySelectorAll('h1') 
     ) as HTMLElement[];
 
     headingElementsRef.current = headings;
 
-    const newTocItems = headings.map((heading, index) => {
+    const newTocItems = headings.map((heading) => {
       const text = heading.textContent || '';
-      const level = parseInt(heading.tagName.substring(1), 10);
+      const level = parseInt(heading.tagName.substring(1), 10); // Will be 1
       let id = heading.id;
       if (!id) {
         id = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
@@ -144,7 +144,6 @@ export default function BlogPostPage() {
   const handleScroll = useCallback(() => {
     if (!mainContentRef.current) return;
 
-    // Active heading logic
     let currentActiveIndex = -1;
     for (let i = headingElementsRef.current.length - 1; i >= 0; i--) {
         const heading = headingElementsRef.current[i];
@@ -315,7 +314,7 @@ export default function BlogPostPage() {
                 <Article content={post.content} />
               </div>
               
-              <div className="mt-8"> 
+              <div className="mt-4"> 
                  <div className="text-center mb-10 pt-4"> 
                     <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base py-3 px-6 rounded-lg shadow-md" asChild>
                         <Link href="/pricing">START YOUR FREE 14-DAY TRIAL <ArrowRight className="ml-2 h-5 w-5" /></Link>
@@ -349,7 +348,7 @@ export default function BlogPostPage() {
 
             {/* Right Column: Sticky Sidebar (TOC, Share) */}
             <div className="lg:col-span-4 order-1 lg:order-2 mb-10 lg:mb-0">
-              <div className="sticky top-24 space-y-6"> {/* sticky top-24 (6rem) is a common offset for sidebars below a main navbar */}
+              <div className="sticky top-48 space-y-6"> {/* Adjusted top-X for vertical alignment */}
                 <TableOfContents
                   tocItems={tocItems}
                   isLoading={isLoading}
