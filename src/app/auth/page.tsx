@@ -77,34 +77,54 @@ export default function AuthPage() {
 
   useEffect(() => {
     console.log('[AuthPage] useEffect for session check and auth listener. isCheckingAuth:', isCheckingAuth);
-    setIsCheckingAuth(true);
+    // Initial check for existing session
     const checkSession = async () => {
+      setIsCheckingAuth(true);
       console.log('[AuthPage] checkSession: Starting initial session check.');
       const { data: { session } } = await supabase.auth.getSession();
       console.log('[AuthPage] checkSession: supabase.auth.getSession() returned. Session:', session);
       if (session) {
         console.log(`[AuthPage] checkSession: Active session found. User: ${session.user?.id}. Redirecting to /.`);
-        router.replace('/'); // Redirect if session already exists
+        router.replace('/'); 
       } else {
         console.log('[AuthPage] checkSession: No active session found.');
-        setIsCheckingAuth(false);
+        setIsCheckingAuth(false); // Allow rendering AuthPage if no session
       }
     };
-    checkSession();
+    
+    // Supabase client might pick up session from URL fragment here before onAuthStateChange fires.
+    // If checkSession runs and doesn't find a session immediately from a fragment,
+    // onAuthStateChange is the main way to catch the SIGNED_IN event from OAuth.
+    if(!window.location.hash.includes('access_token')) { // Avoid premature redirect if it's an OAuth callback
+        checkSession();
+    } else {
+        setIsCheckingAuth(false); // If there's a hash, let onAuthStateChange handle it primarily
+    }
+
 
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log(`[AuthPage] onAuthStateChange: Event - ${event}, Session:`, session);
       if (event === 'SIGNED_IN' && session) {
         console.log(`[AuthPage] onAuthStateChange: SIGNED_IN event. User: ${session.user?.id}. Redirecting to /.`);
+        setIsCheckingAuth(false); // No longer checking, we have a session
         router.replace('/');
-      } else if (event === 'INITIAL_SESSION' && !session) {
-        setIsCheckingAuth(false);
+      } else if (event === 'INITIAL_SESSION') {
+        // This event fires after client initialization.
+        // If session is null here, and checkSession also found null, then user is truly not logged in.
+        if (!session) {
+          setIsCheckingAuth(false);
+        } else {
+          // If INITIAL_SESSION has a session, it means user was already logged in.
+           console.log(`[AuthPage] onAuthStateChange: INITIAL_SESSION with active session. User: ${session.user?.id}. Redirecting to /.`);
+           router.replace('/');
+        }
       }
       if (event === 'USER_UPDATED') {
         console.log('[AuthPage] onAuthStateChange: USER_UPDATED event.');
       }
       if (event === 'SIGNED_OUT') {
         console.log('[AuthPage] onAuthStateChange: SIGNED_OUT event.');
+        // Potentially handle sign-out specific logic if needed, though AppLayout usually handles this
       }
     });
 
@@ -131,7 +151,7 @@ export default function AuthPage() {
       } else {
         console.log('[AuthPage] handleSignIn: Sign-in successful. router.refresh() will be called. onAuthStateChange should handle redirect.');
         toast({ title: 'Signed In Successfully!'});
-        router.refresh();
+        // router.refresh(); // onAuthStateChange will handle the redirect
       }
     } catch (error: any) {
       console.error('[AuthPage] handleSignIn: Catch block error.', error);
@@ -160,7 +180,7 @@ export default function AuthPage() {
       } else if (data.session) {
         console.log('[AuthPage] handleSignUp: Sign-up successful, session created. router.refresh() will be called. onAuthStateChange should handle redirect. User:', data.user?.id);
         toast({ title: 'Account Created & Signed In!' });
-        router.refresh();
+        // router.refresh(); // onAuthStateChange will handle the redirect
       } else if (data.user && !data.session) {
         console.log('[AuthPage] handleSignUp: Sign-up successful, confirmation email sent. User:', data.user?.id);
         setShowConfirmationMessage(true);
@@ -194,7 +214,9 @@ export default function AuthPage() {
       return;
     }
     
-    const redirectURL = `${siteURL}/auth/callback`;
+    // Ensure redirectTo points to this AuthPage itself, so it can handle the session from the URL fragment.
+    // pathname should be '/auth' when on this page.
+    const redirectURL = `${siteURL}${pathname}`; 
     console.log('[AuthPage] handleGoogleSignIn: Using redirect URL:', redirectURL);
 
     const { error } = await supabase.auth.signInWithOAuth({
@@ -209,7 +231,8 @@ export default function AuthPage() {
       toast({ title: 'Google Sign-In Failed', description: error.message, variant: 'destructive' });
       setIsGoogleLoading(false);
     }
-    // If successful, Supabase handles the redirect.
+    // If successful, Supabase handles the redirect to Google, then back to `redirectURL` with session info in hash.
+    // The `onAuthStateChange` listener on this page will then pick up the `SIGNED_IN` event.
   };
 
   console.log('[AuthPage] Rendering. isCheckingAuth:', isCheckingAuth, 'isLoading:', isLoading);
