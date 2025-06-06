@@ -30,6 +30,8 @@ import { SidebarUsageProgress } from './SidebarUsageProgress';
 import type { JobOpening } from '@/lib/types';
 
 const PUBLIC_PATHS = ['/landing', '/auth'];
+const HIDE_DASHBOARD_LINK_PATHS = ['/', '/job-openings', '/contacts', '/companies', '/settings/billing', '/settings/account'];
+
 
 function getInitials(name?: string | null, email?: string | null): string {
   if (name) {
@@ -215,7 +217,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const userDisplayName = user?.user_metadata?.full_name || user?.email || 'User';
 
   const menuItemClass = "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50";
-
+  const showDashboardLink = !HIDE_DASHBOARD_LINK_PATHS.includes(pathname);
 
   return (
     <SidebarProvider defaultOpen>
@@ -235,7 +237,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             "p-2 group-data-[collapsible=icon]:pt-1 group-data-[collapsible=icon]:pb-2 group-data-[collapsible=icon]:pl-2 group-data-[collapsible=icon]:pr-2"
         )}>
           <SidebarUsageProgress user={user} />
-          <div className="mt-4 flex items-center justify-start group-data-[collapsible=icon]:justify-center">
+          <div className="mt-4 flex items-center group-data-[collapsible=icon]:justify-center justify-start">
             <Around
               toggled={theme === 'dark'}
               onClick={toggleTheme}
@@ -244,9 +246,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
               className={cn(
                   "theme-toggle",
                   "text-xl text-sidebar-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar-background hover:text-sidebar-primary",
-                  "w-auto",
-                  "group-data-[collapsible=icon]:mx-auto",
-                  "group-data-[collapsible=icon]:p-0"
+                  "w-auto", // Ensure visible when expanded
+                  "group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:p-0" // Centered & no padding when collapsed
               )}
               style={{ '--theme-toggle__around--duration': '500ms' } as React.CSSProperties}
             />
@@ -286,12 +287,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
                         <span>Homepage</span>
                         </a>
                     </Link>
-                    <Link href="/" passHref legacyBehavior>
-                        <a className={cn(menuItemClass, "cursor-pointer hover:bg-accent hover:text-accent-foreground")}>
-                        <Home className="mr-2 h-4 w-4" /> {/* Consider a different icon for Dashboard if Homepage uses Home */}
-                        <span>Dashboard</span>
-                        </a>
-                    </Link>
+                    {showDashboardLink && (
+                         <Link href="/" passHref legacyBehavior>
+                            <a className={cn(menuItemClass, "cursor-pointer hover:bg-accent hover:text-accent-foreground")}>
+                            <Home className="mr-2 h-4 w-4" />
+                            <span>Dashboard</span>
+                            </a>
+                        </Link>
+                    )}
                     <Link href="/settings/account" passHref legacyBehavior>
                         <a className={cn(menuItemClass, "cursor-pointer hover:bg-accent hover:text-accent-foreground")}>
                         <Settings className="mr-2 h-4 w-4" />

@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react'; // Added this line
+import React from 'react'; 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Briefcase, Users, Building2, Star, Edit3, Rss } from 'lucide-react';
@@ -38,7 +38,7 @@ const mainNavItems: NavItem[] = [
 ];
 
 const blogNavItems: NavItem[] = [
-  { href: '/blog', label: 'View Blog', icon: Rss, separator: true },
+  { href: '/blog', label: 'View Blog', icon: Rss, separator: true, ownerOnly: true },
   { href: '/blog/create', label: 'Create New Post', icon: Edit3, ownerOnly: true },
 ];
 
@@ -85,6 +85,10 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
 
   const renderNavItems = (items: NavItem[], groupLabel?: string) => {
     const filteredItems = items.filter(item => !item.ownerOnly || (item.ownerOnly && isOwner));
+    
+    // If the group is meant to be owner-only (like "Blog Management") and the user is not owner, don't render the group at all.
+    // We handle this by making the call to renderNavItems conditional for the Blog Management group.
+    // This check is a fallback for generic groups if they end up with no visible items.
     if (filteredItems.length === 0 && groupLabel) return null; 
 
     return (
@@ -145,7 +149,7 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
     <div className="flex flex-col h-full">
       <div> 
         {renderNavItems(mainNavItems)}
-        {renderNavItems(blogNavItems, "Blog Management")}
+        {isOwner && renderNavItems(blogNavItems, "Blog Management")}
       </div>
 
       {favoriteJobOpenings && favoriteJobOpenings.length > 0 && (
