@@ -18,8 +18,10 @@ import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
 import type { UserSettings, UsagePreference, DefaultFollowUpTemplates, FollowUpTemplateContent } from '@/lib/types';
-import { Loader2, UserCircle, Settings as SettingsIcon, SlidersHorizontal, MailQuestion, Edit3 } from 'lucide-react';
+import { Loader2, UserCircle, Settings as SettingsIcon, SlidersHorizontal, MailQuestion, Edit3, ShieldAlert, Trash2 } from 'lucide-react';
 import type { Json } from '@/lib/database.types';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useRouter } from 'next/navigation';
 
 const USAGE_PREFERENCES: { value: UsagePreference; label: string }[] = [
   { value: 'job_hunt', label: 'Job Hunting / Career Opportunities' },
@@ -36,6 +38,7 @@ const defaultAllTemplates: DefaultFollowUpTemplates = {
   sharedSignature: '',
 };
 const defaultCadence: [number, number, number] = [7, 14, 21];
+const DELETE_CONFIRMATION_PHRASE = "DELETE MY ACCOUNT";
 
 const accountSettingsSchema = z.object({
   displayName: z.string().max(100, "Display name cannot exceed 100 characters.").optional(),
@@ -69,7 +72,12 @@ export default function AccountSettingsPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleteStep1Open, setIsDeleteStep1Open] = useState(false);
+  const [isDeleteStep2Open, setIsDeleteStep2Open] = useState(false);
+  const [deleteConfirmationInput, setDeleteConfirmationInput] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const form = useForm<AccountSettingsFormValues>({
     resolver: zodResolver(accountSettingsSchema),
@@ -174,9 +182,7 @@ export default function AccountSettingsPage() {
         });
         if (userUpdateError) throw userUpdateError;
       }
-
-      // Note: usagePreference is disabled, so its value won't be changed by the user
-      // but we still save it as it was loaded.
+      
       const settingsDataToUpsert = {
         user_id: currentUser.id,
         usage_preference: values.usagePreference, 
@@ -194,6 +200,65 @@ export default function AccountSettingsPage() {
       toast({ title: 'Error Saving Settings', description: error.message, variant: 'destructive' });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleProceedToDeleteStep2 = () => {
+    setIsDeleteStep1Open(false);
+    setIsDeleteStep2Open(true);
+    setDeleteConfirmationInput('');
+  };
+
+  const handleConfirmAccountDeletion = async () => {
+    if (!currentUser || deleteConfirmationInput !== DELETE_CONFIRMATION_PHRASE) {
+      toast({ title: 'Confirmation Failed', description: 'Please type the confirmation phrase correctly.', variant: 'destructive' });
+      return;
+    }
+    setIsDeletingAccount(true);
+    try {
+      // Order of deletion is important due to foreign key constraints
+      const tablesToDeleteFrom = [
+        'follow_ups',
+        'job_opening_contacts',
+        'job_openings',
+        'contacts', 
+        'companies',
+        'user_settings',
+        'user_subscriptions',
+        'posts', // Assuming posts are directly linked by user_id
+      ];
+
+      for (const tableName of tablesToDeleteFrom) {
+        const { error } = await supabase
+          .from(tableName)
+          .delete()
+          .eq('user_id', currentUser.id);
+        if (error) {
+          console.error(`Error deleting from ${tableName}:`, error);
+          throw new Error(`Failed to delete data from ${tableName}. ${error.message}`);
+        }
+      }
+
+      // Sign out the user
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) {
+        console.error('Error signing out:', signOutError);
+        // Non-fatal, proceed to inform user about data deletion
+      }
+
+      toast({
+        title: 'Account Data Deleted',
+        description: 'All your application data has been successfully deleted. You have been signed out. Your authentication record still exists but is no longer associated with any application data.',
+        duration: 10000, // Longer duration for this important message
+      });
+      router.push('/landing'); 
+      
+    } catch (error: any) {
+      toast({ title: 'Account Deletion Failed', description: error.message || 'An unexpected error occurred.', variant: 'destructive' });
+    } finally {
+      setIsDeletingAccount(false);
+      setIsDeleteStep2Open(false);
+      setDeleteConfirmationInput('');
     }
   };
   
@@ -254,7 +319,7 @@ export default function AccountSettingsPage() {
                       <Select 
                         onValueChange={field.onChange} 
                         value={field.value} 
-                        disabled={true} // Always disabled
+                        disabled={true} 
                       >
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Select your primary goal" /></SelectTrigger>
@@ -378,8 +443,82 @@ export default function AccountSettingsPage() {
             </div>
           </form>
         </Form>
+
+        <Card className="shadow-lg border-destructive">
+          <CardHeader>
+            <CardTitle className="font-headline flex items-center text-destructive"><ShieldAlert className="mr-2 h-5 w-5"/> Danger Zone</CardTitle>
+            <CardDescription className="text-destructive/90">Account deletion is permanent and cannot be undone.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Deleting your account will permanently remove all your associated data, including:
+              job openings, contacts, companies, follow-up schedules, and settings. 
+              Your authentication record will remain but will no longer be associated with any application data.
+            </p>
+            <Button variant="destructive" onClick={() => setIsDeleteStep1Open(true)} disabled={isDeletingAccount}>
+              {isDeletingAccount ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              Delete My Account
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Deletion Dialog Step 1 */}
+        <AlertDialog open={isDeleteStep1Open} onOpenChange={setIsDeleteStep1Open}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action is irreversible. All your data including job openings, contacts, companies, 
+                follow-up schedules, email templates, user settings, and subscription information will be 
+                <strong>permanently deleted</strong>. 
+                Your authentication record will remain, but will be disassociated from all application data.
+                <br /><br />
+                Are you sure you want to proceed?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setIsDeleteStep1Open(false)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleProceedToDeleteStep2} className="bg-destructive hover:bg-destructive/90">
+                I understand, proceed to delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Deletion Dialog Step 2 */}
+        <AlertDialog open={isDeleteStep2Open} onOpenChange={setIsDeleteStep2Open}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Final Confirmation Required</AlertDialogTitle>
+              <AlertDialogDescription>
+                To confirm permanent deletion of your account and all associated data, please type the following phrase exactly as shown below:
+                <br />
+                <strong className="text-destructive font-mono my-2 block">{DELETE_CONFIRMATION_PHRASE}</strong>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <Input
+              type="text"
+              value={deleteConfirmationInput}
+              onChange={(e) => setDeleteConfirmationInput(e.target.value)}
+              placeholder="Type the phrase here"
+              className="border-destructive focus-visible:ring-destructive"
+            />
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setIsDeleteStep2Open(false)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmAccountDeletion}
+                disabled={deleteConfirmationInput !== DELETE_CONFIRMATION_PHRASE || isDeletingAccount}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                {isDeletingAccount ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Confirm Permanent Deletion
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
       </div>
     </AppLayout>
   );
 }
-
+    
