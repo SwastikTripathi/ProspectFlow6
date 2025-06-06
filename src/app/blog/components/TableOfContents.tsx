@@ -4,25 +4,25 @@
 import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Facebook, Twitter, Linkedin, Link as LinkIcon } from 'lucide-react';
+import { Facebook, Twitter, Linkedin, Link as LinkIcon } from 'lucide-react'; // Assuming Twitter is used for X
 import { useToast } from '@/hooks/use-toast';
 
 
 export interface TocItem {
   id: string;
-  level: number;
+  level: number; // Though we might only display one level based on current image
   text: string;
 }
 
 interface TableOfContentsProps {
   tocItems: TocItem[];
   isLoading: boolean;
-  scrollPercentage: number;
+  // scrollPercentage prop removed as per new design
   activeHeadingId?: string | null;
   postTitle: string;
 }
 
-export function TableOfContents({ tocItems, isLoading, scrollPercentage, activeHeadingId, postTitle }: TableOfContentsProps) {
+export function TableOfContents({ tocItems, isLoading, activeHeadingId, postTitle }: TableOfContentsProps) {
   const { toast } = useToast();
   const [currentUrl, setCurrentUrl] = useState('');
 
@@ -42,20 +42,19 @@ export function TableOfContents({ tocItems, isLoading, scrollPercentage, activeH
 
   if (isLoading) {
     return (
-      <div className="relative pl-3 space-y-3 animate-pulse">
-        <div className="absolute left-0 top-0 bottom-0 w-1 bg-muted rounded-full"></div>
-        <div className="h-6 bg-muted rounded w-3/4 mb-3"></div>
-        <div className="space-y-1.5">
+      <div className="space-y-3 animate-pulse">
+        <div className="h-6 bg-muted rounded w-3/4 mb-3"></div> {/* TOC Title Skeleton */}
+        <div className="ml-3 pl-3 border-l border-muted space-y-1.5"> {/* Items Skeleton */}
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-4 bg-muted rounded" style={{ width: `${60 + i * 5}%`, marginLeft: `${i * 0.25}rem` }}></div>
+            <div key={i} className="h-4 bg-muted rounded" style={{ width: `${60 + i * 5}%` }}></div>
           ))}
         </div>
-        <div className="h-5 bg-muted rounded w-1/2 mt-4 mb-1"></div>
-        <div className="flex space-x-2">
-            <div className="h-5 w-5 bg-muted rounded-full"></div>
-            <div className="h-5 w-5 bg-muted rounded-full"></div>
-            <div className="h-5 w-5 bg-muted rounded-full"></div>
-            <div className="h-5 w-20 bg-muted rounded-md"></div>
+        <div className="h-5 bg-muted rounded w-1/2 mt-6 mb-1"></div> {/* Share Title Skeleton */}
+        <div className="flex space-x-1.5"> {/* Share Icons Skeleton */}
+            <div className="h-8 w-8 bg-muted rounded-md"></div>
+            <div className="h-8 w-8 bg-muted rounded-md"></div>
+            <div className="h-8 w-8 bg-muted rounded-md"></div>
+            <div className="h-8 w-20 bg-muted rounded-md"></div>
         </div>
       </div>
     );
@@ -63,49 +62,65 @@ export function TableOfContents({ tocItems, isLoading, scrollPercentage, activeH
 
   if (!tocItems || tocItems.length === 0) {
     return (
-        <div className="pl-3"> 
+        <div> 
             <h3 id="toc-heading" className="text-lg font-semibold text-foreground mb-3">
                 Table of Contents
             </h3>
-            <p className="text-sm text-muted-foreground">No headings found for this post.</p>
+            <p className="text-sm text-muted-foreground">No subheadings found for this post.</p>
+            {/* Share section can still be shown even if no TOC items */}
+             <div className="mt-6 pt-4 border-t border-border/60">
+              <h4 className="text-sm font-semibold text-foreground mb-2">Share this article</h4>
+              <div className="flex items-center space-x-1.5">
+                <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary h-8 w-8">
+                  <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook">
+                    <Facebook size={18} />
+                  </a>
+                </Button>
+                <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary h-8 w-8">
+                  <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(postTitle)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on Twitter">
+                    <Twitter size={18} />
+                  </a>
+                </Button>
+                <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary h-8 w-8">
+                  <a href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(currentUrl)}&title=${encodeURIComponent(postTitle)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn">
+                    <Linkedin size={18} />
+                  </a>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-primary h-8 px-2 text-xs"
+                  onClick={handleCopyLink}
+                  disabled={!currentUrl}
+                >
+                  <LinkIcon className="mr-1.5 h-3.5 w-3.5" /> Copy link
+                </Button>
+              </div>
+            </div>
         </div>
     );
   }
 
   return (
-    <nav className="space-y-4 text-sm relative" aria-labelledby="toc-heading">
-      {/* Overall Article Progress Bar (thin bar on far left) */}
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-muted rounded-full overflow-hidden">
-        <div
-          className="bg-primary transition-height duration-100 ease-linear"
-          style={{ height: `${scrollPercentage}%` }}
-          aria-hidden="true"
-        />
-      </div>
-
-      {/* TOC Content (indented from overall progress bar) */}
-      <div className="ml-3"> {/* Indent all TOC content */}
+    <nav className="space-y-4 text-sm" aria-labelledby="toc-heading">
+      <div> {/* Wrapper for TOC list */}
         <h3 id="toc-heading" className="text-lg font-semibold text-foreground mb-3">
           Table of Contents
         </h3>
-        <ul className="space-y-1">
+        <ul className="space-y-1 border-l border-gray-200 dark:border-gray-700 relative ml-px"> {/* Use ml-px to allow active bar to cover */}
           {tocItems.map((item) => {
             const isActive = item.id === activeHeadingId;
             return (
               <li key={item.id} className="relative">
                 {isActive && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 bg-primary rounded-r-sm" aria-hidden="true"></span>
+                  <span className="absolute -left-px top-1/2 -translate-y-1/2 h-6 w-[3px] bg-primary rounded-r-sm" aria-hidden="true"></span>
                 )}
                 <a
                   href={`#${item.id}`}
                   className={cn(
-                    "block py-1.5 pr-2 text-sm transition-colors duration-150",
-                    "hover:text-primary",
-                    isActive ? "font-semibold text-primary" : "text-muted-foreground hover:text-foreground/80",
-                    item.level === 1 && (isActive ? 'pl-3' : 'pl-2'), // Adjust padding for active indicator
-                    item.level === 2 && (isActive ? 'pl-6' : 'pl-5'), 
-                    item.level === 3 && (isActive ? 'pl-9' : 'pl-8'), 
-                    item.level >= 4 && (isActive ? 'pl-11 text-xs' : 'pl-10 text-xs') 
+                    "block py-1.5 pr-2 pl-4 text-sm transition-colors duration-150", // Adjusted padding
+                    isActive ? "font-semibold text-primary" : "text-muted-foreground hover:text-foreground/80"
+                    // Removed level-based indentation as per image
                   )}
                 >
                   {item.text}
@@ -114,37 +129,38 @@ export function TableOfContents({ tocItems, isLoading, scrollPercentage, activeH
             );
           })}
         </ul>
+      </div>
 
-        <div className="mt-6 pt-4 border-t border-border/60">
-          <h4 className="text-sm font-semibold text-foreground mb-2">Share this article</h4>
-          <div className="flex items-center space-x-1.5">
-            <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary h-8 w-8">
-              <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook">
-                <Facebook size={18} />
-              </a>
-            </Button>
-            <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary h-8 w-8">
-              <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(postTitle)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on Twitter">
-                <Twitter size={18} />
-              </a>
-            </Button>
-            <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary h-8 w-8">
-              <a href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(currentUrl)}&title=${encodeURIComponent(postTitle)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn">
-                <Linkedin size={18} />
-              </a>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-primary h-8 px-2 text-xs"
-              onClick={handleCopyLink}
-              disabled={!currentUrl}
-            >
-              <LinkIcon className="mr-1.5 h-3.5 w-3.5" /> Copy link
-            </Button>
-          </div>
+      <div className="mt-6 pt-4 border-t border-border/60">
+        <h4 className="text-sm font-semibold text-foreground mb-2">Share this article</h4>
+        <div className="flex items-center space-x-1.5">
+          <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary h-8 w-8">
+            <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook">
+              <Facebook size={18} />
+            </a>
+          </Button>
+          <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary h-8 w-8">
+            <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(postTitle)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on X (Twitter)">
+              <Twitter size={18} />
+            </a>
+          </Button>
+          <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary h-8 w-8">
+            <a href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(currentUrl)}&title=${encodeURIComponent(postTitle)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn">
+              <Linkedin size={18} />
+            </a>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-primary h-8 px-2 text-xs"
+            onClick={handleCopyLink}
+            disabled={!currentUrl}
+          >
+            <LinkIcon className="mr-1.5 h-3.5 w-3.5" /> Copy link
+          </Button>
         </div>
       </div>
     </nav>
   );
 }
+

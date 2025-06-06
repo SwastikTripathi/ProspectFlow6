@@ -8,20 +8,19 @@ import { useParams, notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import type { Tables } from '@/lib/database.types';
 import { format, parseISO } from 'date-fns';
-import { Loader2, Tag, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe, ArrowRight } from 'lucide-react';
+import { Loader2, Tag, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe, ArrowRight, UserCircle2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import Article from '../components/Article';
+import Article from '../components/Article'; // Keep Article component for content rendering
 import { TableOfContents, type TocItem } from '../components/TableOfContents';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/icons/Logo';
 import { Around } from "@theme-toggles/react";
 import "@theme-toggles/react/css/Around.css";
-import { Progress } from '@/components/ui/progress';
 
 
-const NAVBAR_HEIGHT_OFFSET = 80; // Adjust this based on your actual navbar height
+const NAVBAR_HEIGHT_OFFSET = 80; 
 
 const footerLinks = {
     product: [
@@ -59,7 +58,6 @@ export default function BlogPostPage() {
 
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null);
-  const [scrollPercentage, setScrollPercentage] = useState(0);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const headingElementsRef = useRef<HTMLElement[]>([]);
   const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
@@ -99,7 +97,7 @@ export default function BlogPostPage() {
           .single();
 
         if (dbError) {
-          if (dbError.code === 'PGRST116') { // Not found
+          if (dbError.code === 'PGRST116') { 
             notFound();
             return;
           }
@@ -122,8 +120,9 @@ export default function BlogPostPage() {
       return;
     }
 
+    // Generate TOC from H2 headings, as per the new image showing "Step 1", "Step 2" etc.
     const headings = Array.from(
-      mainContentRef.current.querySelectorAll('h1') // Only H1 for TOC as per previous request
+      mainContentRef.current.querySelectorAll('h2') 
     ) as HTMLElement[];
 
     headingElementsRef.current = headings;
@@ -145,22 +144,6 @@ export default function BlogPostPage() {
   const handleScroll = useCallback(() => {
     if (!mainContentRef.current) return;
 
-    const contentTop = mainContentRef.current.offsetTop;
-    const contentHeight = mainContentRef.current.offsetHeight;
-    const windowScrollY = window.scrollY;
-    const windowHeight = window.innerHeight;
-
-    // Progress based on how much of the main content has been scrolled past
-    let currentScrollDepth = Math.max(0, windowScrollY + NAVBAR_HEIGHT_OFFSET - contentTop);
-    let percentage = (currentScrollDepth / (contentHeight - (windowHeight - NAVBAR_HEIGHT_OFFSET))) * 100;
-    
-    // If very close to bottom of whole page, ensure 100%
-    if ((windowScrollY + windowHeight) >= (document.body.offsetHeight - 30)) {
-        percentage = 100;
-    }
-
-    setScrollPercentage(Math.min(100, Math.max(0, percentage)));
-
     // Active heading logic
     let currentActiveIndex = -1;
     for (let i = headingElementsRef.current.length - 1; i >= 0; i--) {
@@ -181,7 +164,7 @@ export default function BlogPostPage() {
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
     window.addEventListener('resize', handleScroll);
-    handleScroll(); // Initial check
+    handleScroll(); 
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
@@ -238,8 +221,7 @@ export default function BlogPostPage() {
 
   const displayDate = post.published_at ? format(parseISO(post.published_at), 'MMMM d, yyyy') : format(parseISO(post.created_at), 'MMMM d, yyyy');
   const authorName = post.author_name_cache || 'ProspectFlow Team';
-  // For the credits, we will use the hardcoded "Kaleigh Moore" as per the image.
-  const creditAuthorName = "Kaleigh Moore";
+  const creditAuthorName = "Kaleigh Moore"; 
   const creditAuthorDescription = "Freelance writer for eCommerce & SaaS companies. I write blogs and articles for eCommerce platforms & the SaaS tools that integrate with them.";
 
 
@@ -299,7 +281,7 @@ export default function BlogPostPage() {
                   />
                 </div>
               )}
-               {!post.cover_image_url && ( // Fallback if no cover image
+               {!post.cover_image_url && ( 
                  <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 bg-muted flex items-center justify-center mb-8">
                     <Image
                         src="https://placehold.co/800x500.png" 
@@ -312,12 +294,10 @@ export default function BlogPostPage() {
                  </div>
               )}
 
-              <div className="mb-4">
-                <p className="text-sm text-muted-foreground">
-                    <span>{authorName}</span>
-                    <span className="mx-1.5">&bull;</span>
-                    <span>{displayDate}</span>
-                </p>
+              <div className="mb-4 text-sm text-muted-foreground">
+                  <span>{authorName}</span>
+                  <span className="mx-1.5">&bull;</span>
+                  <span>{displayDate}</span>
               </div>
 
               <h1 className="text-3xl sm:text-4xl md:text-[2.5rem] font-bold tracking-tight mb-3 text-gray-900 dark:text-gray-100 leading-tight">
@@ -335,9 +315,8 @@ export default function BlogPostPage() {
                 <Article content={post.content} />
               </div>
               
-              {/* CTA and Author Bio */}
-              <div className="mt-8"> {/* Reduced top margin */}
-                 <div className="text-center mb-10 pt-4"> {/* Reduced top padding */}
+              <div className="mt-8"> 
+                 <div className="text-center mb-10 pt-4"> 
                     <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base py-3 px-6 rounded-lg shadow-md" asChild>
                         <Link href="/pricing">START YOUR FREE 14-DAY TRIAL <ArrowRight className="ml-2 h-5 w-5" /></Link>
                     </Button>
@@ -370,11 +349,10 @@ export default function BlogPostPage() {
 
             {/* Right Column: Sticky Sidebar (TOC, Share) */}
             <div className="lg:col-span-4 order-1 lg:order-2 mb-10 lg:mb-0">
-              <div className="sticky top-24 space-y-6">
+              <div className="sticky top-24 space-y-6"> {/* sticky top-24 (6rem) is a common offset for sidebars below a main navbar */}
                 <TableOfContents
                   tocItems={tocItems}
                   isLoading={isLoading}
-                  scrollPercentage={scrollPercentage}
                   activeHeadingId={activeHeadingId}
                   postTitle={post.title}
                 />
