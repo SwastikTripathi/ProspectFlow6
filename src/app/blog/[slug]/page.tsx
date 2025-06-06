@@ -21,7 +21,6 @@ import { Logo } from '@/components/icons/Logo';
 import { Around } from "@theme-toggles/react";
 import "@theme-toggles/react/css/Around.css";
 
-
 const NAVBAR_HEIGHT_OFFSET = 64; // h-16 for header = 4rem = 64px
 
 const footerLinks = {
@@ -62,7 +61,8 @@ export default function BlogPostPage() {
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null);
   const mainContentRef = useRef<HTMLDivElement>(null);
-  const headingElementsRef = useRef<HTMLElement[]>([]);
+  const headingElementsRef = useRef<Map<string, HTMLElement>>(new Map());
+  const observerRef = useRef<IntersectionObserver | null>(null);
   const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
 
   useEffect(() => {
@@ -96,12 +96,12 @@ export default function BlogPostPage() {
       try {
         const { data, error: dbError } = await supabase
           .from('posts')
-          .select('*') // Select all columns including new social media URLs
+          .select('*')
           .eq('slug', slug)
           .single();
 
         if (dbError) {
-          if (dbError.code === 'PGRST116') { 
+          if (dbError.code === 'PGRST116') {
             notFound();
             return;
           }
@@ -133,81 +133,117 @@ export default function BlogPostPage() {
     fetchPostAndSerialize();
   }, [slug]);
 
-  const handleScroll = useCallback(() => {
-    const activationPoint = NAVBAR_HEIGHT_OFFSET + 10; // Line below navbar
-    let newActiveId: string | null = null;
-
-    for (let i = 0; i < headingElementsRef.current.length; i++) {
-        const heading = headingElementsRef.current[i];
-        const rect = heading.getBoundingClientRect();
-        if (rect.top <= activationPoint) {
-            newActiveId = heading.id;
-        } else {
-            break; 
-        }
-    }
-    
-    if (newActiveId === null && headingElementsRef.current.length > 0) {
-      const firstHeadingRect = headingElementsRef.current[0].getBoundingClientRect();
-      if (firstHeadingRect.top < window.innerHeight && firstHeadingRect.bottom >= 0) {
-        // No need to set to first heading here if nothing is above activation,
-        // it means we are scrolled above the first heading, so activeId should be null
-        // or based on direct visibility which is harder to manage reliably with scrolling.
-        // The current newActiveId (which would be null or the last valid one) is preferred.
-      }
-    }
-  
-    setActiveHeadingId(prevId => {
-      if (prevId !== newActiveId) {
-        return newActiveId;
-      }
-      return prevId;
-    });
-  }, []);
-
 
   useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
     if (!mdxSource || !mainContentRef.current) {
       setTocItems([]);
-      headingElementsRef.current = [];
-      setActiveHeadingId(null); 
+      headingElementsRef.current.clear();
+      setActiveHeadingId(null);
       return;
     }
-    
-    queueMicrotask(() => {
-      if (mainContentRef.current) {
-        const headings = Array.from(
-          mainContentRef.current.querySelectorAll('h1')
-        ) as HTMLElement[];
 
-        headingElementsRef.current = headings;
+    const populateHeadings = () => {
+      if (!mainContentRef.current) return;
 
-        const newTocItems = headings.map((heading, index) => {
-          const text = heading.textContent || '';
-          let id = heading.id;
-          if (!id) {
-            id = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || `heading-${index}`;
-            heading.id = id;
-          }
-          return { id, level: 1, text };
-        });
-        setTocItems(newTocItems);
-        
-        handleScroll(); 
+      const headings = Array.from(
+        mainContentRef.current.querySelectorAll('h1') // Only considering h1 for TOC as per previous setup
+      ) as HTMLElement[];
+
+      const newHeadingElementsMap = new Map<string, HTMLElement>();
+      const newTocItems: TocItem[] = [];
+
+      headings.forEach((heading, index) => {
+        const text = heading.textContent || '';
+        let id = heading.id;
+        if (!id) {
+          id = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || `heading-${index}`;
+          heading.id = id;
+        }
+        newTocItems.push({ id, level: 1, text }); // Assuming h1 is level 1
+        newHeadingElementsMap.set(id, heading);
+      });
+
+      setTocItems(newTocItems);
+      headingElementsRef.current = newHeadingElementsMap;
+
+      if (newTocItems.length > 0 && !activeHeadingId) {
+         // Set initial active ID to the first item if none is active yet.
+         // IntersectionObserver might set it shortly after.
+         // setActiveHeadingId(newTocItems[0].id);
       }
-    });
-
-  }, [mdxSource, handleScroll]);
-
-
-  useEffect(() => {
-    window.addEventListener('scroll', handleScroll);
-    window.addEventListener('resize', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
     };
-  }, [handleScroll]);
+    
+    populateHeadings();
+
+
+    // Setup IntersectionObserver
+    const observerOptions = {
+      rootMargin: `-${NAVBAR_HEIGHT_OFFSET}px 0px -${typeof window !== 'undefined' ? window.innerHeight - NAVBAR_HEIGHT_OFFSET - 100 : 0}px 0px`,
+      threshold: 0, // Trigger as soon as any part of the target enters the "root" viewport
+    };
+
+    const activeEntryMap = new Map<string, IntersectionObserverEntry>();
+
+    observerRef.current = new IntersectionObserver((entries) => {
+      let mostVisibleAboveThreshold: IntersectionObserverEntry | null = null;
+
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          activeEntryMap.set(entry.target.id, entry);
+        } else {
+          activeEntryMap.delete(entry.target.id);
+        }
+      });
+
+      // Find the 'highest' (closest to top) visible heading among the intersecting ones
+      const visibleHeadings = Array.from(activeEntryMap.values())
+                                .sort((a,b) => a.target.getBoundingClientRect().top - b.target.getBoundingClientRect().top);
+      
+      if (visibleHeadings.length > 0) {
+          setActiveHeadingId(visibleHeadings[0].target.id);
+      } else if (tocItems.length > 0 && activeEntryMap.size === 0) {
+          // If nothing is intersecting (e.g. scrolled past all or before first)
+          // Try to find the one closest to the activation line from below, or default to first.
+          let closestHeadingBelow: HTMLElement | null = null;
+          let minDistance = Infinity;
+          
+          tocItems.forEach(item => {
+              const headingEl = headingElementsRef.current.get(item.id);
+              if (headingEl) {
+                  const rect = headingEl.getBoundingClientRect();
+                  const distanceToActivationLine = rect.top - (NAVBAR_HEIGHT_OFFSET + 10); // +10 for a slight buffer
+                  if (distanceToActivationLine > 0 && distanceToActivationLine < minDistance) {
+                      minDistance = distanceToActivationLine;
+                      closestHeadingBelow = headingEl;
+                  }
+              }
+          });
+          if (closestHeadingBelow) {
+              setActiveHeadingId(closestHeadingBelow.id);
+          } else if (tocItems.length > 0) {
+            // Fallback to first if no other logic applies (e.g. at very top)
+            // setActiveHeadingId(tocItems[0].id); // Potentially problematic if first heading is very short
+          }
+      }
+
+
+    }, observerOptions);
+
+    const currentObserver = observerRef.current;
+    headingElementsRef.current.forEach(headingEl => currentObserver.observe(headingEl));
+
+    return () => {
+      if (currentObserver) {
+        currentObserver.disconnect();
+      }
+      activeEntryMap.clear();
+    };
+
+  }, [mdxSource]); // Re-run when MDX content changes
 
 
   if (isLoading) {
@@ -240,7 +276,7 @@ export default function BlogPostPage() {
       </div>
     );
   }
-  
+
   if (!post) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -259,12 +295,12 @@ export default function BlogPostPage() {
 
   const displayDate = post.published_at ? format(parseISO(post.published_at), 'MMMM d, yyyy') : format(parseISO(post.created_at), 'MMMM d, yyyy');
   const authorName = post.author_name_cache || 'ProspectFlow Team';
-  const creditAuthorName = "Kaleigh Moore"; 
+  const creditAuthorName = "Kaleigh Moore";
   const creditAuthorDescription = "Freelance writer for eCommerce & SaaS companies. I write blogs and articles for eCommerce platforms & the SaaS tools that integrate with them.";
 
   const mdxComponents = {
     h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
-      const { children, className: propClassName, ...rest } = props;
+      const { children, ...rest } = props;
       let id = props.id;
       if (!id && typeof children === 'string') {
         id = children.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || `heading-${Math.random().toString(36).substring(7)}`;
@@ -272,29 +308,22 @@ export default function BlogPostPage() {
         id = `heading-${Math.random().toString(36).substring(7)}`;
       }
       return (
-        <h1
-          id={id}
-          {...rest}
-          style={{ scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px` }}
-          className={cn("text-2xl font-semibold tracking-tight mt-8 mb-4", propClassName)}
-        >
-          {children}
-        </h1>
+        <h1 id={id} {...rest} className="text-2xl font-semibold tracking-tight mt-8 mb-4" style={{ scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px` }}>{children}</h1>
       );
     },
     h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
-      const { children, className: propClassName, ...rest } = props;
-      return <h2 {...rest} className={cn("text-lg font-semibold tracking-tight mt-6 mb-3", propClassName)}>{children}</h2>;
+      const { children, ...rest } = props;
+      return <h2 {...rest} className="text-lg font-semibold tracking-tight mt-6 mb-3">{children}</h2>;
     },
     h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
-      const { children, className: propClassName, ...rest } = props;
-      return <h3 {...rest} className={cn("text-base font-semibold tracking-tight mt-5 mb-2", propClassName)}>{children}</h3>;
+      const { children, ...rest } = props;
+      return <h3 {...rest} className="text-base font-semibold tracking-tight mt-5 mb-2">{children}</h3>;
     },
     h4: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
-      const { children, className: propClassName, ...rest } = props;
-      return <h4 {...rest} className={cn("text-sm font-semibold tracking-tight mt-4 mb-2", propClassName)}>{children}</h4>;
+      const { children, ...rest } = props;
+      return <h4 {...rest} className="text-sm font-semibold tracking-tight mt-4 mb-2">{children}</h4>;
     },
-    p: (props: React.HTMLAttributes<HTMLParagraphElement>) => {
+     p: (props: React.HTMLAttributes<HTMLParagraphElement>) => {
       const { children, className: propClassName, ...rest } = props;
       return <p {...rest} className={cn("mb-3 leading-relaxed", propClassName)}>{children}</p>;
     },
@@ -352,8 +381,8 @@ export default function BlogPostPage() {
 
       <main className="flex-1 py-12 md:py-16">
         <div className="container mx-auto px-[5vw] md:px-[8vw] lg:px-[10vw] max-w-screen-xl">
-          
-           <div className="lg:grid lg:grid-cols-12 lg:gap-x-12 xl:gap-x-16 mb-8">
+
+          <div className="lg:grid lg:grid-cols-12 lg:gap-x-12 xl:gap-x-16 mb-8">
             <div className="lg:col-span-8">
               {post.cover_image_url && (
                 <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20">
@@ -381,7 +410,7 @@ export default function BlogPostPage() {
                 </div>
               )}
             </div>
-            <div className="lg:col-span-4 hidden lg:block"></div> 
+            <div className="lg:col-span-4 hidden lg:block"></div>
           </div>
 
 
@@ -403,17 +432,17 @@ export default function BlogPostPage() {
                   Close Features and News
                 </Link>
               </div>
-              
+
               <div ref={mainContentRef} className="prose prose-sm dark:prose-invert max-w-none">
                 {mdxSource ? (
                   <MDXRemote {...mdxSource} components={mdxComponents} />
                 ) : (
-                  <p>Loading content...</p> 
+                  <p>Loading content...</p>
                 )}
               </div>
-              
-              <div className="mt-4"> 
-                 <div className="text-center mb-10 pt-2"> 
+
+              <div className="mt-4">
+                 <div className="text-center mb-10 pt-2">
                     <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base py-3 px-6 rounded-lg shadow-md" asChild>
                         <Link href="/pricing">START YOUR FREE 14-DAY TRIAL <ArrowRight className="ml-2 h-5 w-5" /></Link>
                     </Button>
@@ -424,7 +453,7 @@ export default function BlogPostPage() {
                  <div className="mt-8 py-4 flex items-start gap-x-4">
                     <div>
                         <Image
-                        src="https://placehold.co/80x80.png" 
+                        src="https://placehold.co/80x80.png"
                         alt={creditAuthorName}
                         width={80}
                         height={80}
@@ -544,6 +573,3 @@ export default function BlogPostPage() {
     </div>
   );
 }
-    
-
-    
