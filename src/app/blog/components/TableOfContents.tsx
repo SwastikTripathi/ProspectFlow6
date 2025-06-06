@@ -42,16 +42,16 @@ export function TableOfContents({ tocItems, isLoading, scrollPercentage, activeH
 
   if (isLoading) {
     return (
-      <div className="relative pl-3 space-y-3 animate-pulse"> {/* Adjusted pl for progress bar space */}
-        <div className="absolute left-0 top-0 bottom-0 w-1 bg-muted rounded-full"></div> {/* Overall Progress Bar Track */}
-        <div className="h-6 bg-muted rounded w-3/4 mb-3"></div> {/* TOC Title Skeleton */}
-        <div className="space-y-1.5"> {/* TOC Items Skeleton */}
+      <div className="relative pl-3 space-y-3 animate-pulse">
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-muted rounded-full"></div>
+        <div className="h-6 bg-muted rounded w-3/4 mb-3"></div>
+        <div className="space-y-1.5">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="h-4 bg-muted rounded" style={{ width: `${60 + i * 5}%`, marginLeft: `${i * 0.25}rem` }}></div>
           ))}
         </div>
-        <div className="h-5 bg-muted rounded w-1/2 mt-4 mb-1"></div> {/* Share Title Skeleton */}
-        <div className="flex space-x-2"> {/* Share Icons Skeleton */}
+        <div className="h-5 bg-muted rounded w-1/2 mt-4 mb-1"></div>
+        <div className="flex space-x-2">
             <div className="h-5 w-5 bg-muted rounded-full"></div>
             <div className="h-5 w-5 bg-muted rounded-full"></div>
             <div className="h-5 w-5 bg-muted rounded-full"></div>
@@ -63,7 +63,7 @@ export function TableOfContents({ tocItems, isLoading, scrollPercentage, activeH
 
   if (!tocItems || tocItems.length === 0) {
     return (
-        <div className="pl-3"> {/* Adjusted pl */}
+        <div className="pl-3"> 
             <h3 id="toc-heading" className="text-lg font-semibold text-foreground mb-3">
                 Table of Contents
             </h3>
@@ -74,7 +74,7 @@ export function TableOfContents({ tocItems, isLoading, scrollPercentage, activeH
 
   return (
     <nav className="space-y-4 text-sm relative" aria-labelledby="toc-heading">
-      {/* Overall Article Progress Bar */}
+      {/* Overall Article Progress Bar (thin bar on far left) */}
       <div className="absolute left-0 top-0 bottom-0 w-1 bg-muted rounded-full overflow-hidden">
         <div
           className="bg-primary transition-height duration-100 ease-linear"
@@ -93,21 +93,21 @@ export function TableOfContents({ tocItems, isLoading, scrollPercentage, activeH
             const isActive = item.id === activeHeadingId;
             return (
               <li key={item.id} className="relative">
+                {isActive && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 bg-primary rounded-r-sm" aria-hidden="true"></span>
+                )}
                 <a
                   href={`#${item.id}`}
                   className={cn(
                     "block py-1.5 pr-2 text-sm transition-colors duration-150",
                     "hover:text-primary",
                     isActive ? "font-semibold text-primary" : "text-muted-foreground hover:text-foreground/80",
-                    item.level === 1 && 'pl-2', // Base padding for level 1
-                    item.level === 2 && 'pl-5', // Indent level 2
-                    item.level === 3 && 'pl-8', // Indent level 3
-                    item.level >= 4 && 'pl-10 text-xs' // Indent level 4+
+                    item.level === 1 && (isActive ? 'pl-3' : 'pl-2'), // Adjust padding for active indicator
+                    item.level === 2 && (isActive ? 'pl-6' : 'pl-5'), 
+                    item.level === 3 && (isActive ? 'pl-9' : 'pl-8'), 
+                    item.level >= 4 && (isActive ? 'pl-11 text-xs' : 'pl-10 text-xs') 
                   )}
                 >
-                  {isActive && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 bg-primary rounded-r-sm" aria-hidden="true"></span>
-                  )}
                   {item.text}
                 </a>
               </li>
@@ -148,4 +148,3 @@ export function TableOfContents({ tocItems, isLoading, scrollPercentage, activeH
     </nav>
   );
 }
-

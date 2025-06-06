@@ -50,6 +50,7 @@ const footerLinks = {
     ],
 };
 
+const NAVBAR_HEIGHT_OFFSET = 80; // Approx navbar height (h-16 = 64px) + buffer (16px)
 
 export default function BlogPostPage() {
   const params = useParams();
@@ -160,7 +161,6 @@ export default function BlogPostPage() {
   }, [generateToc]);
   
   useEffect(() => {
-    // Populate headingElementsRef after tocItems are set and component has rendered
     if (tocItems.length > 0) {
         const elements = tocItems.map(item => document.getElementById(item.id)).filter(el => el !== null) as HTMLElement[];
         headingElementsRef.current = elements;
@@ -178,43 +178,36 @@ export default function BlogPostPage() {
             return;
         }
 
-        const viewportTopOffsetActive = window.innerHeight * 0.20; // 20% from the top for active heading
         let currentActiveId: string | null = null;
+        let activeIndex = -1;
 
+        // Find the heading that is currently "active" (closest to the top, below navbar)
         for (let i = headingElementsRef.current.length - 1; i >= 0; i--) {
             const headingEl = headingElementsRef.current[i];
             if (headingEl) {
                 const rect = headingEl.getBoundingClientRect();
-                if (rect.top < viewportTopOffsetActive) {
+                if (rect.top < NAVBAR_HEIGHT_OFFSET) { 
                     currentActiveId = headingEl.id;
+                    activeIndex = i;
                     break; 
                 }
             }
         }
         setActiveHeadingId(currentActiveId);
-
-        if (currentActiveId) {
-            const activeIndex = tocItems.findIndex(item => item.id === currentActiveId);
-            if (activeIndex !== -1) {
-                const percentage = ((activeIndex + 1) / tocItems.length) * 100;
-                setScrollPercentage(Math.min(100, Math.max(0, percentage)));
-            } else {
-                setScrollPercentage(0); // Active ID found but not in tocItems (should not happen)
-            }
+        
+        // Calculate scroll percentage based on the active heading's index
+        if (activeIndex !== -1) {
+            setScrollPercentage(((activeIndex + 1) / tocItems.length) * 100);
         } else {
             // If no heading is "active" (e.g., scrolled to top, above first heading)
-            // Check if first heading is below the threshold, if so, 0%, otherwise, could be >0 if scrolled past it.
-            if(headingElementsRef.current.length > 0 && headingElementsRef.current[0].getBoundingClientRect().top >= viewportTopOffsetActive) {
-                 setScrollPercentage(0);
-            } else if (headingElementsRef.current.length > 0 ) {
-                 // This case handles if user has scrolled past all headings towards the end.
-                 // Or if all headings are above the threshold (e.g. short article)
-                 // Let's check if the last heading is above the viewport.
-                const lastHeading = headingElementsRef.current[headingElementsRef.current.length - 1];
-                if (lastHeading && lastHeading.getBoundingClientRect().bottom < viewportTopOffsetActive) {
-                    setScrollPercentage(100);
-                }
-            }
+             if (headingElementsRef.current.length > 0 && headingElementsRef.current[0].getBoundingClientRect().top >= NAVBAR_HEIGHT_OFFSET) {
+                 setScrollPercentage(0); // Scrolled above the first heading
+             } else if (headingElementsRef.current.length > 0) {
+                 // Scrolled past all headings
+                 setScrollPercentage(100);
+             } else {
+                 setScrollPercentage(0); // No headings
+             }
         }
     };
 
@@ -226,7 +219,7 @@ export default function BlogPostPage() {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
     };
-  }, [tocItems]);
+  }, [tocItems]); // Re-run if tocItems changes
 
 
   useEffect(() => {
@@ -276,8 +269,10 @@ export default function BlogPostPage() {
         return acc;
     }, '');
     const id = slugify(textContent);
-    return React.createElement(`h${level}`, { id, ...props }, children);
+    // Add scroll-margin-top to account for the sticky navbar
+    return React.createElement(`h${level}`, { id, ...props, style: { scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET}px`} }, children);
   };
+
 
   const markdownComponents = {
     h1: headingRenderer(1),
@@ -408,7 +403,7 @@ export default function BlogPostPage() {
             </div>
 
             <div className="lg:grid lg:grid-cols-[minmax(0,_1fr)_260px] lg:gap-10 xl:gap-16">
-                <div className="min-w-0 order-first"> {/* Article Content */}
+                <div className="min-w-0 order-first"> {/* Article Content (Left) */}
                     <article>
                         <header className="mb-8">
                         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 font-headline text-foreground">
@@ -449,7 +444,7 @@ export default function BlogPostPage() {
                         </div>
                     </article>
 
-                    <section className="mt-4 py-4"> {/* Reduced margin-top */}
+                    <section className="mt-4 py-4"> {/* Reduced margin-top for CTA */}
                         <div className="flex justify-center">
                         <Button size="lg" asChild className="shadow-md rounded-full">
                             <Link href="/auth?action=signup">
@@ -478,7 +473,7 @@ export default function BlogPostPage() {
                         </div>
                     </section>
                 </div>
-                <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-12rem)] overflow-y-auto pl-4 border-l border-border/60 py-2 order-last"> {/* Changed pr to pl and border-r to border-l */}
+                <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-12rem)] overflow-y-auto pl-4 border-l border-border/60 py-2 order-last"> {/* TOC (Right) */}
                     <TableOfContents tocItems={tocItems} isLoading={isLoading} scrollPercentage={scrollPercentage} activeHeadingId={activeHeadingId} postTitle={post.title || ''} />
                 </aside>
             </div>
