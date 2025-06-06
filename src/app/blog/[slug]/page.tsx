@@ -16,12 +16,11 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Logo } from '@/components/icons/Logo';
 import { Around } from "@theme-toggles/react";
 import "@theme-toggles/react/css/Around.css";
-import { cn, slugify } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import type { User } from '@supabase/supabase-js';
 import { OWNER_EMAIL } from '@/lib/config';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { TableOfContents, type TocItem } from '../components/TableOfContents';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 type PostWithAuthor = Tables<'posts'>;
@@ -50,7 +49,7 @@ const footerLinks = {
     ],
 };
 
-const NAVBAR_HEIGHT_OFFSET = 80; // Approx navbar height (h-16 = 64px) + buffer (16px)
+const NAVBAR_HEIGHT_OFFSET = 80; // Approx navbar height for potential future scroll-to-offset usage
 
 export default function BlogPostPage() {
   const params = useParams();
@@ -65,11 +64,6 @@ export default function BlogPostPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [tocItems, setTocItems] = useState<TocItem[]>([]);
-  const [scrollPercentage, setScrollPercentage] = useState(0);
-  const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null);
-  const headingElementsRef = useRef<HTMLElement[]>([]);
-
 
   useEffect(() => {
     const checkUser = async () => {
@@ -134,94 +128,7 @@ export default function BlogPostPage() {
 
     fetchPost();
   }, [slug]);
-
-  const generateToc = useCallback(() => {
-    if (post?.content) {
-        const newTocItems: TocItem[] = [];
-        const tempContent = post.content.replace(/```[\s\S]*?```/g, ''); 
-        const headingRegex = /^(#{1,4})\s+(.*)/gm; 
-        let match;
-        
-        while ((match = headingRegex.exec(tempContent)) !== null) {
-            const level = match[1].length;
-            const text = match[2].trim();
-            const id = slugify(text);
-            if (text) {
-                newTocItems.push({ id, level, text });
-            }
-        }
-        setTocItems(newTocItems);
-    } else {
-        setTocItems([]);
-    }
-  }, [post?.content]);
-
-  useEffect(() => {
-    generateToc();
-  }, [generateToc]);
   
-  useEffect(() => {
-    if (tocItems.length > 0) {
-        const elements = tocItems.map(item => document.getElementById(item.id)).filter(el => el !== null) as HTMLElement[];
-        headingElementsRef.current = elements;
-    } else {
-        headingElementsRef.current = [];
-    }
-  }, [tocItems]);
-
-
-  useEffect(() => {
-    const handleScroll = () => {
-        if (headingElementsRef.current.length === 0) {
-            setActiveHeadingId(null);
-            setScrollPercentage(0);
-            return;
-        }
-
-        let currentActiveId: string | null = null;
-        let activeIndex = -1;
-
-        // Find the heading that is currently "active" (closest to the top, below navbar)
-        for (let i = headingElementsRef.current.length - 1; i >= 0; i--) {
-            const headingEl = headingElementsRef.current[i];
-            if (headingEl) {
-                const rect = headingEl.getBoundingClientRect();
-                if (rect.top < NAVBAR_HEIGHT_OFFSET) { 
-                    currentActiveId = headingEl.id;
-                    activeIndex = i;
-                    break; 
-                }
-            }
-        }
-        setActiveHeadingId(currentActiveId);
-        
-        // Calculate scroll percentage based on the active heading's index
-        if (activeIndex !== -1) {
-            setScrollPercentage(((activeIndex + 1) / tocItems.length) * 100);
-        } else {
-            // If no heading is "active" (e.g., scrolled to top, above first heading)
-             if (headingElementsRef.current.length > 0 && headingElementsRef.current[0].getBoundingClientRect().top >= NAVBAR_HEIGHT_OFFSET) {
-                 setScrollPercentage(0); // Scrolled above the first heading
-             } else if (headingElementsRef.current.length > 0) {
-                 // Scrolled past all headings
-                 setScrollPercentage(100);
-             } else {
-                 setScrollPercentage(0); // No headings
-             }
-        }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll, { passive: true });
-    handleScroll(); // Initial calculation
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
-    };
-  }, [tocItems]); // Re-run if tocItems changes
-
-
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -260,27 +167,6 @@ export default function BlogPostPage() {
     } finally {
       setIsDeleting(false);
     }
-  };
-
-  const headingRenderer = (level: number) => ({ node, children, ...props }: any) => {
-    const textContent = React.Children.toArray(children).reduce((acc: string, child: any) => {
-        if (typeof child === 'string') return acc + child;
-        if (child.props && child.props.children) return acc + React.Children.toArray(child.props.children).join('');
-        return acc;
-    }, '');
-    const id = slugify(textContent);
-    // Add scroll-margin-top to account for the sticky navbar
-    return React.createElement(`h${level}`, { id, ...props, style: { scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET}px`} }, children);
-  };
-
-
-  const markdownComponents = {
-    h1: headingRenderer(1),
-    h2: headingRenderer(2),
-    h3: headingRenderer(3),
-    h4: headingRenderer(4),
-    h5: headingRenderer(5), 
-    h6: headingRenderer(6),
   };
 
   if (isLoading && !post) {
@@ -402,80 +288,75 @@ export default function BlogPostPage() {
                 )}
             </div>
 
-            <div className="lg:grid lg:grid-cols-[minmax(0,_1fr)_260px] lg:gap-10 xl:gap-16">
-                <div className="min-w-0 order-first"> {/* Article Content (Left) */}
-                    <article>
-                        <header className="mb-8">
-                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 font-headline text-foreground">
-                            {post.title}
-                        </h1>
-                        <div className="flex items-center space-x-3 text-sm text-muted-foreground">
-                            <div className="flex items-center">
-                            <UserIcon className="mr-1.5 h-4 w-4" />
-                            <span>{post.author_name_cache || 'ProspectFlow Team'}</span>
-                            </div>
-                            <div className="flex items-center">
-                            <CalendarDays className="mr-1.5 h-4 w-4" />
-                            <span>{displayDate}</span>
-                            </div>
+            <div className="min-w-0"> {/* Article Content Wrapper */}
+                <article>
+                    <header className="mb-8">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 font-headline text-foreground">
+                        {post.title}
+                    </h1>
+                    <div className="flex items-center space-x-3 text-sm text-muted-foreground">
+                        <div className="flex items-center">
+                        <UserIcon className="mr-1.5 h-4 w-4" />
+                        <span>{post.author_name_cache || 'ProspectFlow Team'}</span>
                         </div>
-                        </header>
+                        <div className="flex items-center">
+                        <CalendarDays className="mr-1.5 h-4 w-4" />
+                        <span>{displayDate}</span>
+                        </div>
+                    </div>
+                    </header>
 
-                        {post.cover_image_url && (
-                        <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden shadow-lg mb-8">
-                            <Image
-                            src={post.cover_image_url}
-                            alt={post.title || 'Blog post cover image'}
-                            fill
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                            className="object-cover"
-                            priority
-                            data-ai-hint="article content visual"
-                            />
-                        </div>
-                        )}
+                    {post.cover_image_url && (
+                    <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden shadow-lg mb-8">
+                        <Image
+                        src={post.cover_image_url}
+                        alt={post.title || 'Blog post cover image'}
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover"
+                        priority
+                        data-ai-hint="article content visual"
+                        />
+                    </div>
+                    )}
 
-                        <div 
-                          className="prose prose-lg dark:prose-invert prose-headings:font-headline prose-headings:text-foreground prose-p:text-foreground/90 prose-p:leading-relaxed prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground prose-blockquote:border-primary prose-blockquote:text-muted-foreground prose-code:bg-muted prose-code:text-foreground prose-code:p-1 prose-code:rounded-sm prose-code:font-code break-words"
-                        >
-                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                            {post.content}
-                        </ReactMarkdown>
-                        </div>
-                    </article>
+                    <div 
+                        className="prose prose-lg dark:prose-invert prose-headings:font-headline prose-headings:text-foreground prose-p:text-foreground/90 prose-p:leading-relaxed prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground prose-blockquote:border-primary prose-blockquote:text-muted-foreground prose-code:bg-muted prose-code:text-foreground prose-code:p-1 prose-code:rounded-sm prose-code:font-code break-words"
+                    >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {post.content}
+                    </ReactMarkdown>
+                    </div>
+                </article>
 
-                    <section className="mt-4 py-4"> {/* Reduced margin-top for CTA */}
-                        <div className="flex justify-center">
-                        <Button size="lg" asChild className="shadow-md rounded-full">
-                            <Link href="/auth?action=signup">
-                            START YOUR FREE 14-DAY TRIAL <ArrowRight className="ml-2 h-5 w-5" />
-                            </Link>
-                        </Button>
-                        </div>
-                    </section>
+                <section className="mt-4 py-4"> {/* CTA - Reduced margin-top */}
+                    <div className="flex justify-center">
+                    <Button size="lg" asChild className="shadow-md rounded-full">
+                        <Link href="/auth?action=signup">
+                        START YOUR FREE 14-DAY TRIAL <ArrowRight className="ml-2 h-5 w-5" />
+                        </Link>
+                    </Button>
+                    </div>
+                </section>
 
-                    <section className="mt-10 py-8 border-t border-border">
-                        <div className="flex items-start gap-6">
-                        <Avatar className="h-20 w-20 flex-shrink-0">
-                            <AvatarImage src="https://placehold.co/80x80.png" alt={post.author_name_cache || "Author"} data-ai-hint="professional portrait" />
-                            <AvatarFallback>{post.author_name_cache ? post.author_name_cache.substring(0,2).toUpperCase() : "AU"}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <p className="text-sm text-muted-foreground mb-1">Article written by</p>
-                            <h4 className="text-xl font-bold font-headline text-foreground mb-2">{post.author_name_cache || 'ProspectFlow Team'}</h4>
-                            <p className="text-muted-foreground text-sm leading-relaxed">
-                            {post.author_name_cache === 'Swastik Tripathi'
-                             ? "Founder of ProspectFlow. Passionate about helping professionals connect and achieve their goals through streamlined outreach and productivity tools."
-                             : "A valued contributor to the ProspectFlow blog, sharing insights on professional development and outreach strategies."
-                            }
-                            </p>
-                        </div>
-                        </div>
-                    </section>
-                </div>
-                <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-12rem)] overflow-y-auto pl-4 border-l border-border/60 py-2 order-last"> {/* TOC (Right) */}
-                    <TableOfContents tocItems={tocItems} isLoading={isLoading} scrollPercentage={scrollPercentage} activeHeadingId={activeHeadingId} postTitle={post.title || ''} />
-                </aside>
+                <section className="mt-10 py-8 border-t border-border">
+                    <div className="flex items-start gap-6">
+                    <Avatar className="h-20 w-20 flex-shrink-0">
+                        <AvatarImage src="https://placehold.co/80x80.png" alt={post.author_name_cache || "Author"} data-ai-hint="professional portrait" />
+                        <AvatarFallback>{post.author_name_cache ? post.author_name_cache.substring(0,2).toUpperCase() : "AU"}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                        <p className="text-sm text-muted-foreground mb-1">Article written by</p>
+                        <h4 className="text-xl font-bold font-headline text-foreground mb-2">{post.author_name_cache || 'ProspectFlow Team'}</h4>
+                        <p className="text-muted-foreground text-sm leading-relaxed">
+                        {post.author_name_cache === 'Swastik Tripathi'
+                            ? "Founder of ProspectFlow. Passionate about helping professionals connect and achieve their goals through streamlined outreach and productivity tools."
+                            : "A valued contributor to the ProspectFlow blog, sharing insights on professional development and outreach strategies."
+                        }
+                        </p>
+                    </div>
+                    </div>
+                </section>
             </div>
         </div>
       </main>
