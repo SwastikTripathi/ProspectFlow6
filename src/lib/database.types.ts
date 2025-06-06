@@ -294,6 +294,8 @@ export type Database = {
           author_twitter_url: string | null
           author_linkedin_url: string | null
           author_website_url: string | null
+          author_instagram_url: string | null
+          author_email_address: string | null
         }
         Insert: {
           id?: string
@@ -311,6 +313,8 @@ export type Database = {
           author_twitter_url?: string | null
           author_linkedin_url?: string | null
           author_website_url?: string | null
+          author_instagram_url?: string | null
+          author_email_address?: string | null
         }
         Update: {
           id?: string
@@ -328,6 +332,8 @@ export type Database = {
           author_twitter_url?: string | null
           author_linkedin_url?: string | null
           author_website_url?: string | null
+          author_instagram_url?: string | null
+          author_email_address?: string | null
         }
         Relationships: [
           {
@@ -550,6 +556,5 @@ export const Constants = {
     Enums: {},
   },
 } as const
-
 
     

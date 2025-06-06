@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Edit3, ShieldAlert, Trash2, Twitter, Linkedin, Globe } from 'lucide-react';
+import { Loader2, Edit3, ShieldAlert, Trash2, Twitter, Linkedin, Globe, Instagram, Mail } from 'lucide-react';
 import { slugify } from '@/lib/utils';
 import type { Tables, TablesUpdate } from '@/lib/database.types';
 import { OWNER_EMAIL } from '@/lib/config';
@@ -30,6 +30,8 @@ const editPostSchema = z.object({
   author_twitter_url: z.string().url('Must be a valid Twitter URL').optional().or(z.literal('')),
   author_linkedin_url: z.string().url('Must be a valid LinkedIn URL').optional().or(z.literal('')),
   author_website_url: z.string().url('Must be a valid Website URL').optional().or(z.literal('')),
+  author_instagram_url: z.string().url('Must be a valid Instagram URL').optional().or(z.literal('')),
+  author_email_address: z.string().email('Must be a valid email address').optional().or(z.literal('')),
 });
 
 type EditPostFormValues = z.infer<typeof editPostSchema>;
@@ -75,6 +77,8 @@ export default function EditPostPage() {
         author_twitter_url: data.author_twitter_url || '',
         author_linkedin_url: data.author_linkedin_url || '',
         author_website_url: data.author_website_url || '',
+        author_instagram_url: data.author_instagram_url || '',
+        author_email_address: data.author_email_address || '',
       });
     } catch (err: any) {
       toast({ title: 'Error Fetching Post', description: err.message, variant: 'destructive' });
@@ -135,8 +139,9 @@ export default function EditPostPage() {
         author_twitter_url: values.author_twitter_url || null,
         author_linkedin_url: values.author_linkedin_url || null,
         author_website_url: values.author_website_url || null,
+        author_instagram_url: values.author_instagram_url || null,
+        author_email_address: values.author_email_address || null,
         updated_at: new Date().toISOString(),
-        // status and published_at remain unchanged unless explicitly modified
       };
 
       const { data, error } = await supabase
@@ -149,7 +154,7 @@ export default function EditPostPage() {
       if (error) throw error;
 
       toast({ title: 'Post Updated!', description: `"${data.title}" has been saved.` });
-      router.push(`/blog/${data.slug}`); // Redirect to the potentially new slug
+      router.push(`/blog/${data.slug}`); 
     } catch (error: any) {
       toast({ title: 'Error Updating Post', description: error.message, variant: 'destructive' });
     } finally {
@@ -204,7 +209,7 @@ export default function EditPostPage() {
     );
   }
   
-  if (!post && !isLoadingPost) { // Should be caught by fetchPost error handling or notFound
+  if (!post && !isLoadingPost) { 
     return (
         <AppLayout>
             <div className="text-center py-10">Post not found.</div>
@@ -303,7 +308,7 @@ export default function EditPostPage() {
             <Card className="shadow-lg">
                 <CardHeader>
                     <CardTitle className="font-headline">Author Social Links (Optional)</CardTitle>
-                    <CardDescription>Update links to the author's social media profiles.</CardDescription>
+                    <CardDescription>Update links to the author's social media profiles and email.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <FormField
@@ -334,12 +339,38 @@ export default function EditPostPage() {
                     />
                     <FormField
                     control={form.control}
+                    name="author_instagram_url"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel className="flex items-center"><Instagram className="mr-2 h-4 w-4" /> Instagram URL</FormLabel>
+                        <FormControl>
+                            <Input {...field} placeholder="https://instagram.com/authorhandle" />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
                     name="author_website_url"
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel className="flex items-center"><Globe className="mr-2 h-4 w-4" /> Personal Website URL</FormLabel>
                         <FormControl>
                             <Input {...field} placeholder="https://authorswebsite.com" />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="author_email_address"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel className="flex items-center"><Mail className="mr-2 h-4 w-4" /> Email Address</FormLabel>
+                        <FormControl>
+                            <Input type="email" {...field} placeholder="author@example.com" />
                         </FormControl>
                         <FormMessage />
                         </FormItem>

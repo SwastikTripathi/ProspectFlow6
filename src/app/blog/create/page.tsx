@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Edit, ShieldAlert, Twitter, Linkedin, Globe } from 'lucide-react';
+import { Loader2, Edit, ShieldAlert, Twitter, Linkedin, Globe, Instagram, Mail } from 'lucide-react';
 import { slugify } from '@/lib/utils';
 import type { TablesInsert } from '@/lib/database.types';
 import { OWNER_EMAIL } from '@/lib/config';
@@ -29,6 +29,8 @@ const createPostSchema = z.object({
   author_twitter_url: z.string().url('Must be a valid Twitter URL').optional().or(z.literal('')),
   author_linkedin_url: z.string().url('Must be a valid LinkedIn URL').optional().or(z.literal('')),
   author_website_url: z.string().url('Must be a valid Website URL').optional().or(z.literal('')),
+  author_instagram_url: z.string().url('Must be a valid Instagram URL').optional().or(z.literal('')),
+  author_email_address: z.string().email('Must be a valid email address').optional().or(z.literal('')),
 });
 
 type CreatePostFormValues = z.infer<typeof createPostSchema>;
@@ -52,6 +54,8 @@ export default function CreatePostPage() {
       author_twitter_url: '',
       author_linkedin_url: '',
       author_website_url: '',
+      author_instagram_url: '',
+      author_email_address: '',
     },
   });
 
@@ -101,6 +105,8 @@ export default function CreatePostPage() {
         author_twitter_url: values.author_twitter_url || null,
         author_linkedin_url: values.author_linkedin_url || null,
         author_website_url: values.author_website_url || null,
+        author_instagram_url: values.author_instagram_url || null,
+        author_email_address: values.author_email_address || null,
         status: 'published', 
         published_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -235,7 +241,7 @@ export default function CreatePostPage() {
             <Card className="shadow-lg">
                 <CardHeader>
                     <CardTitle className="font-headline">Author Social Links (Optional)</CardTitle>
-                    <CardDescription>Provide links to the author's social media profiles.</CardDescription>
+                    <CardDescription>Provide links to the author's social media profiles and email.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <FormField
@@ -264,6 +270,19 @@ export default function CreatePostPage() {
                         </FormItem>
                     )}
                     />
+                     <FormField
+                    control={form.control}
+                    name="author_instagram_url"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel className="flex items-center"><Instagram className="mr-2 h-4 w-4" /> Instagram URL</FormLabel>
+                        <FormControl>
+                            <Input {...field} placeholder="https://instagram.com/authorhandle" />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
                     <FormField
                     control={form.control}
                     name="author_website_url"
@@ -272,6 +291,19 @@ export default function CreatePostPage() {
                         <FormLabel className="flex items-center"><Globe className="mr-2 h-4 w-4" /> Personal Website URL</FormLabel>
                         <FormControl>
                             <Input {...field} placeholder="https://authorswebsite.com" />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="author_email_address"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel className="flex items-center"><Mail className="mr-2 h-4 w-4" /> Email Address</FormLabel>
+                        <FormControl>
+                            <Input type="email" {...field} placeholder="author@example.com" />
                         </FormControl>
                         <FormMessage />
                         </FormItem>

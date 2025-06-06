@@ -8,7 +8,7 @@ import { useParams, notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import type { Tables } from '@/lib/database.types';
 import { format, parseISO } from 'date-fns';
-import { Loader2, Tag, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe, ArrowRight, Youtube } from 'lucide-react';
+import { Loader2, Tag, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe, ArrowRight, Youtube, Instagram, Mail } from 'lucide-react';
 import { MDXRemote, type MDXRemoteSerializeResult } from 'next-mdx-remote';
 import { serialize } from 'next-mdx-remote/serialize';
 import rehypeHighlight from 'rehype-highlight';
@@ -64,6 +64,8 @@ export default function BlogPostPage() {
   const headingElementsRef = useRef<Map<string, HTMLElement>>(new Map());
   const observerRef = useRef<IntersectionObserver | null>(null);
   const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
+  const activeEntryMap = useRef<Map<string, IntersectionObserverEntry>>(new Map());
+
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -138,6 +140,8 @@ export default function BlogPostPage() {
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
+    activeEntryMap.current.clear();
+
 
     if (!mdxSource || !mainContentRef.current) {
       setTocItems([]);
@@ -150,85 +154,75 @@ export default function BlogPostPage() {
       if (!mainContentRef.current) return;
 
       const headings = Array.from(
-        mainContentRef.current.querySelectorAll('h1') // Only considering h1 for TOC as per previous setup
+        mainContentRef.current.querySelectorAll('h1[id], h2[id], h3[id], h4[id]') // Ensure only headings with IDs are selected
       ) as HTMLElement[];
 
       const newHeadingElementsMap = new Map<string, HTMLElement>();
       const newTocItems: TocItem[] = [];
 
-      headings.forEach((heading, index) => {
+      headings.forEach((heading) => {
         const text = heading.textContent || '';
-        let id = heading.id;
-        if (!id) {
-          id = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || `heading-${index}`;
-          heading.id = id;
+        const id = heading.id;
+        const level = parseInt(heading.tagName.substring(1), 10);
+        if (id) { // Only add if ID exists
+            newTocItems.push({ id, level: level, text });
+            newHeadingElementsMap.set(id, heading);
         }
-        newTocItems.push({ id, level: 1, text }); // Assuming h1 is level 1
-        newHeadingElementsMap.set(id, heading);
       });
 
       setTocItems(newTocItems);
       headingElementsRef.current = newHeadingElementsMap;
-
-      if (newTocItems.length > 0 && !activeHeadingId) {
-         // Set initial active ID to the first item if none is active yet.
-         // IntersectionObserver might set it shortly after.
-         // setActiveHeadingId(newTocItems[0].id);
-      }
     };
     
     populateHeadings();
 
-
-    // Setup IntersectionObserver
     const observerOptions = {
-      rootMargin: `-${NAVBAR_HEIGHT_OFFSET}px 0px -${typeof window !== 'undefined' ? window.innerHeight - NAVBAR_HEIGHT_OFFSET - 100 : 0}px 0px`,
-      threshold: 0, // Trigger as soon as any part of the target enters the "root" viewport
+      root: null,
+      rootMargin: `-${NAVBAR_HEIGHT_OFFSET}px 0px -${(typeof window !== 'undefined' ? window.innerHeight : 600) - NAVBAR_HEIGHT_OFFSET - 150}px 0px`,
+      threshold: 0,
     };
 
-    const activeEntryMap = new Map<string, IntersectionObserverEntry>();
-
     observerRef.current = new IntersectionObserver((entries) => {
-      let mostVisibleAboveThreshold: IntersectionObserverEntry | null = null;
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                activeEntryMap.current.set(entry.target.id, entry);
+            } else {
+                activeEntryMap.current.delete(entry.target.id);
+            }
+        });
 
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          activeEntryMap.set(entry.target.id, entry);
-        } else {
-          activeEntryMap.delete(entry.target.id);
-        }
-      });
-
-      // Find the 'highest' (closest to top) visible heading among the intersecting ones
-      const visibleHeadings = Array.from(activeEntryMap.values())
+        const visibleHeadings = Array.from(activeEntryMap.current.values())
                                 .sort((a,b) => a.target.getBoundingClientRect().top - b.target.getBoundingClientRect().top);
       
-      if (visibleHeadings.length > 0) {
-          setActiveHeadingId(visibleHeadings[0].target.id);
-      } else if (tocItems.length > 0 && activeEntryMap.size === 0) {
-          // If nothing is intersecting (e.g. scrolled past all or before first)
-          // Try to find the one closest to the activation line from below, or default to first.
-          let closestHeadingBelow: HTMLElement | null = null;
-          let minDistance = Infinity;
-          
-          tocItems.forEach(item => {
-              const headingEl = headingElementsRef.current.get(item.id);
-              if (headingEl) {
-                  const rect = headingEl.getBoundingClientRect();
-                  const distanceToActivationLine = rect.top - (NAVBAR_HEIGHT_OFFSET + 10); // +10 for a slight buffer
-                  if (distanceToActivationLine > 0 && distanceToActivationLine < minDistance) {
-                      minDistance = distanceToActivationLine;
-                      closestHeadingBelow = headingEl;
-                  }
-              }
-          });
-          if (closestHeadingBelow) {
-              setActiveHeadingId(closestHeadingBelow.id);
-          } else if (tocItems.length > 0) {
-            // Fallback to first if no other logic applies (e.g. at very top)
-            // setActiveHeadingId(tocItems[0].id); // Potentially problematic if first heading is very short
-          }
-      }
+        if (visibleHeadings.length > 0) {
+            setActiveHeadingId(visibleHeadings[0].target.id);
+        } else if (headingElementsRef.current.size > 0) {
+            // Fallback: if no heading is in the "activation zone"
+            let bestFallbackId: string | null = null;
+            const headings = Array.from(headingElementsRef.current.values());
+            // Find the last heading that is above the viewport top or very close to it
+            for (let i = headings.length - 1; i >= 0; i--) {
+                const heading = headings[i];
+                if (heading.getBoundingClientRect().top < (NAVBAR_HEIGHT_OFFSET + 20)) { // 20px buffer
+                    bestFallbackId = heading.id;
+                    break;
+                }
+            }
+            if (bestFallbackId) {
+                 setActiveHeadingId(bestFallbackId);
+            } else if (headings.length > 0) {
+                // If all headings are below this point (e.g. scrolled to very top)
+                // activate the first one IF it's actually visible or near visible.
+                const firstHeadingRect = headings[0].getBoundingClientRect();
+                if (firstHeadingRect.bottom > 0 && firstHeadingRect.top < window.innerHeight / 2) {
+                   setActiveHeadingId(headings[0].id);
+                } else {
+                   setActiveHeadingId(null); // Clear if nothing is conclusively active
+                }
+            } else {
+              setActiveHeadingId(null);
+            }
+        }
 
 
     }, observerOptions);
@@ -240,10 +234,10 @@ export default function BlogPostPage() {
       if (currentObserver) {
         currentObserver.disconnect();
       }
-      activeEntryMap.clear();
+      activeEntryMap.current.clear();
     };
 
-  }, [mdxSource]); // Re-run when MDX content changes
+  }, [mdxSource, NAVBAR_HEIGHT_OFFSET]);
 
 
   if (isLoading) {
@@ -303,25 +297,43 @@ export default function BlogPostPage() {
       const { children, ...rest } = props;
       let id = props.id;
       if (!id && typeof children === 'string') {
-        id = children.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || `heading-${Math.random().toString(36).substring(7)}`;
+        id = children.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || `heading-h1-${Math.random().toString(36).substring(7)}`;
       } else if (!id) {
-        id = `heading-${Math.random().toString(36).substring(7)}`;
+        id = `heading-h1-${Math.random().toString(36).substring(7)}`;
       }
       return (
-        <h1 id={id} {...rest} className="text-2xl font-semibold tracking-tight mt-8 mb-4" style={{ scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px` }}>{children}</h1>
+        <h1 id={id} {...rest} className="text-2xl font-semibold tracking-tight mt-10 mb-4" style={{ scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px` }}>{children}</h1>
       );
     },
     h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
       const { children, ...rest } = props;
-      return <h2 {...rest} className="text-lg font-semibold tracking-tight mt-6 mb-3">{children}</h2>;
+      let id = props.id;
+      if (!id && typeof children === 'string') {
+        id = children.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || `heading-h2-${Math.random().toString(36).substring(7)}`;
+      } else if (!id) {
+        id = `heading-h2-${Math.random().toString(36).substring(7)}`;
+      }
+      return <h2 id={id} {...rest} className="text-xl font-semibold tracking-tight mt-8 mb-3" style={{ scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px` }}>{children}</h2>;
     },
     h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
       const { children, ...rest } = props;
-      return <h3 {...rest} className="text-base font-semibold tracking-tight mt-5 mb-2">{children}</h3>;
+      let id = props.id;
+      if (!id && typeof children === 'string') {
+        id = children.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || `heading-h3-${Math.random().toString(36).substring(7)}`;
+      } else if (!id) {
+        id = `heading-h3-${Math.random().toString(36).substring(7)}`;
+      }
+      return <h3 id={id} {...rest} className="text-lg font-semibold tracking-tight mt-6 mb-2" style={{ scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px` }}>{children}</h3>;
     },
     h4: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
       const { children, ...rest } = props;
-      return <h4 {...rest} className="text-sm font-semibold tracking-tight mt-4 mb-2">{children}</h4>;
+       let id = props.id;
+      if (!id && typeof children === 'string') {
+        id = children.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || `heading-h4-${Math.random().toString(36).substring(7)}`;
+      } else if (!id) {
+        id = `heading-h4-${Math.random().toString(36).substring(7)}`;
+      }
+      return <h4 id={id} {...rest} className="text-base font-semibold tracking-tight mt-5 mb-2" style={{ scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px` }}>{children}</h4>;
     },
      p: (props: React.HTMLAttributes<HTMLParagraphElement>) => {
       const { children, className: propClassName, ...rest } = props;
@@ -410,7 +422,7 @@ export default function BlogPostPage() {
                 </div>
               )}
             </div>
-            <div className="lg:col-span-4 hidden lg:block"></div>
+            <div className="lg:col-span-4 hidden lg:block"></div> {/* Empty column to match content layout */}
           </div>
 
 
@@ -465,7 +477,7 @@ export default function BlogPostPage() {
                         <p className="text-sm text-muted-foreground mb-0.5">Article written by</p>
                         <h3 className="text-2xl font-bold text-foreground mb-2">{creditAuthorName}</h3>
                         <p className="text-sm text-muted-foreground leading-relaxed">{creditAuthorDescription}</p>
-                         {(post.author_twitter_url || post.author_linkedin_url || post.author_website_url) && (
+                         {(post.author_twitter_url || post.author_linkedin_url || post.author_website_url || post.author_instagram_url || post.author_email_address) && (
                             <div className="mt-3 flex space-x-3">
                                 {post.author_twitter_url && (
                                 <a href={post.author_twitter_url} target="_blank" rel="noopener noreferrer" aria-label="Author's Twitter" className="text-muted-foreground hover:text-primary">
@@ -477,9 +489,19 @@ export default function BlogPostPage() {
                                     <Linkedin size={18} />
                                 </a>
                                 )}
+                                 {post.author_instagram_url && (
+                                <a href={post.author_instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Author's Instagram" className="text-muted-foreground hover:text-primary">
+                                    <Instagram size={18} />
+                                </a>
+                                )}
                                 {post.author_website_url && (
                                 <a href={post.author_website_url} target="_blank" rel="noopener noreferrer" aria-label="Author's Website" className="text-muted-foreground hover:text-primary">
                                     <Globe size={18} />
+                                </a>
+                                )}
+                                {post.author_email_address && (
+                                <a href={`mailto:${post.author_email_address}`} aria-label="Author's Email" className="text-muted-foreground hover:text-primary">
+                                    <Mail size={18} />
                                 </a>
                                 )}
                             </div>
@@ -491,7 +513,7 @@ export default function BlogPostPage() {
             </div>
 
             <div className="lg:col-span-4 order-1 lg:order-2 mb-10 lg:mb-0">
-              <div className="sticky top-28 space-y-6">
+              <div className="sticky top-28 space-y-6"> {/* Adjusted top from top-24 to top-28 */}
                 <TableOfContents
                   tocItems={tocItems}
                   isLoading={isLoading && !mdxSource}
@@ -573,3 +595,5 @@ export default function BlogPostPage() {
     </div>
   );
 }
+
+    
