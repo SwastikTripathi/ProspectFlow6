@@ -1,14 +1,26 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useParams, notFound } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
+import type { Tables } from '@/lib/database.types';
+import { format, parseISO } from 'date-fns';
+import { Loader2, Tag, UserCircle2, Facebook, Twitter, Linkedin, Link as LinkIcon } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+import { Article } from '../components/Article';
+import { TableOfContents, type TocItem } from '../components/TableOfContents';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 import { Logo } from '@/components/icons/Logo';
 import { Around } from "@theme-toggles/react";
 import "@theme-toggles/react/css/Around.css";
-import { cn } from '@/lib/utils';
-import { Facebook, Twitter, Youtube, Linkedin, Globe as FooterGlobeIcon } from 'lucide-react';
+
+
+const NAVBAR_HEIGHT_OFFSET = 80; // Approx height of sticky navbar + buffer
 
 const footerLinks = {
     product: [
@@ -34,7 +46,21 @@ const footerLinks = {
     ],
 };
 
+
 export default function BlogPostPage() {
+  const params = useParams();
+  const slug = params?.slug as string | undefined;
+  const { toast } = useToast();
+
+  const [post, setPost] = useState<Tables<'posts'> | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [tocItems, setTocItems] = useState<TocItem[]>([]);
+  const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null);
+  const [scrollPercentage, setScrollPercentage] = useState(0);
+  const mainContentRef = useRef<HTMLDivElement>(null);
+  const headingElementsRef = useRef<HTMLElement[]>([]);
   const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
 
   useEffect(() => {
@@ -45,7 +71,7 @@ export default function BlogPostPage() {
     document.documentElement.classList.toggle('dark', initialTheme === 'dark');
   }, []);
 
-  const toggleTheme = () => {
+  const toggleThemeHandler = () => {
     setTheme(prevTheme => {
       const newTheme = prevTheme === 'light' ? 'dark' : 'light';
       document.documentElement.classList.toggle('dark', newTheme === 'dark');
@@ -54,10 +80,160 @@ export default function BlogPostPage() {
     });
   };
 
-  return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-background to-secondary/10">
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+  useEffect(() => {
+    if (!slug) {
+      setIsLoading(false);
+      setError("No post slug provided.");
+      return;
+    }
+
+    const fetchPost = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const { data, error: dbError } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('slug', slug)
+          .single();
+
+        if (dbError) {
+          if (dbError.code === 'PGRST116') { // Not found
+            notFound();
+            return;
+          }
+          throw dbError;
+        }
+        setPost(data);
+      } catch (err: any) {
+        setError(err.message || 'Failed to fetch post.');
+        console.error('Error fetching post:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPost();
+  }, [slug]);
+
+  useEffect(() => {
+    if (!post || !mainContentRef.current) {
+      setTocItems([]);
+      return;
+    }
+
+    const headings = Array.from(
+      mainContentRef.current.querySelectorAll('h1, h2, h3, h4')
+    ) as HTMLElement[];
+
+    headingElementsRef.current = headings;
+
+    const newTocItems = headings.map((heading, index) => {
+      const text = heading.textContent || '';
+      const level = parseInt(heading.tagName.substring(1), 10);
+      let id = heading.id;
+      if (!id) {
+        id = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+        heading.id = id;
+      }
+      return { id, level, text };
+    });
+    setTocItems(newTocItems);
+  }, [post]);
+
+
+  const handleScroll = useCallback(() => {
+    if (!headingElementsRef.current.length || !tocItems.length) return;
+
+    let currentActiveIndex = -1;
+    for (let i = headingElementsRef.current.length - 1; i >= 0; i--) {
+      const heading = headingElementsRef.current[i];
+      const rect = heading.getBoundingClientRect();
+      if (rect.top < NAVBAR_HEIGHT_OFFSET + 20) { // +20 for a bit of buffer
+        currentActiveIndex = i;
+        break;
+      }
+    }
+    
+    const newActiveId = currentActiveIndex !== -1 ? headingElementsRef.current[currentActiveIndex].id : null;
+    setActiveHeadingId(newActiveId);
+    
+    let percentage = 0;
+    if (currentActiveIndex !== -1) {
+      percentage = ((currentActiveIndex + 1) / tocItems.length) * 100;
+    }
+    // Ensure 100% at the very bottom
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 30) {
+      percentage = 100;
+    }
+    setScrollPercentage(Math.min(100, Math.max(0, percentage)));
+
+  }, [tocItems.length]);
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleScroll);
+    handleScroll(); 
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [handleScroll]);
+
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
          <div className="container flex h-16 max-w-screen-2xl items-center justify-between mx-auto px-[5vw] md:px-[10vw]">
+            <Link href="/landing" className="mr-6 flex items-center space-x-2"><Logo /></Link>
+         </div>
+        </header>
+        <main className="flex-1 py-12 md:py-16 flex justify-center items-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+         <div className="container flex h-16 max-w-screen-2xl items-center justify-between mx-auto px-[5vw] md:px-[10vw]">
+           <Link href="/landing" className="mr-6 flex items-center space-x-2"><Logo /></Link>
+         </div>
+        </header>
+        <main className="flex-1 py-12 md:py-16 text-center">
+          <p className="text-destructive">{error}</p>
+          <Button onClick={() => window.location.reload()} className="mt-4">Try Again</Button>
+        </main>
+      </div>
+    );
+  }
+  
+  if (!post) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+         <div className="container flex h-16 max-w-screen-2xl items-center justify-between mx-auto px-[5vw] md:px-[10vw]">
+          <Link href="/landing" className="mr-6 flex items-center space-x-2"><Logo /></Link>
+         </div>
+        </header>
+        <main className="flex-1 py-12 md:py-16 text-center">
+          <p className="text-muted-foreground">Post not found.</p>
+          <Link href="/blog"><Button variant="link">Back to Blog</Button></Link>
+        </main>
+      </div>
+    );
+  }
+
+  const displayDate = post.published_at ? format(parseISO(post.published_at), 'MMMM d, yyyy') : 'Date unavailable';
+  const authorName = post.author_name_cache || 'ProspectFlow Team';
+
+  return (
+    <div className="flex flex-col min-h-screen bg-background">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 max-w-screen-2xl items-center justify-between mx-auto px-[5vw] md:px-[10vw]">
           <Link href="/landing" className="mr-6 flex items-center space-x-2">
             <Logo />
           </Link>
@@ -68,12 +244,12 @@ export default function BlogPostPage() {
             <Button variant="ghost" asChild className="rounded-full text-primary font-semibold">
               <Link href="/blog">Blog</Link>
             </Button>
-             <Button variant="ghost" asChild className="rounded-full">
+            <Button variant="ghost" asChild className="rounded-full">
               <Link href="/about">About</Link>
             </Button>
             <Around
               toggled={theme === 'dark'}
-              onClick={toggleTheme}
+              onClick={toggleThemeHandler}
               title="Toggle theme"
               aria-label="Toggle theme"
               className={cn(
@@ -93,8 +269,73 @@ export default function BlogPostPage() {
       </header>
 
       <main className="flex-1 py-12 md:py-16">
-        <div className="container mx-auto px-[5vw] md:px-[10vw] max-w-4xl">
-          {/* Content Removed */}
+        <div className="container mx-auto px-[5vw] md:px-[8vw] lg:px-[10vw] max-w-screen-xl">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 lg:gap-x-12 xl:gap-x-16">
+            {/* Left Column: Article Content */}
+            <div className="lg:col-span-8 order-2 lg:order-1">
+              <div className="flex items-center space-x-3 mb-4 text-sm">
+                <UserCircle2 className="h-8 w-8 text-muted-foreground" /> {/* Placeholder Avatar */}
+                <div>
+                  <p className="font-medium text-foreground">{authorName}</p>
+                  <p className="text-muted-foreground">{displayDate}</p>
+                </div>
+              </div>
+
+              <h1 className="text-3xl sm:text-4xl md:text-[2.5rem] font-bold tracking-tight mb-3 text-gray-900 dark:text-gray-100 leading-tight">
+                {post.title}
+              </h1>
+
+              <div className="mb-8">
+                <Link href="#" className="text-sm text-sky-600 dark:text-sky-500 hover:underline flex items-center">
+                  <Tag className="h-4 w-4 mr-1.5" />
+                  Close Features and News
+                </Link>
+              </div>
+              
+              <div ref={mainContentRef}>
+                <Article content={post.content} />
+              </div>
+            </div>
+
+            {/* Right Column: Sticky Sidebar (Image, TOC, Share) */}
+            <div className="lg:col-span-4 order-1 lg:order-2 mb-10 lg:mb-0">
+              <div className="sticky top-24 space-y-6">
+                {post.cover_image_url && (
+                  <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20">
+                    <Image
+                      src={post.cover_image_url}
+                      alt={post.title || 'Blog post cover image'}
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 33vw"
+                      className="object-cover"
+                      priority
+                      data-ai-hint="woman stress laptop" 
+                    />
+                  </div>
+                )}
+                {!post.cover_image_url && (
+                   <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 bg-muted flex items-center justify-center">
+                      <Image
+                        src="https://placehold.co/600x375.png" // Aspect ratio matches 16/10 for placeholder
+                        alt="Placeholder image"
+                        width={600}
+                        height={375}
+                        className="object-cover"
+                        data-ai-hint="woman stress laptop"
+                      />
+                   </div>
+                )}
+                
+                <TableOfContents
+                  tocItems={tocItems}
+                  isLoading={isLoading}
+                  scrollPercentage={scrollPercentage}
+                  activeHeadingId={activeHeadingId}
+                  postTitle={post.title}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </main>
 
@@ -143,7 +384,7 @@ export default function BlogPostPage() {
               <div className="mt-4">
                  <Button variant="outline" className="w-full justify-between bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200 hover:text-slate-50">
                     <span>Language</span>
-                    <FooterGlobeIcon className="h-4 w-4 opacity-50" />
+                    <Globe className="h-4 w-4 opacity-50" />
                 </Button>
               </div>
             </div>
@@ -158,7 +399,6 @@ export default function BlogPostPage() {
             <div className="flex space-x-4">
               <a href="#" aria-label="Facebook" className="text-slate-400 hover:text-primary transition-colors"><Facebook size={20} /></a>
               <a href="#" aria-label="Twitter" className="text-slate-400 hover:text-primary transition-colors"><Twitter size={20} /></a>
-              <a href="#" aria-label="YouTube" className="text-slate-400 hover:text-primary transition-colors"><Youtube size={20} /></a>
               <a href="#" aria-label="LinkedIn" className="text-slate-400 hover:text-primary transition-colors"><Linkedin size={20} /></a>
             </div>
           </div>
@@ -167,5 +407,4 @@ export default function BlogPostPage() {
     </div>
   );
 }
-
     
