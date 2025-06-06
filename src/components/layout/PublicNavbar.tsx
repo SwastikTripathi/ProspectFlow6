@@ -103,11 +103,11 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
   const navLinkClass = (linkType?: 'landing' | 'pricing' | 'blog' | 'about') => {
     const isActive = activeLink === linkType;
     return cn(
-      "rounded-full px-3 py-1.5 sm:px-4 h-auto", // Adjusted padding and height
-      "transition-colors duration-150 ease-in-out",
+      "rounded-full px-3 py-1.5 sm:px-4 h-auto", // Base padding and height
+      "transition-colors duration-150 ease-in-out", // Base transition
       isActive
-        ? "text-primary font-semibold" // Active link: primary color, bold, no hover underline here
-        : "text-foreground/70 hover:bg-transparent hover:text-primary hover:underline hover:underline-offset-4 active:text-primary/90 focus-visible:text-primary focus-visible:underline focus-visible:underline-offset-4"
+        ? "text-primary font-semibold cursor-default" // Active link: primary color, bold, no hover effects
+        : "text-foreground/70 hover:underline hover:underline-offset-4 focus-visible:underline focus-visible:underline-offset-4 active:text-primary/90" // Inactive: default color, underline on hover/focus, primary color on active (click)
     );
   };
   
@@ -131,7 +131,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
             <Link href="/about">About</Link>
           </Button>
           
-          <div className="mx-1 sm:mx-2"> {/* Add some spacing around the theme toggle */}
+          <div className="mx-1 sm:mx-2 flex items-center"> {/* Ensured this div is also a flex-center container */}
             <Around
                 toggled={theme === 'dark'}
                 onClick={toggleThemeHandler}
@@ -139,7 +139,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
                 aria-label="Toggle theme"
                 className={cn(
                 "theme-toggle text-foreground/70 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-                "h-6 w-6 p-0" // Slightly smaller toggle
+                "block h-6 w-6 p-0" // Added 'block'
                 )}
                 style={{ '--theme-toggle__around--duration': '500ms' } as React.CSSProperties}
             />
@@ -191,7 +191,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
             </HoverCard>
           ) : (
             <>
-              <Button variant="ghost" asChild className="rounded-full px-3 py-1.5 sm:px-4 h-auto text-foreground/70 hover:bg-transparent hover:text-primary active:text-primary/90">
+              <Button variant="ghost" asChild className={cn(navLinkClass(), "text-foreground/70 hover:underline active:text-primary/90")}>
                 <Link href="/auth">Sign In</Link>
               </Button>
               <Button asChild className="shadow-md rounded-full h-9 px-4 text-sm">
