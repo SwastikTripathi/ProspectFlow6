@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AnimatedSectionImage } from '@/components/utils/AnimatedSectionImage';
 import { PublicNavbar } from '@/components/layout/PublicNavbar';
+import { PublicFooter } from '@/components/layout/PublicFooter'; // Added import
 import { cn } from '@/lib/utils';
 
 const newTestimonialsData = [
@@ -280,54 +281,6 @@ const AnimatedWordsSection = () => {
 
 
 export default function LandingPage() {
-  const footerLinks = {
-    product: [
-      { name: 'Overview', href: '#' },
-      { name: 'Communication', href: '#' },
-      { name: 'Automation', href: '#' },
-      { name: 'Integrations', href: '#' },
-      { name: 'Reporting', href: '#' },
-      { name: 'SMS', href: '#' },
-      { name: 'Calling', href: '#' },
-      { name: 'Security', href: '#' },
-    ],
-    pricing: [
-      { name: 'Pricing', href: '/pricing' },
-      { name: 'Close vs Other CRMs', href: '#' },
-      { name: 'Close for Startups', href: '#' },
-      { name: 'Customer Stories', href: '#' },
-      { name: 'Inbound Sales', href: '#' },
-      { name: 'Outbound Sales', href: '#' },
-    ],
-    resources: [
-      { name: 'Blog', href: '/blog' },
-      { name: 'Ebooks + Templates', href: '#' },
-      { name: 'Guides', href: '#' },
-      { name: 'See a demo video', href: '#' },
-      { name: 'Office Hours', href: '#' },
-      { name: 'Sales Tools', href: '#' },
-    ],
-    company: [
-      { name: 'About', href: '/about' },
-      { name: 'Careers', href: '#' },
-      { name: 'Partner with Close', href: '#' },
-      { name: 'Brand Guidelines', href: '#' },
-      { name: 'Terms', href: '#' },
-      { name: 'Privacy', href: '#' },
-      { name: 'GDPR', href: '#' },
-      { name: 'CCPA', href: '#' },
-    ],
-    getHelp: [
-      { name: '+1-833-GO-CLOSE', href: 'tel:+18334625673' },
-      { name: 'Help Center', href: '#' },
-      { name: 'API Documentation', href: '#' },
-      { name: 'Download the Close App', href: '#' },
-      { name: 'Product Updates', href: '#' },
-      { name: '2025 Product Roadmap', href: '#' },
-      { name: 'System Status', href: '#' },
-    ],
-  };
-
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-background to-secondary/10">
@@ -634,75 +587,8 @@ export default function LandingPage() {
             </Button>
           </div>
         </section>
-
       </main>
-
-      <footer className="bg-slate-900 text-slate-300">
-        <div className="container mx-auto px-[10vw] py-12 md:py-16">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 mb-12">
-            <div>
-              <h5 className="font-bold text-slate-50 mb-4">Product</h5>
-              <ul className="space-y-2">
-                {footerLinks.product.map((link) => (
-                  <li key={link.name}><Link href={link.href} className="hover:text-primary transition-colors">{link.name}</Link></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h5 className="font-bold text-slate-50 mb-4">Pricing & Use Cases</h5>
-              <ul className="space-y-2">
-                {footerLinks.pricing.map((link) => (
-                  <li key={link.name}><Link href={link.href} className="hover:text-primary transition-colors">{link.name}</Link></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h5 className="font-bold text-slate-50 mb-4">Resources</h5>
-              <ul className="space-y-2">
-                {footerLinks.resources.map((link) => (
-                  <li key={link.name}><Link href={link.href} className="hover:text-primary transition-colors">{link.name}</Link></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h5 className="font-bold text-slate-50 mb-4">Company</h5>
-              <ul className="space-y-2">
-                {footerLinks.company.map((link) => (
-                  <li key={link.name}><Link href={link.href} className="hover:text-primary transition-colors">{link.name}</Link></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h5 className="font-bold text-slate-50 mb-4">Get Help</h5>
-              <ul className="space-y-2">
-                {footerLinks.getHelp.map((link) => (
-                  <li key={link.name}><Link href={link.href} className="hover:text-primary transition-colors">{link.name}</Link></li>
-                ))}
-              </ul>
-              <div className="mt-4">
-                 <Button variant="outline" className="w-full justify-between bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200 hover:text-slate-50">
-                    <span>Language</span>
-                    <Globe className="h-4 w-4 opacity-50" />
-                </Button>
-              </div>
-            </div>
-          </div>
-          <div className="border-t border-slate-700 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <div className="mb-4 md:mb-0">
-              <Logo />
-            </div>
-            <div className="text-sm text-slate-400 mb-4 md:mb-0">
-              &copy; {new Date().getFullYear()} ProspectFlow Inc. All rights reserved.
-            </div>
-            <div className="flex space-x-4">
-              <a href="#" aria-label="Facebook" className="text-slate-400 hover:text-primary transition-colors"><Facebook size={20} /></a>
-              <a href="#" aria-label="Twitter" className="text-slate-400 hover:text-primary transition-colors"><Twitter size={20} /></a>
-              <a href="#" aria-label="YouTube" className="text-slate-400 hover:text-primary transition-colors"><Youtube size={20} /></a>
-              <a href="#" aria-label="LinkedIn" className="text-slate-400 hover:text-primary transition-colors"><Linkedin size={20} /></a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }
