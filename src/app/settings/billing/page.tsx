@@ -15,7 +15,8 @@ import { createRazorpayOrder, verifyRazorpayPayment } from '@/app/actions/razorp
 import { addMonths, isFuture, format } from 'date-fns';
 import { ALL_AVAILABLE_PLANS } from '@/lib/config';
 import { cn } from '@/lib/utils';
-import { generateInvoicePdf } from '@/lib/invoiceGenerator'; // Added import
+import { generateInvoicePdf } from '@/lib/invoiceGenerator';
+import { AskForNameDialog } from '@/components/AskForNameDialog'; // New Import
 
 const NEXT_PUBLIC_RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
@@ -30,6 +31,14 @@ interface PlanDisplayInfo {
   discountPercentage?: number;
 }
 
+// Data structure to hold information needed for invoice generation
+// if we have to wait for user to input their name.
+interface PendingInvoiceContext {
+  plan: AvailablePlan;
+  paymentId: string;
+  orderId: string;
+  finalAmountPaid: number;
+}
 
 export default function BillingPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -37,6 +46,8 @@ export default function BillingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
+  const [isAskNameDialogOpen, setIsAskNameDialogOpen] = useState(false);
+  const [pendingInvoiceContext, setPendingInvoiceContext] = useState<PendingInvoiceContext | null>(null);
 
   const { toast } = useToast();
 
@@ -60,7 +71,7 @@ export default function BillingPage() {
     );
     supabase.auth.getUser().then(({ data: { user } }) => {
       setCurrentUser(user);
-      if(!user) setIsLoading(false);
+       if(!user) setIsLoading(false);
     });
     return () => authListener.subscription?.unsubscribe();
   }, [toast]);
@@ -91,7 +102,6 @@ export default function BillingPage() {
           plan_expiry_date: data.plan_expiry_date ? new Date(data.plan_expiry_date) : null,
         });
       } else {
-        // No active subscription, default to free effectively by setting null
         setCurrentSubscription(null); 
       }
     } catch (error: any) {
@@ -149,41 +159,25 @@ export default function BillingPage() {
     }
   };
 
-  const handleSuccessfulPaymentAndSubscription = async (
-    plan: AvailablePlan, 
-    paymentId: string, 
-    orderId: string,
-    finalAmountPaid: number
-  ) => {
-    if (!currentUser) return;
-
-    // 1. Prepare data for invoice
-    const userName = currentUser.user_metadata?.full_name || currentUser.email || 'Valued Customer';
-    if (!currentUser.user_metadata?.full_name) {
-        toast({
-            title: 'Name Missing for Invoice',
-            description: 'Your name is not set. Please update it in Account Settings for a complete invoice. Using email for now.',
-            duration: 7000,
-        });
-    }
-    
+  const proceedToGenerateInvoice = (userNameForInvoice: string, context: PendingInvoiceContext) => {
     const invoiceData: InvoiceData = {
-      invoiceNumber: `INV-${format(new Date(), 'yyyyMMdd')}-${orderId.slice(-6)}`,
+      invoiceNumber: `INV-${format(new Date(), 'yyyyMMdd')}-${context.orderId.slice(-6)}`,
       invoiceDate: format(new Date(), 'PPP'),
-      userName: userName,
-      userEmail: currentUser.email || 'N/A',
-      planName: plan.name,
-      planPrice: finalAmountPaid,
-      paymentId: paymentId,
-      orderId: orderId,
-      companyName: "ProspectFlow Inc.", // Placeholder, make this configurable
-      // companyAddress: "123 Main St, Anytown, USA",
-      // companyContact: "support@prospectflow.com"
+      userName: userNameForInvoice,
+      userEmail: currentUser?.email || 'N/A',
+      planName: context.plan.name,
+      planPrice: context.finalAmountPaid,
+      paymentId: context.paymentId,
+      orderId: context.orderId,
+      companyName: "ProspectFlow Inc.",
+      companyAddress: "123 Innovation Drive, Tech City, ST 54321",
+      companyContact: "contact@prospectflow.com",
     };
 
-    // 2. Generate and download PDF invoice
     try {
       generateInvoicePdf(invoiceData);
+      // Future: Save invoice metadata to Supabase `invoices` table here
+      // For example: await supabase.from('invoices').insert({ user_id: currentUser.id, ...invoiceData });
     } catch (pdfError: any) {
       toast({
         title: 'Invoice Generation Failed',
@@ -192,28 +186,62 @@ export default function BillingPage() {
         duration: 10000,
       });
     }
+  };
 
-    // 3. Placeholder: Save invoice metadata to your database
-    // try {
-    //   const { error: saveInvoiceError } = await supabase
-    //     .from('invoices') // Assuming you have an 'invoices' table
-    //     .insert({
-    //       user_id: currentUser.id,
-    //       invoice_number: invoiceData.invoiceNumber,
-    //       invoice_date: new Date(invoiceData.invoiceDate).toISOString(),
-    //       plan_name: invoiceData.planName,
-    //       amount: invoiceData.planPrice,
-    //       razorpay_payment_id: invoiceData.paymentId,
-    //       razorpay_order_id: invoiceData.orderId,
-    //       // ... other relevant fields
-    //     });
-    //   if (saveInvoiceError) throw saveInvoiceError;
-    // } catch (dbError: any) {
-    //   // Log this error server-side or to an error tracking service
-    //   // User's subscription is active, so this is more for your records.
-    // }
+  const handleNameSubmittedForInvoice = async (submittedName: string) => {
+    if (!currentUser || !pendingInvoiceContext) {
+      toast({ title: 'Error', description: 'User or payment context missing.', variant: 'destructive' });
+      setIsAskNameDialogOpen(false);
+      return;
+    }
 
-    await fetchSubscription(); // Refresh subscription display
+    try {
+      const { data: updatedUser, error: userUpdateError } = await supabase.auth.updateUser({
+        data: { full_name: submittedName }
+      });
+
+      if (userUpdateError) throw userUpdateError;
+
+      // Refresh currentUser state or specifically update the name
+      setCurrentUser(prevUser => prevUser ? {...prevUser, user_metadata: {...prevUser.user_metadata, full_name: submittedName}} : null);
+      
+      toast({ title: 'Name Updated', description: 'Your name has been saved to your profile.' });
+      
+      proceedToGenerateInvoice(submittedName, pendingInvoiceContext);
+
+    } catch (error: any) {
+      toast({ title: 'Error Updating Name', description: error.message, variant: 'destructive' });
+      // Still attempt to generate invoice with email as fallback if name update fails
+      proceedToGenerateInvoice(currentUser.email || 'Valued Customer', pendingInvoiceContext);
+    } finally {
+      setIsAskNameDialogOpen(false);
+      setPendingInvoiceContext(null); // Clear pending context
+    }
+  };
+
+  const handleSuccessfulPaymentAndSubscription = async (
+    plan: AvailablePlan, 
+    paymentId: string, 
+    orderId: string,
+    finalAmountPaid: number
+  ) => {
+    if (!currentUser) return;
+    
+    await fetchSubscription(); // Refresh subscription display first
+
+    const userNameForInvoice = currentUser.user_metadata?.full_name || '';
+
+    if (!userNameForInvoice) {
+      setPendingInvoiceContext({ plan, paymentId, orderId, finalAmountPaid });
+      setIsAskNameDialogOpen(true);
+      toast({
+          title: 'Name Required for Invoice',
+          description: 'Please enter your name to include on the invoice.',
+          duration: 7000,
+      });
+    } else {
+      proceedToGenerateInvoice(userNameForInvoice, { plan, paymentId, orderId, finalAmountPaid });
+    }
   };
 
 
@@ -241,7 +269,7 @@ export default function BillingPage() {
 
       const isUserCurrentlyOnActivePremium = 
         currentSubscription &&
-        currentSubscription.tier === 'premium' &&
+        currentSubscription.tier === 'premium' && 
         currentSubscription.status === 'active' &&
         currentSubscription.plan_expiry_date &&
         isFuture(new Date(currentSubscription.plan_expiry_date));
@@ -330,9 +358,7 @@ export default function BillingPage() {
                  if (upsertError) throw new Error(upsertError.message || 'Failed to update subscription after payment.');
                 toast({ title: 'Payment Successful!', description: `Your subscription to ${plan.name} is active.`});
                 
-                // Call new handler for invoice and other post-payment actions
                 await handleSuccessfulPaymentAndSubscription(plan, response.razorpay_payment_id, response.razorpay_order_id, finalAmountForPayment);
-                // fetchSubscription is called inside handleSuccessfulPaymentAndSubscription
               } else {
                 toast({ title: 'Payment Verification Failed', description: verificationResult.error || 'Please contact support.', variant: 'destructive' });
               }
@@ -610,7 +636,14 @@ export default function BillingPage() {
             </CardContent>
         </Card>
       </div>
+      {currentUser && (
+        <AskForNameDialog
+            isOpen={isAskNameDialogOpen}
+            onOpenChange={setIsAskNameDialogOpen}
+            onSubmitName={handleNameSubmittedForInvoice}
+            currentEmail={currentUser.email}
+        />
+      )}
     </AppLayout>
   );
 }
-
