@@ -173,7 +173,7 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
                               tooltip={isCollapsedDesktop ? { children: favoriteDisplayName, side: "right", align: "center" } : undefined}
                             >
                               <Link href={`/job-openings?view=${opening.id}`}>
-                                <Star className="text-primary flex-shrink-0" />
+                                <Star className="text-yellow-500 flex-shrink-0" />
                                 <span className={cn("truncate ml-2", isCollapsedDesktop ? "hidden" : "group-data-[collapsible=icon]:hidden")}>
                                   {favoriteDisplayName}
                                 </span>
