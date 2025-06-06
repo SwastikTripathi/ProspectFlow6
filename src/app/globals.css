@@ -2,13 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import highlight.js theme */
+@import 'highlight.js/styles/github.css';
+
 body {
-  font-family: 'PT Sans', sans-serif; /* Default body font */
-  @apply leading-relaxed; /* Apply relaxed line height globally */
+  font-family: 'Inter', sans-serif; /* Default body font, Inter is now primary */
+  @apply leading-relaxed antialiased; /* Apply relaxed line height and antialiasing globally */
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'PT Sans', sans-serif; /* Default headline font, was Playfair Display */
+  font-family: 'Inter', sans-serif; /* Default headline font, Inter is now primary */
 }
 
 @layer base {
