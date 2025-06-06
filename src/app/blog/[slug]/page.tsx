@@ -96,7 +96,7 @@ export default function BlogPostPage() {
       try {
         const { data, error: dbError } = await supabase
           .from('posts')
-          .select('*')
+          .select('*') // Select all columns including new social media URLs
           .eq('slug', slug)
           .single();
 
@@ -137,27 +137,23 @@ export default function BlogPostPage() {
     const activationPoint = NAVBAR_HEIGHT_OFFSET + 10; // Line below navbar
     let newActiveId: string | null = null;
 
-    // Iterate from top to bottom, find the last heading above the activation point
     for (let i = 0; i < headingElementsRef.current.length; i++) {
-      const heading = headingElementsRef.current[i];
-      const rect = heading.getBoundingClientRect();
-      if (rect.top <= activationPoint) {
-        newActiveId = heading.id;
-      } else {
-        // This heading and subsequent ones are below the activation point.
-        // If newActiveId is null at this point (meaning first heading is already below),
-        // then newActiveId remains null (or will be set to first if visible).
-        // Otherwise, the current newActiveId is the correct one.
-        break;
-      }
+        const heading = headingElementsRef.current[i];
+        const rect = heading.getBoundingClientRect();
+        if (rect.top <= activationPoint) {
+            newActiveId = heading.id;
+        } else {
+            break; 
+        }
     }
     
-    // If no heading is above the activation point (e.g., scrolled to top)
-    // and there are headings, make the first one active if it's somewhat visible.
     if (newActiveId === null && headingElementsRef.current.length > 0) {
       const firstHeadingRect = headingElementsRef.current[0].getBoundingClientRect();
       if (firstHeadingRect.top < window.innerHeight && firstHeadingRect.bottom >= 0) {
-        // newActiveId = headingElementsRef.current[0].id; // Commented out for testing direct match
+        // No need to set to first heading here if nothing is above activation,
+        // it means we are scrolled above the first heading, so activeId should be null
+        // or based on direct visibility which is harder to manage reliably with scrolling.
+        // The current newActiveId (which would be null or the last valid one) is preferred.
       }
     }
   
@@ -178,12 +174,10 @@ export default function BlogPostPage() {
       return;
     }
     
-    // Ensure this runs after MDXRemote has rendered
-    // Using a microtask or a short timeout can help, but ideally, this effect runs when mainContentRef updates with new children
     queueMicrotask(() => {
       if (mainContentRef.current) {
         const headings = Array.from(
-          mainContentRef.current.querySelectorAll('h1') // Only H1 for TOC as per previous instruction
+          mainContentRef.current.querySelectorAll('h1')
         ) as HTMLElement[];
 
         headingElementsRef.current = headings;
@@ -192,15 +186,13 @@ export default function BlogPostPage() {
           const text = heading.textContent || '';
           let id = heading.id;
           if (!id) {
-            // ID generation logic from mdxComponents should handle this, but as a fallback:
             id = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || `heading-${index}`;
             heading.id = id;
           }
-          return { id, level: 1, text }; // Level is 1 for H1
+          return { id, level: 1, text };
         });
         setTocItems(newTocItems);
         
-        // Initial scroll check after headings are populated
         handleScroll(); 
       }
     });
@@ -210,7 +202,7 @@ export default function BlogPostPage() {
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
-    window.addEventListener('resize', handleScroll); // Recalculate on resize
+    window.addEventListener('resize', handleScroll);
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
@@ -283,8 +275,8 @@ export default function BlogPostPage() {
         <h1
           id={id}
           {...rest}
-          style={{ scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px` }} // Keep scroll margin
-          className={cn("text-2xl font-semibold tracking-tight mt-8 mb-4", propClassName)} 
+          style={{ scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px` }}
+          className={cn("text-2xl font-semibold tracking-tight mt-8 mb-4", propClassName)}
         >
           {children}
         </h1>
@@ -292,15 +284,15 @@ export default function BlogPostPage() {
     },
     h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
       const { children, className: propClassName, ...rest } = props;
-      return <h2 {...rest} className={cn("text-xl font-semibold tracking-tight mt-6 mb-3", propClassName)}>{children}</h2>;
+      return <h2 {...rest} className={cn("text-lg font-semibold tracking-tight mt-6 mb-3", propClassName)}>{children}</h2>;
     },
     h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
       const { children, className: propClassName, ...rest } = props;
-      return <h3 {...rest} className={cn("text-lg font-semibold tracking-tight mt-5 mb-2", propClassName)}>{children}</h3>;
+      return <h3 {...rest} className={cn("text-base font-semibold tracking-tight mt-5 mb-2", propClassName)}>{children}</h3>;
     },
     h4: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
       const { children, className: propClassName, ...rest } = props;
-      return <h4 {...rest} className={cn("text-base font-semibold tracking-tight mt-4 mb-2", propClassName)}>{children}</h4>;
+      return <h4 {...rest} className={cn("text-sm font-semibold tracking-tight mt-4 mb-2", propClassName)}>{children}</h4>;
     },
     p: (props: React.HTMLAttributes<HTMLParagraphElement>) => {
       const { children, className: propClassName, ...rest } = props;
@@ -316,8 +308,6 @@ export default function BlogPostPage() {
     },
     li: (props: React.HTMLAttributes<HTMLLIElement>) => {
       const { children, className: propClassName, ...rest } = props;
-      // prose-sm default li has "margin-top: 0.2em; margin-bottom: 0.2em;"
-      // We can reduce this slightly if needed or rely on the space-y-1 on parent ul/ol
       return <li {...rest} className={cn("leading-relaxed", propClassName)}>{children}</li>;
     },
   };
@@ -363,9 +353,8 @@ export default function BlogPostPage() {
       <main className="flex-1 py-12 md:py-16">
         <div className="container mx-auto px-[5vw] md:px-[8vw] lg:px-[10vw] max-w-screen-xl">
           
-           {/* Cover image in its own row, constrained */}
            <div className="lg:grid lg:grid-cols-12 lg:gap-x-12 xl:gap-x-16 mb-8">
-            <div className="lg:col-span-8"> {/* Image takes the left 8 columns */}
+            <div className="lg:col-span-8">
               {post.cover_image_url && (
                 <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20">
                   <Image
@@ -392,7 +381,7 @@ export default function BlogPostPage() {
                 </div>
               )}
             </div>
-            <div className="lg:col-span-4 hidden lg:block"></div> {/* Empty right 4 columns */}
+            <div className="lg:col-span-4 hidden lg:block"></div> 
           </div>
 
 
@@ -447,6 +436,25 @@ export default function BlogPostPage() {
                         <p className="text-sm text-muted-foreground mb-0.5">Article written by</p>
                         <h3 className="text-2xl font-bold text-foreground mb-2">{creditAuthorName}</h3>
                         <p className="text-sm text-muted-foreground leading-relaxed">{creditAuthorDescription}</p>
+                         {(post.author_twitter_url || post.author_linkedin_url || post.author_website_url) && (
+                            <div className="mt-3 flex space-x-3">
+                                {post.author_twitter_url && (
+                                <a href={post.author_twitter_url} target="_blank" rel="noopener noreferrer" aria-label="Author's Twitter" className="text-muted-foreground hover:text-primary">
+                                    <Twitter size={18} />
+                                </a>
+                                )}
+                                {post.author_linkedin_url && (
+                                <a href={post.author_linkedin_url} target="_blank" rel="noopener noreferrer" aria-label="Author's LinkedIn" className="text-muted-foreground hover:text-primary">
+                                    <Linkedin size={18} />
+                                </a>
+                                )}
+                                {post.author_website_url && (
+                                <a href={post.author_website_url} target="_blank" rel="noopener noreferrer" aria-label="Author's Website" className="text-muted-foreground hover:text-primary">
+                                    <Globe size={18} />
+                                </a>
+                                )}
+                            </div>
+                        )}
                     </div>
                  </div>
               </div>
@@ -454,7 +462,7 @@ export default function BlogPostPage() {
             </div>
 
             <div className="lg:col-span-4 order-1 lg:order-2 mb-10 lg:mb-0">
-              <div className="sticky top-28 space-y-6"> {/* Adjusted top from top-24 */}
+              <div className="sticky top-28 space-y-6">
                 <TableOfContents
                   tocItems={tocItems}
                   isLoading={isLoading && !mdxSource}
@@ -536,4 +544,6 @@ export default function BlogPostPage() {
     </div>
   );
 }
+    
+
     

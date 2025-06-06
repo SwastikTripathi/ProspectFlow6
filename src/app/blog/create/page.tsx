@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Edit, ShieldAlert } from 'lucide-react';
+import { Loader2, Edit, ShieldAlert, Twitter, Linkedin, Globe } from 'lucide-react';
 import { slugify } from '@/lib/utils';
 import type { TablesInsert } from '@/lib/database.types';
 import { OWNER_EMAIL } from '@/lib/config';
@@ -26,6 +26,9 @@ const createPostSchema = z.object({
   content: z.string().min(10, 'Content is too short'),
   excerpt: z.string().max(300, 'Excerpt too long').optional(),
   cover_image_url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  author_twitter_url: z.string().url('Must be a valid Twitter URL').optional().or(z.literal('')),
+  author_linkedin_url: z.string().url('Must be a valid LinkedIn URL').optional().or(z.literal('')),
+  author_website_url: z.string().url('Must be a valid Website URL').optional().or(z.literal('')),
 });
 
 type CreatePostFormValues = z.infer<typeof createPostSchema>;
@@ -46,6 +49,9 @@ export default function CreatePostPage() {
       content: '',
       excerpt: '',
       cover_image_url: '',
+      author_twitter_url: '',
+      author_linkedin_url: '',
+      author_website_url: '',
     },
   });
 
@@ -92,6 +98,9 @@ export default function CreatePostPage() {
         content: values.content,
         excerpt: values.excerpt || null,
         cover_image_url: values.cover_image_url || null,
+        author_twitter_url: values.author_twitter_url || null,
+        author_linkedin_url: values.author_linkedin_url || null,
+        author_website_url: values.author_website_url || null,
         status: 'published', 
         published_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -221,16 +230,67 @@ export default function CreatePostPage() {
                   )}
                 />
               </CardContent>
-              <CardFooter>
+            </Card>
+            
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle className="font-headline">Author Social Links (Optional)</CardTitle>
+                    <CardDescription>Provide links to the author's social media profiles.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <FormField
+                    control={form.control}
+                    name="author_twitter_url"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel className="flex items-center"><Twitter className="mr-2 h-4 w-4" /> Twitter URL</FormLabel>
+                        <FormControl>
+                            <Input {...field} placeholder="https://twitter.com/authorhandle" />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="author_linkedin_url"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel className="flex items-center"><Linkedin className="mr-2 h-4 w-4" /> LinkedIn URL</FormLabel>
+                        <FormControl>
+                            <Input {...field} placeholder="https://linkedin.com/in/authorprofile" />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="author_website_url"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel className="flex items-center"><Globe className="mr-2 h-4 w-4" /> Personal Website URL</FormLabel>
+                        <FormControl>
+                            <Input {...field} placeholder="https://authorswebsite.com" />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </CardContent>
+            </Card>
+
+            <CardFooter className="pt-8">
                 <Button type="submit" disabled={isSubmitting} className="w-full md:w-auto">
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Publish Post
                 </Button>
-              </CardFooter>
-            </Card>
+            </CardFooter>
           </form>
         </Form>
       </div>
     </AppLayout>
   );
 }
+
+    

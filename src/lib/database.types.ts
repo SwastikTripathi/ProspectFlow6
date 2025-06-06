@@ -291,6 +291,9 @@ export type Database = {
           status: "draft" | "published"
           published_at: string | null
           author_name_cache: string | null
+          author_twitter_url: string | null
+          author_linkedin_url: string | null
+          author_website_url: string | null
         }
         Insert: {
           id?: string
@@ -305,6 +308,9 @@ export type Database = {
           status?: "draft" | "published"
           published_at?: string | null
           author_name_cache?: string | null
+          author_twitter_url?: string | null
+          author_linkedin_url?: string | null
+          author_website_url?: string | null
         }
         Update: {
           id?: string
@@ -319,6 +325,9 @@ export type Database = {
           status?: "draft" | "published"
           published_at?: string | null
           author_name_cache?: string | null
+          author_twitter_url?: string | null
+          author_linkedin_url?: string | null
+          author_website_url?: string | null
         }
         Relationships: [
           {
@@ -541,3 +550,6 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
+
+    
