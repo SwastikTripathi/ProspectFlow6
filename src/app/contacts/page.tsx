@@ -373,10 +373,10 @@ export default function ContactsPage() {
             disabled={!currentUser || isLoading}
             title={showOnlyFavorites ? "Show All Contacts" : "Show Only Favorites"}
             className={cn(
-              "hover:bg-background", // Keep background consistent on hover
+              "hover:bg-background",
               showOnlyFavorites ?
-              "border-yellow-500 ring-2 ring-yellow-500/50 text-yellow-500 bg-background" : // Active state
-              "hover:text-muted-foreground" // Inactive state
+              "text-yellow-500 bg-background" :
+              "hover:text-muted-foreground"
             )}
           >
             <Star className={cn("h-5 w-5", showOnlyFavorites ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground")} />
