@@ -290,15 +290,16 @@ export default function CompaniesPage() {
             </div>
           </div>
           <Button
-            variant={showOnlyFavorites ? "default" : "outline"}
+            variant="outline"
             size="icon"
             onClick={() => setShowOnlyFavorites(!showOnlyFavorites)}
             disabled={!currentUser || isLoading}
             title={showOnlyFavorites ? "Show All Companies" : "Show Only Favorites"}
             className={cn(
-                showOnlyFavorites ? 
-                "border-yellow-500 ring-2 ring-yellow-500/50 hover:bg-primary" : 
-                "hover:bg-background hover:text-muted-foreground"
+              "hover:bg-background", // Keep background consistent on hover
+              showOnlyFavorites ?
+              "border-yellow-500 ring-2 ring-yellow-500/50 text-yellow-500 bg-background" : // Active state: yellow border/ring, yellow icon, same bg
+              "hover:text-muted-foreground" // Inactive state: specific hover text color
             )}
           >
             <Star className={cn("h-5 w-5", showOnlyFavorites ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground")} />
