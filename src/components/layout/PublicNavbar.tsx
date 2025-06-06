@@ -101,7 +101,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
   const userDisplayName = user?.user_metadata?.full_name || user?.email || 'User';
 
   const navLinkClass = (linkType?: 'landing' | 'pricing' | 'blog' | 'about') => {
-    const isActive = activeLink === linkType && typeof linkType !== 'undefined'; // Ensures linkType must be defined for active state
+    const isActive = activeLink === linkType && typeof linkType !== 'undefined'; 
     return cn(
       "rounded-full px-3 py-1.5 sm:px-4 h-auto text-sm font-medium",
       "transition-colors duration-150 ease-in-out",
@@ -183,7 +183,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
                  <div className="my-1 h-px bg-muted" />
                 <button
                   onClick={handleSignOut}
-                  className={cn(menuItemClass, "w-full text-destructive hover:bg-destructive/10 focus:bg-destructive/10")}
+                  className={cn(menuItemClass, "w-full text-destructive hover:bg-destructive/20 focus:bg-destructive/20 focus:text-destructive")}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sign Out</span>

@@ -245,7 +245,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               aria-label="Toggle theme"
               className={cn(
                   "theme-toggle",
-                  "text-xl text-sidebar-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar-background",
+                  "text-xl text-sidebar-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar-background hover:text-sidebar-foreground",
                   "w-auto",
                   "group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:p-0"
               )}
@@ -310,7 +310,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     <div className="my-1 h-px bg-muted" />
                     <button
                         onClick={handleSignOut}
-                        className={cn(menuItemClass, "text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer w-full hover:bg-destructive/10")}
+                        className={cn(menuItemClass, "text-destructive focus:bg-destructive/20 focus:text-destructive cursor-pointer w-full hover:bg-destructive/20")}
                     >
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Sign Out</span>
