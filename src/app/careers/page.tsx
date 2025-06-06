@@ -29,10 +29,10 @@ export default function CareersPage() {
               <CardTitle className="font-headline text-2xl">Current Openings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="p-6 bg-secondary/50 rounded-lg text-center">
-                <Inbox className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">No Current Openings</h3>
-                <p className="text-muted-foreground">
+              <div className="p-8 md:p-10 bg-secondary/50 rounded-lg text-center">
+                <Inbox className="h-16 w-16 md:h-20 md:w-20 text-muted-foreground mx-auto mb-6" />
+                <h3 className="text-xl md:text-2xl font-semibold text-foreground mb-3">No Current Openings</h3>
+                <p className="text-muted-foreground text-sm md:text-base">
                   We are not actively hiring for specific roles at this moment. 
                   However, we are always interested in connecting with talented individuals.
                 </p>
