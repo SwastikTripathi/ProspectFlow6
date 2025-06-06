@@ -115,7 +115,7 @@ function HeroVisual() {
       title: 'Tech Solutions Ltd.',
       contextLine: 'Enterprise Software',
       status: 'Researching',
-      statusColor: 'bg-purple-600/30 text-purple-50 border-transparent', // This was a typo in original, should be a valid color. Corrected for demo
+      statusColor: 'bg-purple-600/30 text-purple-50 border-transparent', 
       avatar: 'https://placehold.co/32x32.png',
       dataAiHint: 'modern building',
       cardTypeIcon: Building,
@@ -280,26 +280,6 @@ const AnimatedWordsSection = () => {
 
 
 export default function LandingPage() {
-  const fourReasons = [
-    {
-      icon: Zap,
-      title: "Built for Streamlined Outreach",
-      description: "ProspectFlow is designed specifically for the workflows of proactive job seekers and networkers, helping you manage your pipeline without the clutter of complex CRMs."
-    },
-    {
-      icon: Users,
-      title: "Designed for Individuals & Career Growth"
-    },
-    {
-      icon: Focus,
-      title: "Focus on Connections, Not Admin"
-    },
-    {
-      icon: ShieldCheck,
-      title: "Clear Features, Fair Pricing"
-    }
-  ];
-
   const footerLinks = {
     product: [
       { name: 'Overview', href: '#' },
@@ -463,7 +443,7 @@ export default function LandingPage() {
                 <p className="text-muted-foreground leading-relaxed">
                   Stop juggling multiple tools just to keep track of prospects. Customers can get lost in the shuffle! We believe in keeping it simple. Every tool you need for your outreach process either lives within ProspectFlow or integrates with it seamlessly. You'll send emails, manage follow-ups, and track your pipeline, all without ever leaving ProspectFlow.
                 </p>
-                <div className="border-l-4 border-primary pl-6 py-4 bg-card rounded-r-lg shadow">
+                <div className="border-l-4 border-primary pl-6 py-4">
                   <blockquote className="text-muted-foreground italic mb-4">
                     "{newTestimonialsData[1].quote}"
                   </blockquote>
@@ -496,7 +476,7 @@ export default function LandingPage() {
                 <p className="text-muted-foreground leading-relaxed">
                   Manually tracking emails that were sent, calls that were made, or reminders to follow up are things of the past. We automate much of the admin work so you can focus your efforts on building relationships and closing your next opportunity.
                 </p>
-                <div className="border-l-4 border-accent pl-6 py-4 bg-card rounded-r-lg shadow">
+                <div className="border-l-4 border-accent pl-6 py-4">
                   <blockquote className="text-foreground italic">
                     "I can automate responses, emails and trigger actions very easily, improving my chances of effectively managing many more prospects."
                   </blockquote>
@@ -528,9 +508,9 @@ export default function LandingPage() {
               </div>
               <div className="flex justify-center md:justify-end items-center">
                 <Image
-                  src="https://placehold.co/300x150.png"
+                  src="https://placehold.co/600x150.png"
                   alt="CRM Benefits Graphic"
-                  width={300}
+                  width={600}
                   height={150}
                   className="rounded-lg shadow-md"
                   data-ai-hint="chart graph"
@@ -565,50 +545,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="py-16 md:py-24 bg-background">
-          <div className="container mx-auto px-[10vw]">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 font-headline text-foreground">
-              Stop juggling spreadsheets &amp; missed chances. <br className="hidden sm:inline" />
-              Choose <span className="text-primary">ProspectFlow</span> for these reasons:
-            </h2>
-            <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
-              <div className="relative aspect-[4/3] bg-secondary/20 rounded-xl shadow-xl p-6 flex items-center justify-center">
-                <Image
-                  src="https://placehold.co/1024x768.png"
-                  alt="ProspectFlow Interface Mockup"
-                  width={1024}
-                  height={768}
-                  className="rounded-lg object-contain"
-                  data-ai-hint="app interface task management"
-                />
-              </div>
-              <div className="space-y-8">
-                {fourReasons.map((reason, index) => {
-                  const IconComponent = reason.icon;
-                  return (
-                    <div key={reason.title} className="relative">
-                      <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0">
-                          <IconComponent className="h-7 w-7 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-semibold font-headline text-foreground mb-1">{reason.title}</h3>
-                          {reason.description && (
-                            <p className="text-muted-foreground leading-relaxed">{reason.description}</p>
-                          )}
-                        </div>
-                      </div>
-                      {index < fourReasons.length - 1 && (
-                        <div className="ml-11 mt-4 border-b border-border"></div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* New Hero-style CTA Section */}
         <section className="py-20 md:py-28 text-center bg-gradient-to-br from-slate-900 to-slate-800 text-slate-50">
           <div className="container mx-auto px-[10vw]">
@@ -627,10 +563,10 @@ export default function LandingPage() {
             </Button>
             <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-3 mt-10 text-sm text-slate-300">
               <span className="flex items-center">
-                <CheckCircle className="inline-block h-4 w-4 mr-1.5 text-green-400"/>Free Tier available
+                <CheckCircle className="inline-block h-4 w-4 mr-1.5 text-green-400"/>Free Forever
               </span>
               <span className="flex items-center">
-                <CheckCircle className="inline-block h-4 w-4 mr-1.5 text-green-400"/>No credit card required
+                <CheckCircle className="inline-block h-4 w-4 mr-1.5 text-green-400"/>Paid plans available
               </span>
               <span className="flex items-center">
                 <CheckCircle className="inline-block h-4 w-4 mr-1.5 text-green-400"/>Automated Follow-up Reminders
@@ -658,7 +594,7 @@ export default function LandingPage() {
         </section>
 
         {/* FAQ Section */}
-        <section className="py-16 md:py-24 bg-secondary/30">
+        <section className="py-16 md:py-24 bg-background">
           <div className="container mx-auto px-[10vw]">
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 font-headline text-foreground">
               Frequently Asked Questions
@@ -677,6 +613,25 @@ export default function LandingPage() {
                 ))}
               </Accordion>
             </div>
+          </div>
+        </section>
+
+        {/* Final CTA Section */}
+        <section className="py-20 md:py-28 bg-secondary/30 text-center">
+          <div className="container mx-auto px-[10vw]">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-8 font-headline text-foreground">
+              Ready to Transform Your Outreach?
+            </h2>
+            <p className="max-w-xl mx-auto text-md sm:text-lg text-muted-foreground mb-10">
+              Take control of your professional connections and never miss an opportunity. ProspectFlow helps you stay organized and efficient.
+            </p>
+            <Button
+              size="lg"
+              className="text-lg px-8 py-6 shadow-xl rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+              asChild
+            >
+              <Link href="/auth?action=signup">Get Started for Free <ArrowRight className="ml-2 h-5 w-5" /></Link>
+            </Button>
           </div>
         </section>
 
@@ -751,4 +706,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
