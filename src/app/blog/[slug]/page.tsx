@@ -121,7 +121,7 @@ export default function BlogPostPage() {
       return;
     }
 
-    // Generate TOC from H1 headings only
+    // Generate TOC from H1 headings only (as per latest instruction)
     const headings = Array.from(
       mainContentRef.current.querySelectorAll('h1') 
     ) as HTMLElement[];
@@ -145,33 +145,58 @@ export default function BlogPostPage() {
   const handleScroll = useCallback(() => {
     if (!mainContentRef.current || headingElementsRef.current.length === 0) return;
 
-    let currentActiveIndex = -1;
-    // Iterate from top to bottom. The active heading is the *last one*
-    // whose top has passed or is at/just above the navbar line.
-    for (let i = 0; i < headingElementsRef.current.length; i++) {
-        const heading = headingElementsRef.current[i];
-        const rect = heading.getBoundingClientRect();
+    let closestHeadingId: string | null = null;
+    // Initialize with a large value, we want the smallest positive or closest negative distance
+    let smallestDistanceAboveThreshold = Infinity; 
+    let smallestDistanceOverall = Infinity;
+    let idForSmallestDistanceOverall = null;
 
-        // If the heading's top is at or above the (navbar_height + small_buffer)
-        if (rect.top <= NAVBAR_HEIGHT_OFFSET + 20) { 
-            currentActiveIndex = i;
-        } else {
-            // This heading and subsequent ones are below the threshold,
-            // so the previous one (if any) was the correct one.
-            break;
+
+    for (const heading of headingElementsRef.current) {
+        const rect = heading.getBoundingClientRect();
+        const distanceToThreshold = rect.top - (NAVBAR_HEIGHT_OFFSET + 10); // 10px buffer
+
+        // If the heading's top is at or above the threshold line
+        if (rect.top <= (NAVBAR_HEIGHT_OFFSET + 10)) {
+            // We are looking for the heading that is closest to the threshold line *from above or at the line*
+            // So, distanceToThreshold will be negative or zero. We want the one with the largest rect.top (closest to threshold).
+            if (rect.top >= smallestDistanceAboveThreshold || smallestDistanceAboveThreshold === Infinity) { // check if rect.top is closer to threshold
+                smallestDistanceAboveThreshold = rect.top;
+                closestHeadingId = heading.id;
+            }
+        }
+        
+        // Keep track of the heading closest to the threshold overall (could be below it)
+        // This is a fallback if nothing is above the threshold.
+        if (Math.abs(distanceToThreshold) < Math.abs(smallestDistanceOverall)) {
+            smallestDistanceOverall = distanceToThreshold;
+            idForSmallestDistanceOverall = heading.id;
         }
     }
     
-    const newActiveId = currentActiveIndex !== -1 ? headingElementsRef.current[currentActiveIndex].id : null;
-    if (activeHeadingId !== newActiveId) {
-        setActiveHeadingId(newActiveId);
+    // If no heading is above or at the threshold, but we have headings,
+    // and the very first heading is visible on screen, make it active.
+    // This handles the case when scrolled to the top.
+    if (!closestHeadingId && headingElementsRef.current.length > 0) {
+        const firstHeadingRect = headingElementsRef.current[0].getBoundingClientRect();
+        if (firstHeadingRect.top < window.innerHeight && firstHeadingRect.bottom > 0) {
+             // If the overall closest heading is the first one and it's visible, use it.
+             // Or, if it's very close to the top (e.g. partially scrolled past viewport top but still "current")
+            if (idForSmallestDistanceOverall === headingElementsRef.current[0].id || firstHeadingRect.top <= (NAVBAR_HEIGHT_OFFSET + 10)) {
+                 closestHeadingId = headingElementsRef.current[0].id;
+            }
+        }
     }
-  }, [activeHeadingId]); // Removed NAVBAR_HEIGHT_OFFSET from dependencies as it's constant
+
+
+    if (activeHeadingId !== closestHeadingId) {
+        setActiveHeadingId(closestHeadingId);
+    }
+  }, [activeHeadingId]); 
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
     window.addEventListener('resize', handleScroll);
-    // Initial call to set active heading based on current scroll position
     handleScroll(); 
     return () => {
       window.removeEventListener('scroll', handleScroll);
@@ -229,8 +254,8 @@ export default function BlogPostPage() {
 
   const displayDate = post.published_at ? format(parseISO(post.published_at), 'MMMM d, yyyy') : format(parseISO(post.created_at), 'MMMM d, yyyy');
   const authorName = post.author_name_cache || 'ProspectFlow Team';
-  const creditAuthorName = "Kaleigh Moore"; // As per image
-  const creditAuthorDescription = "Freelance writer for eCommerce & SaaS companies. I write blogs and articles for eCommerce platforms & the SaaS tools that integrate with them."; // As per image
+  const creditAuthorName = "Kaleigh Moore"; 
+  const creditAuthorDescription = "Freelance writer for eCommerce & SaaS companies. I write blogs and articles for eCommerce platforms & the SaaS tools that integrate with them.";
 
 
   return (
@@ -273,36 +298,38 @@ export default function BlogPostPage() {
 
       <main className="flex-1 py-12 md:py-16">
         <div className="container mx-auto px-[5vw] md:px-[8vw] lg:px-[10vw] max-w-screen-xl">
-          {/* Cover Image - Moved to its own row, constrained width */}
-          {post.cover_image_url && (
-            <div className="max-w-4xl mx-auto mb-8">
-              <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20">
-                <Image
-                  src={post.cover_image_url}
-                  alt={post.title || 'Blog post cover image'}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 80vw, 60vw" // Adjust sizes as needed
-                  className="object-cover"
-                  priority
-                  data-ai-hint="woman stress laptop"
-                />
-              </div>
-            </div>
-          )}
-          {!post.cover_image_url && ( 
-             <div className="max-w-4xl mx-auto mb-8">
-               <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 bg-muted flex items-center justify-center">
+          
+          {/* Header Image Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 lg:gap-x-12 xl:gap-x-16 mb-8">
+            <div className="lg:col-span-8">
+              {post.cover_image_url && (
+                <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20">
                   <Image
-                      src="https://placehold.co/800x500.png" 
-                      alt="Placeholder image"
-                      width={800}
-                      height={500}
-                      className="object-cover"
-                      data-ai-hint="woman stress laptop"
+                    src={post.cover_image_url}
+                    alt={post.title || 'Blog post cover image'}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 80vw, 60vw"
+                    className="object-cover"
+                    priority
+                    data-ai-hint="woman stress laptop"
                   />
-               </div>
-             </div>
-          )}
+                </div>
+              )}
+              {!post.cover_image_url && (
+                <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 bg-muted flex items-center justify-center">
+                  <Image
+                    src="https://placehold.co/800x500.png"
+                    alt="Placeholder image"
+                    width={800}
+                    height={500}
+                    className="object-cover"
+                    data-ai-hint="woman stress laptop"
+                  />
+                </div>
+              )}
+            </div>
+            <div className="lg:col-span-4 hidden lg:block"></div> {/* Empty column for spacing consistency */}
+          </div>
 
           {/* Two-column layout for content and TOC */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 lg:gap-x-12 xl:gap-x-16">
@@ -330,7 +357,7 @@ export default function BlogPostPage() {
               </div>
               
               <div className="mt-4"> 
-                 <div className="text-center mb-10 pt-2"> {/* Reduced top padding for CTA */}
+                 <div className="text-center mb-10 pt-2"> 
                     <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base py-3 px-6 rounded-lg shadow-md" asChild>
                         <Link href="/pricing">START YOUR FREE 14-DAY TRIAL <ArrowRight className="ml-2 h-5 w-5" /></Link>
                     </Button>
@@ -363,7 +390,7 @@ export default function BlogPostPage() {
 
             {/* Right Column: Sticky Sidebar (TOC, Share) */}
             <div className="lg:col-span-4 order-1 lg:order-2 mb-10 lg:mb-0">
-              <div className="sticky top-24 space-y-6"> {/* Adjusted top-X based on navbar height (h-16 ~ 4rem, top-24 ~ 6rem, so 2rem below navbar) */}
+              <div className="sticky top-28 space-y-6"> {/* Adjusted top-X */}
                 <TableOfContents
                   tocItems={tocItems}
                   isLoading={isLoading}
@@ -446,4 +473,3 @@ export default function BlogPostPage() {
   );
 }
     
-
