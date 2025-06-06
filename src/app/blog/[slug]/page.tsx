@@ -136,22 +136,28 @@ export default function BlogPostPage() {
   const handleScroll = useCallback(() => {
     const activationPoint = NAVBAR_HEIGHT_OFFSET + 10; // Line below navbar
     let newActiveId: string | null = null;
-  
+
+    // Iterate from top to bottom, find the last heading above the activation point
     for (let i = 0; i < headingElementsRef.current.length; i++) {
       const heading = headingElementsRef.current[i];
       const rect = heading.getBoundingClientRect();
       if (rect.top <= activationPoint) {
-        newActiveId = heading.id; 
+        newActiveId = heading.id;
       } else {
-        break; 
+        // This heading and subsequent ones are below the activation point.
+        // If newActiveId is null at this point (meaning first heading is already below),
+        // then newActiveId remains null (or will be set to first if visible).
+        // Otherwise, the current newActiveId is the correct one.
+        break;
       }
     }
     
+    // If no heading is above the activation point (e.g., scrolled to top)
+    // and there are headings, make the first one active if it's somewhat visible.
     if (newActiveId === null && headingElementsRef.current.length > 0) {
-      // Check if the first heading is visible on the screen when scrolled to the top
       const firstHeadingRect = headingElementsRef.current[0].getBoundingClientRect();
-      if (firstHeadingRect.top >= 0 && firstHeadingRect.bottom <= window.innerHeight) {
-        newActiveId = headingElementsRef.current[0].id;
+      if (firstHeadingRect.top < window.innerHeight && firstHeadingRect.bottom >= 0) {
+        // newActiveId = headingElementsRef.current[0].id; // Commented out for testing direct match
       }
     }
   
@@ -172,34 +178,39 @@ export default function BlogPostPage() {
       return;
     }
     
-    if (mainContentRef.current) {
-      const headings = Array.from(
-        mainContentRef.current.querySelectorAll('h1') 
-      ) as HTMLElement[];
+    // Ensure this runs after MDXRemote has rendered
+    // Using a microtask or a short timeout can help, but ideally, this effect runs when mainContentRef updates with new children
+    queueMicrotask(() => {
+      if (mainContentRef.current) {
+        const headings = Array.from(
+          mainContentRef.current.querySelectorAll('h1') // Only H1 for TOC as per previous instruction
+        ) as HTMLElement[];
 
-      headingElementsRef.current = headings;
+        headingElementsRef.current = headings;
 
-      const newTocItems = headings.map((heading, index) => {
-        const text = heading.textContent || '';
-        let id = heading.id;
-        if (!id) {
-          id = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || `heading-${index}`;
-          heading.id = id;
-        }
-        return { id, level: 1, text };
-      });
-      setTocItems(newTocItems);
-      
-      queueMicrotask(() => {
+        const newTocItems = headings.map((heading, index) => {
+          const text = heading.textContent || '';
+          let id = heading.id;
+          if (!id) {
+            // ID generation logic from mdxComponents should handle this, but as a fallback:
+            id = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || `heading-${index}`;
+            heading.id = id;
+          }
+          return { id, level: 1, text }; // Level is 1 for H1
+        });
+        setTocItems(newTocItems);
+        
+        // Initial scroll check after headings are populated
         handleScroll(); 
-      });
-    }
+      }
+    });
+
   }, [mdxSource, handleScroll]);
 
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
-    window.addEventListener('resize', handleScroll);
+    window.addEventListener('resize', handleScroll); // Recalculate on resize
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
@@ -272,8 +283,8 @@ export default function BlogPostPage() {
         <h1
           id={id}
           {...rest}
-          style={{ scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px` }}
-          className={cn("text-2xl font-semibold tracking-tight", propClassName)} 
+          style={{ scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px` }} // Keep scroll margin
+          className={cn("text-2xl font-semibold tracking-tight mt-8 mb-4", propClassName)} 
         >
           {children}
         </h1>
@@ -281,15 +292,33 @@ export default function BlogPostPage() {
     },
     h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
       const { children, className: propClassName, ...rest } = props;
-      return <h2 {...rest} className={cn("text-lg font-semibold tracking-tight", propClassName)}>{children}</h2>;
+      return <h2 {...rest} className={cn("text-xl font-semibold tracking-tight mt-6 mb-3", propClassName)}>{children}</h2>;
     },
     h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
       const { children, className: propClassName, ...rest } = props;
-      return <h3 {...rest} className={cn("text-base font-semibold tracking-tight", propClassName)}>{children}</h3>;
+      return <h3 {...rest} className={cn("text-lg font-semibold tracking-tight mt-5 mb-2", propClassName)}>{children}</h3>;
     },
     h4: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
       const { children, className: propClassName, ...rest } = props;
-      return <h4 {...rest} className={cn("text-sm font-semibold tracking-tight", propClassName)}>{children}</h4>;
+      return <h4 {...rest} className={cn("text-base font-semibold tracking-tight mt-4 mb-2", propClassName)}>{children}</h4>;
+    },
+    p: (props: React.HTMLAttributes<HTMLParagraphElement>) => {
+      const { children, className: propClassName, ...rest } = props;
+      return <p {...rest} className={cn("mb-3 leading-relaxed", propClassName)}>{children}</p>;
+    },
+    ul: (props: React.HTMLAttributes<HTMLUListElement>) => {
+      const { children, className: propClassName, ...rest } = props;
+      return <ul {...rest} className={cn("list-disc pl-5 mb-3 space-y-1", propClassName)}>{children}</ul>;
+    },
+    ol: (props: React.HTMLAttributes<HTMLOListElement>) => {
+      const { children, className: propClassName, ...rest } = props;
+      return <ol {...rest} className={cn("list-decimal pl-5 mb-3 space-y-1", propClassName)}>{children}</ol>;
+    },
+    li: (props: React.HTMLAttributes<HTMLLIElement>) => {
+      const { children, className: propClassName, ...rest } = props;
+      // prose-sm default li has "margin-top: 0.2em; margin-bottom: 0.2em;"
+      // We can reduce this slightly if needed or rely on the space-y-1 on parent ul/ol
+      return <li {...rest} className={cn("leading-relaxed", propClassName)}>{children}</li>;
     },
   };
 
@@ -334,10 +363,11 @@ export default function BlogPostPage() {
       <main className="flex-1 py-12 md:py-16">
         <div className="container mx-auto px-[5vw] md:px-[8vw] lg:px-[10vw] max-w-screen-xl">
           
+           {/* Cover image in its own row, constrained */}
            <div className="lg:grid lg:grid-cols-12 lg:gap-x-12 xl:gap-x-16 mb-8">
-            <div className="lg:col-span-8">
+            <div className="lg:col-span-8"> {/* Image takes the left 8 columns */}
               {post.cover_image_url && (
-                <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 mb-6">
+                <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20">
                   <Image
                     src={post.cover_image_url}
                     alt={post.title || 'Blog post cover image'}
@@ -350,7 +380,7 @@ export default function BlogPostPage() {
                 </div>
               )}
               {!post.cover_image_url && (
-                 <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 bg-muted flex items-center justify-center mb-6">
+                 <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 bg-muted flex items-center justify-center">
                   <Image
                     src="https://placehold.co/800x500.png"
                     alt="Placeholder image"
@@ -362,7 +392,7 @@ export default function BlogPostPage() {
                 </div>
               )}
             </div>
-            <div className="lg:col-span-4 hidden lg:block"></div> 
+            <div className="lg:col-span-4 hidden lg:block"></div> {/* Empty right 4 columns */}
           </div>
 
 
@@ -424,7 +454,7 @@ export default function BlogPostPage() {
             </div>
 
             <div className="lg:col-span-4 order-1 lg:order-2 mb-10 lg:mb-0">
-              <div className="sticky top-28 space-y-6">
+              <div className="sticky top-28 space-y-6"> {/* Adjusted top from top-24 */}
                 <TableOfContents
                   tocItems={tocItems}
                   isLoading={isLoading && !mdxSource}
@@ -506,12 +536,4 @@ export default function BlogPostPage() {
     </div>
   );
 }
-    
-
-    
-
-    
-
-    
-
     
