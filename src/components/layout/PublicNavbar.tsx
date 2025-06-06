@@ -53,14 +53,12 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
-    // Theme initialization
     const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const initialTheme = storedTheme || (systemPrefersDark ? 'dark' : 'light');
     setTheme(initialTheme);
     document.documentElement.classList.toggle('dark', initialTheme === 'dark');
 
-    // Auth state
     setIsLoadingAuth(true);
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -86,7 +84,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
       toast({ title: 'Sign Out Failed', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Signed Out Successfully' });
-      router.push('/landing'); // Redirect to landing after sign out from public pages
+      router.push('/landing'); 
     }
   };
 
@@ -102,11 +100,16 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
   const userInitials = user ? getInitials(user.user_metadata?.full_name, user.email) : 'U';
   const userDisplayName = user?.user_metadata?.full_name || user?.email || 'User';
 
-  const navLinkClass = (linkType?: 'landing' | 'pricing' | 'blog' | 'about') =>
-    cn(
-      "rounded-full",
-      activeLink === linkType ? "text-primary font-semibold" : ""
+  const navLinkClass = (linkType?: 'landing' | 'pricing' | 'blog' | 'about') => {
+    const isActive = activeLink === linkType;
+    return cn(
+      "rounded-full px-3 py-1.5 sm:px-4 h-auto", // Adjusted padding and height
+      "transition-colors duration-150 ease-in-out",
+      isActive
+        ? "text-primary font-semibold" // Active link: primary color, bold, no hover underline here
+        : "text-foreground/70 hover:bg-transparent hover:text-primary hover:underline hover:underline-offset-4 active:text-primary/90 focus-visible:text-primary focus-visible:underline focus-visible:underline-offset-4"
     );
+  };
   
   const menuItemClass = "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50";
 
@@ -117,7 +120,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
         <Link href="/landing" className="mr-6 flex items-center space-x-2">
           <Logo />
         </Link>
-        <nav className="flex items-center space-x-1 sm:space-x-2">
+        <nav className="flex items-center space-x-0.5 sm:space-x-1">
           <Button variant="ghost" asChild className={navLinkClass('pricing')}>
             <Link href={user ? "/settings/billing" : "/pricing"}>Pricing</Link>
           </Button>
@@ -127,21 +130,25 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
           <Button variant="ghost" asChild className={navLinkClass('about')}>
             <Link href="/about">About</Link>
           </Button>
-          <Around
-            toggled={theme === 'dark'}
-            onClick={toggleThemeHandler}
-            title="Toggle theme"
-            aria-label="Toggle theme"
-            className={cn(
-              "theme-toggle text-foreground/70 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-              "h-7 w-7 p-0.5"
-            )}
-            style={{ '--theme-toggle__around--duration': '500ms' } as React.CSSProperties}
-          />
+          
+          <div className="mx-1 sm:mx-2"> {/* Add some spacing around the theme toggle */}
+            <Around
+                toggled={theme === 'dark'}
+                onClick={toggleThemeHandler}
+                title="Toggle theme"
+                aria-label="Toggle theme"
+                className={cn(
+                "theme-toggle text-foreground/70 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+                "h-6 w-6 p-0" // Slightly smaller toggle
+                )}
+                style={{ '--theme-toggle__around--duration': '500ms' } as React.CSSProperties}
+            />
+          </div>
+
           {isLoadingAuth ? (
             <div className="flex items-center space-x-2">
                  <div className="h-8 w-20 rounded-full bg-muted animate-pulse"></div>
-                 <div className="h-8 w-24 rounded-full bg-muted animate-pulse"></div>
+                 <div className="h-9 px-4 py-2 rounded-full bg-muted animate-pulse w-32"></div>
             </div>
           ) : user ? (
             <HoverCard openDelay={0} closeDelay={200}>
@@ -184,10 +191,10 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
             </HoverCard>
           ) : (
             <>
-              <Button variant="ghost" asChild className="rounded-full">
+              <Button variant="ghost" asChild className="rounded-full px-3 py-1.5 sm:px-4 h-auto text-foreground/70 hover:bg-transparent hover:text-primary active:text-primary/90">
                 <Link href="/auth">Sign In</Link>
               </Button>
-              <Button asChild className="shadow-md rounded-full">
+              <Button asChild className="shadow-md rounded-full h-9 px-4 text-sm">
                 <Link href="/auth?action=signup">Get Started Free</Link>
               </Button>
             </>
