@@ -10,14 +10,13 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface TocItem {
   id: string;
-  level: number; // Though we might only display one level based on current image
+  level: number; 
   text: string;
 }
 
 interface TableOfContentsProps {
   tocItems: TocItem[];
   isLoading: boolean;
-  // scrollPercentage prop removed as per new design
   activeHeadingId?: string | null;
   postTitle: string;
 }
@@ -107,20 +106,19 @@ export function TableOfContents({ tocItems, isLoading, activeHeadingId, postTitl
         <h3 id="toc-heading" className="text-lg font-semibold text-foreground mb-3">
           Table of Contents
         </h3>
-        <ul className="space-y-1 border-l border-gray-200 dark:border-gray-700 relative ml-px"> {/* Use ml-px to allow active bar to cover */}
+        <ul className="space-y-1 border-l border-transparent relative ml-px"> {/* Removed border-gray-200 dark:border-gray-700 */}
           {tocItems.map((item) => {
             const isActive = item.id === activeHeadingId;
             return (
               <li key={item.id} className="relative">
-                {isActive && (
-                  <span className="absolute -left-px top-1/2 -translate-y-1/2 h-6 w-[3px] bg-primary rounded-r-sm" aria-hidden="true"></span>
-                )}
+                {/* Removed the span element that created the side bar */}
                 <a
                   href={`#${item.id}`}
                   className={cn(
-                    "block py-1.5 pr-2 pl-4 text-sm transition-colors duration-150", // Adjusted padding
-                    isActive ? "font-semibold text-primary" : "text-muted-foreground hover:text-foreground/80"
-                    // Removed level-based indentation as per image
+                    "block py-1.5 pr-2 pl-4 text-sm transition-colors duration-150",
+                    isActive 
+                        ? "text-foreground underline underline-offset-4 decoration-primary decoration-2" 
+                        : "text-muted-foreground hover:text-foreground/80",
                   )}
                 >
                   {item.text}
