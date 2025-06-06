@@ -7,26 +7,47 @@ import { format } from 'date-fns';
 export function generateInvoicePdf(invoiceData: InvoiceData) {
   const doc = new jsPDF();
 
-  // --- Document Settings & Placeholders ---
+  // --- Document Settings ---
   const FONT_SIZE_NORMAL = 10;
   const FONT_SIZE_LARGE = 16;
   const FONT_SIZE_SMALL = 8;
   const MARGIN = 15;
   const LINE_HEIGHT = 7;
-  // Placeholder for your company logo - replace with actual image loading if needed
-  // const logoUrl = "https://your-company.com/logo.png"; 
-  // Example: doc.addImage(logoUrl, 'PNG', MARGIN, MARGIN, 40, 15);
+  const LOGO_WIDTH = 40;
+  const LOGO_HEIGHT = 15; // Adjust as per your logo's aspect ratio
 
   // --- Header ---
+  // Company Logo (if URL provided)
+  // Note: For external URLs, jsPDF might struggle due to CORS.
+  // It's often better to convert the image to a Base64 Data URL beforehand
+  // or ensure your image hosting allows cross-origin access.
+  // For simplicity, this is a placeholder.
+  if (invoiceData.companyLogoUrl) {
+    try {
+      // Example: doc.addImage(invoiceData.companyLogoUrl, 'PNG', MARGIN, MARGIN, LOGO_WIDTH, LOGO_HEIGHT);
+      // This line is commented out as direct URL adding can be unreliable.
+      // You would typically load the image first and then add it, or use a data URL.
+      doc.setFontSize(FONT_SIZE_SMALL);
+      doc.text("[Your Logo Here]", MARGIN, MARGIN + LOGO_HEIGHT / 2, { baseline: 'middle' });
+    } catch (e) {
+      // console.error("Error adding logo image:", e);
+      doc.setFontSize(FONT_SIZE_SMALL);
+      doc.text("[Logo Placeholder]", MARGIN, MARGIN + LOGO_HEIGHT / 2, { baseline: 'middle' });
+    }
+  } else {
+    doc.setFontSize(FONT_SIZE_SMALL);
+    doc.text("[Your Logo Here]", MARGIN, MARGIN + LOGO_HEIGHT / 2, { baseline: 'middle' });
+  }
+
   // Company Name (Your Company)
   doc.setFontSize(FONT_SIZE_LARGE);
   doc.setFont('helvetica', 'bold');
-  doc.text(invoiceData.companyName || "ProspectFlow Inc.", MARGIN, MARGIN + 5);
+  doc.text(invoiceData.companyName, MARGIN, MARGIN + LOGO_HEIGHT + 5); // Positioned below logo area
 
   doc.setFontSize(FONT_SIZE_SMALL);
   doc.setFont('helvetica', 'normal');
-  doc.text(invoiceData.companyAddress || "123 Innovation Drive, Tech City, ST 54321", MARGIN, MARGIN + 10);
-  doc.text(invoiceData.companyContact || "contact@prospectflow.com | (555) 123-4567", MARGIN, MARGIN + 14);
+  doc.text(invoiceData.companyAddress, MARGIN, MARGIN + LOGO_HEIGHT + 10);
+  doc.text(invoiceData.companyContact, MARGIN, MARGIN + LOGO_HEIGHT + 14);
 
   // Invoice Title
   doc.setFontSize(FONT_SIZE_LARGE);
@@ -45,16 +66,15 @@ export function generateInvoicePdf(invoiceData: InvoiceData) {
 
 
   // --- Bill To Section ---
-  let billToY = MARGIN + 30;
+  let billToY = MARGIN + LOGO_HEIGHT + 25; // Adjusted for logo space
   doc.setFontSize(FONT_SIZE_NORMAL);
   doc.setFont('helvetica', 'bold');
   doc.text("Bill To:", MARGIN, billToY);
   billToY += LINE_HEIGHT / 2;
   doc.setFont('helvetica', 'normal');
-  doc.text(invoiceData.userName, MARGIN, billToY); // User's name or email
+  doc.text(invoiceData.userName, MARGIN, billToY);
   billToY += LINE_HEIGHT / 2;
   doc.text(invoiceData.userEmail, MARGIN, billToY);
-  // Add user address here if collected and available
 
   // --- Line Items Table ---
   const tableStartY = billToY + LINE_HEIGHT * 2;
@@ -70,7 +90,7 @@ export function generateInvoicePdf(invoiceData: InvoiceData) {
       ],
     ],
     theme: 'striped',
-    headStyles: { fillColor: [63, 81, 181] }, // Example: Primary color
+    headStyles: { fillColor: [63, 81, 181] }, 
     styles: { fontSize: FONT_SIZE_NORMAL -1, cellPadding: 2.5 },
     columnStyles: {
         3: { halign: 'right' },
@@ -82,7 +102,7 @@ export function generateInvoicePdf(invoiceData: InvoiceData) {
   const finalY = (doc as any).lastAutoTable.finalY;
 
   // --- Totals ---
-  const totalsX = doc.internal.pageSize.getWidth() - MARGIN - 60; // Align right
+  const totalsX = doc.internal.pageSize.getWidth() - MARGIN - 60; 
   let totalsY = finalY + LINE_HEIGHT * 1.5;
 
   doc.setFontSize(FONT_SIZE_NORMAL);
@@ -90,14 +110,6 @@ export function generateInvoicePdf(invoiceData: InvoiceData) {
   doc.text("Subtotal:", totalsX, totalsY);
   doc.text(`${invoiceData.planPrice.toFixed(2)}`, doc.internal.pageSize.getWidth() - MARGIN, totalsY, { align: 'right'});
   totalsY += LINE_HEIGHT;
-
-  // Example Tax - adjust if needed
-  // const taxRate = 0.18; // 18%
-  // const taxAmount = invoiceData.planPrice * taxRate;
-  // doc.text("Tax (18%):", totalsX, totalsY);
-  // doc.text(`${taxAmount.toFixed(2)}`, doc.internal.pageSize.getWidth() - MARGIN, totalsY, { align: 'right'});
-  // totalsY += LINE_HEIGHT;
-  // const totalAmount = invoiceData.planPrice + taxAmount;
 
   doc.setFont('helvetica', 'bold');
   doc.text("Total Amount:", totalsX, totalsY);
@@ -111,11 +123,6 @@ export function generateInvoicePdf(invoiceData: InvoiceData) {
   footerY += LINE_HEIGHT / 2;
   doc.text("This is a computer-generated invoice and does not require a physical signature.", MARGIN, footerY);
   
-  // Placeholder for signature line (if needed for manual print & sign)
-  // const signatureX = doc.internal.pageSize.getWidth() - MARGIN - 70;
-  // doc.line(signatureX, footerY - 5, signatureX + 60, footerY - 5); // Signature line
-  // doc.text("Authorized Signature", signatureX, footerY);
-
   // --- Save PDF ---
   doc.save(`Invoice-${invoiceData.invoiceNumber}.pdf`);
 }

@@ -161,6 +161,12 @@ export default function BillingPage() {
   const proceedToGenerateInvoiceAndSaveRecord = async (userNameForInvoice: string, context: PendingInvoiceContext) => {
     if (!currentUser) return;
 
+    // --- Customize Your Company Details Here ---
+    const yourCompanyName = "ProspectFlow Inc.";
+    const yourCompanyAddress = "123 Innovation Drive, Tech City, ST 54321";
+    const yourCompanyContact = "contact@prospectflow.com";
+    const yourCompanyLogoUrl = "https://placehold.co/200x80.png?text=Your+Logo"; // Replace with your actual logo URL or Data URL
+
     const invoiceData: InvoiceData = {
       invoiceNumber: context.invoiceNumber,
       invoiceDate: format(new Date(), 'PPP'),
@@ -170,9 +176,10 @@ export default function BillingPage() {
       planPrice: context.finalAmountPaid,
       paymentId: context.paymentId,
       orderId: context.orderId,
-      companyName: "ProspectFlow Inc.", // Placeholder
-      companyAddress: "123 Innovation Drive, Tech City, ST 54321", // Placeholder
-      companyContact: "contact@prospectflow.com", // Placeholder
+      companyName: yourCompanyName,
+      companyAddress: yourCompanyAddress,
+      companyContact: yourCompanyContact,
+      companyLogoUrl: yourCompanyLogoUrl, 
     };
 
     try {
@@ -186,7 +193,6 @@ export default function BillingPage() {
       });
     }
 
-    // Save invoice record to database
     const invoiceRecord: InvoiceRecord = {
       user_id: currentUser.id,
       invoice_number: context.invoiceNumber,
@@ -240,6 +246,7 @@ export default function BillingPage() {
 
     } catch (error: any) {
       toast({ title: 'Error Updating Name', description: error.message, variant: 'destructive' });
+      // Fallback to email if name update fails but we need to generate invoice
       await proceedToGenerateInvoiceAndSaveRecord(currentUser.email || 'Valued Customer', pendingInvoiceContext);
     } finally {
       setIsAskNameDialogOpen(false);
@@ -272,7 +279,6 @@ export default function BillingPage() {
       await proceedToGenerateInvoiceAndSaveRecord(userNameForInvoice, { plan, paymentId, orderId, finalAmountPaid, invoiceNumber });
     }
   };
-
 
   const handleSelectPlan = async (plan: AvailablePlan) => {
     if (!currentUser) {
@@ -396,6 +402,7 @@ export default function BillingPage() {
             } finally {
                 setIsProcessingPayment(false);
                 setProcessingPlanId(null);
+                await fetchSubscription(); // Re-fetch subscription status after processing
             }
           },
           prefill: {
