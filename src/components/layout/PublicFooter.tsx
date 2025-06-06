@@ -32,7 +32,7 @@ const footerLinkConfig = [
   },
   {
     title: 'Get Help',
-    isHelpSection: true,
+    isHelpSection: true, // Keep this structure if you plan to add more specific help links
     links: [
       { name: 'Contact Us', href: '/contact' },
     ],
@@ -59,7 +59,7 @@ export function PublicFooter() {
               {category.isHelpSection && (
                 <div className="mt-4">
                   <Button variant="outline" className="w-full justify-between bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200 hover:text-slate-50">
-                    <span>Language</span>
+                    <span>Country</span>
                     <Globe className="h-4 w-4 opacity-50" />
                   </Button>
                 </div>
