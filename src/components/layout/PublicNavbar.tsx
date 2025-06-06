@@ -107,8 +107,8 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
       "transition-colors duration-150 ease-in-out",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
       isActive
-        ? "text-primary font-semibold cursor-default" // Active link: colored, bold, default cursor, no hover underline
-        : "text-foreground/70 hover:underline hover:underline-offset-4 active:text-primary/90" // Inactive: underline on hover, color change on active click
+        ? "text-primary font-semibold cursor-default"
+        : "text-foreground/70 hover:underline hover:underline-offset-4 active:text-primary/90"
     );
   };
 
@@ -139,8 +139,8 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
                 title="Toggle theme"
                 aria-label="Toggle theme"
                 className={cn(
-                "theme-toggle text-foreground/70 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-                "block h-6 w-6 p-0" 
+                "theme-toggle text-foreground/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+                "block h-6 w-6 p-0"
                 )}
                 style={{ '--theme-toggle__around--duration': '500ms' } as React.CSSProperties}
             />

@@ -237,7 +237,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             "p-2 group-data-[collapsible=icon]:pt-1 group-data-[collapsible=icon]:pb-2 group-data-[collapsible=icon]:pl-2 group-data-[collapsible=icon]:pr-2"
         )}>
           <SidebarUsageProgress user={user} />
-          <div className="mt-4 flex items-center group-data-[collapsible=icon]:justify-center justify-start">
+          <div className={cn("mt-4 flex items-center", "group-data-[collapsible=icon]:justify-center justify-start")}>
             <Around
               toggled={theme === 'dark'}
               onClick={toggleTheme}
@@ -245,9 +245,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
               aria-label="Toggle theme"
               className={cn(
                   "theme-toggle",
-                  "text-xl text-sidebar-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar-background hover:text-sidebar-primary",
-                  "w-auto", // Ensure visible when expanded
-                  "group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:p-0" // Centered & no padding when collapsed
+                  "text-xl text-sidebar-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar-background",
+                  "w-auto",
+                  "group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:p-0"
               )}
               style={{ '--theme-toggle__around--duration': '500ms' } as React.CSSProperties}
             />
