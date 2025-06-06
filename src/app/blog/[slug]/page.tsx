@@ -8,13 +8,12 @@ import { useParams, notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import type { Tables } from '@/lib/database.types';
 import { format, parseISO } from 'date-fns';
-import { Loader2, Tag, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe, ArrowRight, Youtube, UserCircle2 } from 'lucide-react';
+import { Loader2, Tag, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe, ArrowRight, Youtube, UserCircle2, MessageSquareText } from 'lucide-react';
 import { MDXRemote, type MDXRemoteSerializeResult } from 'next-mdx-remote';
 import { serialize } from 'next-mdx-remote/serialize';
 import rehypeHighlight from 'rehype-highlight';
 
 import { Button } from '@/components/ui/button';
-// Article component import removed
 import { TableOfContents, type TocItem } from '../components/TableOfContents';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -23,7 +22,7 @@ import { Around } from "@theme-toggles/react";
 import "@theme-toggles/react/css/Around.css";
 
 
-const NAVBAR_HEIGHT_OFFSET = 80; 
+const NAVBAR_HEIGHT_OFFSET = 64; // h-16 for header = 4rem = 64px
 
 const footerLinks = {
     product: [
@@ -114,7 +113,7 @@ export default function BlogPostPage() {
           try {
             const source = await serialize(data.content, {
               mdxOptions: {
-                rehypePlugins: [rehypeHighlight as any], // Added rehypeHighlight
+                rehypePlugins: [rehypeHighlight as any],
               },
             });
             setMdxSource(source);
@@ -135,13 +134,12 @@ export default function BlogPostPage() {
   }, [slug]);
 
   useEffect(() => {
-    if (!mdxSource || !mainContentRef.current) { // Check mdxSource instead of post for TOC generation
+    if (!mdxSource || !mainContentRef.current) {
       setTocItems([]);
       headingElementsRef.current = [];
       return;
     }
     
-    // Wait for MDXRemote to render
     const timeoutId = setTimeout(() => {
       if (mainContentRef.current) {
         const headings = Array.from(
@@ -162,7 +160,7 @@ export default function BlogPostPage() {
         });
         setTocItems(newTocItems);
       }
-    }, 0); // Small delay to allow MDXRemote to render
+    }, 0); 
 
     return () => clearTimeout(timeoutId);
   }, [mdxSource]);
@@ -170,46 +168,28 @@ export default function BlogPostPage() {
 
   const handleScroll = useCallback(() => {
     if (!mainContentRef.current || headingElementsRef.current.length === 0) return;
-  
-    let closestHeadingId: string | null = null;
-    let smallestDistanceAboveThreshold = -Infinity; // For headings at or above the threshold line
-  
-    for (const heading of headingElementsRef.current) {
+    
+    let newActiveId: string | null = null;
+    const threshold = NAVBAR_HEIGHT_OFFSET + 20; // 20px buffer below navbar
+
+    // Iterate from the last heading upwards to find the current active one
+    for (let i = headingElementsRef.current.length - 1; i >= 0; i--) {
+      const heading = headingElementsRef.current[i];
       const rect = heading.getBoundingClientRect();
-      const distanceToThreshold = rect.top - (NAVBAR_HEIGHT_OFFSET + 10); // 10px buffer
-  
-      // If the heading's top edge is at or above the threshold
-      if (rect.top <= (NAVBAR_HEIGHT_OFFSET + 10)) {
-        // We want the heading that is *closest* to the threshold from *above or at* the line.
-        // This means its `rect.top` will be the largest value that is still <= threshold.
-        if (rect.top > smallestDistanceAboveThreshold) {
-          smallestDistanceAboveThreshold = rect.top;
-          closestHeadingId = heading.id;
-        }
+      if (rect.top <= threshold) {
+        newActiveId = heading.id;
+        break; 
       }
     }
-  
-    // Fallback: If no heading is at/above threshold (e.g., user scrolled to top or between sections)
-    // try to find the first visible heading on screen.
-    if (!closestHeadingId && headingElementsRef.current.length > 0) {
-      for (const heading of headingElementsRef.current) {
-        const rect = heading.getBoundingClientRect();
-        // Is this heading visible within the viewport (partially or fully)?
-        if (rect.top < window.innerHeight && rect.bottom > (NAVBAR_HEIGHT_OFFSET)) {
-          closestHeadingId = heading.id;
-          break; // Take the first one that's visible from the top.
-        }
-      }
+
+    // If no heading is above or at the threshold (e.g., scrolled to the very top),
+    // and there are headings, make the first one active.
+    if (!newActiveId && headingElementsRef.current.length > 0) {
+      newActiveId = headingElementsRef.current[0].id;
     }
   
-    // If still no closestHeadingId, and we have headings, default to the first one
-    // This handles when you are at the very top of the page.
-    if (!closestHeadingId && headingElementsRef.current.length > 0) {
-      closestHeadingId = headingElementsRef.current[0].id;
-    }
-  
-    if (activeHeadingId !== closestHeadingId) {
-      setActiveHeadingId(closestHeadingId);
+    if (activeHeadingId !== newActiveId) {
+      setActiveHeadingId(newActiveId);
     }
   }, [activeHeadingId]);
 
@@ -255,7 +235,7 @@ export default function BlogPostPage() {
     );
   }
   
-  if (!post) { // This check might be redundant if notFound() is called, but good for safety
+  if (!post) {
     return (
       <div className="flex flex-col min-h-screen">
         <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -281,7 +261,6 @@ export default function BlogPostPage() {
       const id = String(props.children).toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
       return <h1 id={id} {...props} style={{scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px`}} />;
     },
-    // Add other custom components for MDX if needed (e.g., p, a, blockquote)
   };
 
   return (
@@ -325,8 +304,7 @@ export default function BlogPostPage() {
       <main className="flex-1 py-12 md:py-16">
         <div className="container mx-auto px-[5vw] md:px-[8vw] lg:px-[10vw] max-w-screen-xl">
           
-          {/* Header Image Row */}
-           <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 lg:gap-x-12 xl:gap-x-16 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 lg:gap-x-12 xl:gap-x-16 mb-8">
             <div className="lg:col-span-8">
               {post.cover_image_url && (
                 <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20">
@@ -354,13 +332,10 @@ export default function BlogPostPage() {
                 </div>
               )}
             </div>
-            <div className="lg:col-span-4 hidden lg:block"></div> {/* Empty column for spacing consistency with content below */}
+            <div className="lg:col-span-4 hidden lg:block"></div>
           </div>
 
-
-          {/* Two-column layout for content and TOC */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 lg:gap-x-12 xl:gap-x-16">
-            {/* Left Column: Article Content */}
             <div className="lg:col-span-8 order-2 lg:order-1">
               <div className="mb-4 text-sm text-muted-foreground">
                   <span>{authorName}</span>
@@ -379,7 +354,7 @@ export default function BlogPostPage() {
                 </Link>
               </div>
               
-              <div ref={mainContentRef} className="prose dark:prose-invert lg:prose-xl max-w-none">
+              <div ref={mainContentRef} className="prose dark:prose-invert max-w-none">
                 {mdxSource ? (
                   <MDXRemote {...mdxSource} components={mdxComponents} />
                 ) : (
@@ -419,9 +394,8 @@ export default function BlogPostPage() {
 
             </div>
 
-            {/* Right Column: Sticky Sidebar (TOC, Share) */}
             <div className="lg:col-span-4 order-1 lg:order-2 mb-10 lg:mb-0">
-              <div className="sticky top-28 space-y-6"> {/* Adjusted top-28 */}
+              <div className="sticky top-28 space-y-6">
                 <TableOfContents
                   tocItems={tocItems}
                   isLoading={isLoading && !mdxSource}
