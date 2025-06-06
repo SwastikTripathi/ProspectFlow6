@@ -103,18 +103,12 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
   const navLinkClass = (linkType?: 'landing' | 'pricing' | 'blog' | 'about') => {
     const isActive = activeLink === linkType;
     return cn(
-      // Base structure and typography for all text links
       "rounded-full px-3 py-1.5 sm:px-4 h-auto text-sm font-medium",
       "transition-colors duration-150 ease-in-out",
-      // Focus visible styles - consistent for all
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-      // The "nav-text" button variant will handle ensuring no background changes.
-      // This class function now focuses on text color, underlines, and active state.
       isActive
-        ? // Active link: colored, bold, no underline on hover
-          "text-primary font-semibold cursor-default hover:no-underline"
-        : // Inactive link: specific text color, underline on hover, different color on active click
-          "text-foreground/70 hover:underline active:text-primary/90"
+        ? "text-primary font-semibold cursor-default" // Active link: colored, bold, default cursor, no hover underline
+        : "text-foreground/70 hover:underline hover:underline-offset-4 active:text-primary/90" // Inactive: underline on hover, color change on active click
     );
   };
 
@@ -138,7 +132,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
             <Link href="/about">About</Link>
           </Button>
 
-          <div className="mx-1 sm:mx-2 flex items-center h-full"> {/* Ensure div is flex and items-center */}
+          <div className="mx-1 sm:mx-2 flex items-center h-full">
             <Around
                 toggled={theme === 'dark'}
                 onClick={toggleThemeHandler}
@@ -146,7 +140,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
                 aria-label="Toggle theme"
                 className={cn(
                 "theme-toggle text-foreground/70 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-                "block h-6 w-6 p-0" // Use block for better layout control within flex parent
+                "block h-6 w-6 p-0" 
                 )}
                 style={{ '--theme-toggle__around--duration': '500ms' } as React.CSSProperties}
             />
