@@ -4,10 +4,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
 import type { Tables } from '@/lib/database.types';
+import { Star } from 'lucide-react';
 
 type PostWithAuthor = Tables<'posts'>;
 
@@ -33,7 +34,7 @@ export function PostCard({ post }: PostCardProps) {
   return (
     <Link href={`/blog/${post.slug}`} passHref legacyBehavior>
       <a className="block group">
-        <Card className="h-full flex flex-col shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+        <Card className="h-full flex flex-col shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden relative">
           {post.cover_image_url && (
             <div className="relative w-full aspect-[16/9] overflow-hidden">
               <Image
@@ -44,7 +45,17 @@ export function PostCard({ post }: PostCardProps) {
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                 data-ai-hint="article content" 
               />
+               {post.is_featured && (
+                <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground shadow-md">
+                  <Star className="mr-1 h-3 w-3 fill-current" /> Featured
+                </Badge>
+              )}
             </div>
+          )}
+          {!post.cover_image_url && post.is_featured && (
+             <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground z-10 shadow-md">
+               <Star className="mr-1 h-3 w-3 fill-current" /> Featured
+             </Badge>
           )}
           <CardHeader className="pb-3">
             <CardTitle className="font-headline text-xl lg:text-2xl group-hover:text-primary transition-colors">
@@ -74,3 +85,5 @@ export function PostCard({ post }: PostCardProps) {
     </Link>
   );
 }
+
+    

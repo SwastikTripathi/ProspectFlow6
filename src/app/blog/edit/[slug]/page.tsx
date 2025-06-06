@@ -14,6 +14,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Edit3, ShieldAlert, Trash2, Twitter, Linkedin, Globe, Instagram, Mail } from 'lucide-react';
 import { slugify } from '@/lib/utils';
@@ -32,6 +34,7 @@ const editPostSchema = z.object({
   author_website_url: z.string().url('Must be a valid Website URL').optional().or(z.literal('')),
   author_instagram_url: z.string().url('Must be a valid Instagram URL').optional().or(z.literal('')),
   author_email_address: z.string().email('Must be a valid email address').optional().or(z.literal('')),
+  is_featured: z.boolean().optional(),
 });
 
 type EditPostFormValues = z.infer<typeof editPostSchema>;
@@ -79,6 +82,7 @@ export default function EditPostPage() {
         author_website_url: data.author_website_url || '',
         author_instagram_url: data.author_instagram_url || '',
         author_email_address: data.author_email_address || '',
+        is_featured: data.is_featured || false,
       });
     } catch (err: any) {
       toast({ title: 'Error Fetching Post', description: err.message, variant: 'destructive' });
@@ -141,6 +145,7 @@ export default function EditPostPage() {
         author_website_url: values.author_website_url || null,
         author_instagram_url: values.author_instagram_url || null,
         author_email_address: values.author_email_address || null,
+        is_featured: values.is_featured || false,
         updated_at: new Date().toISOString(),
       };
 
@@ -299,6 +304,28 @@ export default function EditPostPage() {
                         <Textarea {...field} placeholder="Write your article content here. Use Markdown for formatting." rows={15} />
                       </FormControl>
                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="is_featured"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Mark as Featured Post
+                        </FormLabel>
+                         <p className="text-xs text-muted-foreground">
+                          Featured posts may be highlighted on the blog page.
+                        </p>
+                      </div>
                     </FormItem>
                   )}
                 />

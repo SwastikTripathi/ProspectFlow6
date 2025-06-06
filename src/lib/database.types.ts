@@ -296,6 +296,7 @@ export type Database = {
           author_website_url: string | null
           author_instagram_url: string | null
           author_email_address: string | null
+          is_featured: boolean | null
         }
         Insert: {
           id?: string
@@ -315,6 +316,7 @@ export type Database = {
           author_website_url?: string | null
           author_instagram_url?: string | null
           author_email_address?: string | null
+          is_featured?: boolean | null
         }
         Update: {
           id?: string
@@ -334,6 +336,7 @@ export type Database = {
           author_website_url?: string | null
           author_instagram_url?: string | null
           author_email_address?: string | null
+          is_featured?: boolean | null
         }
         Relationships: [
           {
@@ -517,7 +520,7 @@ export type TablesUpdate<
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
-      ? U
+      ? I
       : never
     : never
 
