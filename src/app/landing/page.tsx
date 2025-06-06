@@ -11,8 +11,7 @@ import { Logo } from '@/components/icons/Logo';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AnimatedSectionImage } from '@/components/utils/AnimatedSectionImage';
-import { Around } from "@theme-toggles/react";
-import "@theme-toggles/react/css/Around.css";
+import { PublicNavbar } from '@/components/layout/PublicNavbar'; // Using PublicNavbar
 import { cn } from '@/lib/utils';
 
 const features = [
@@ -308,25 +307,6 @@ const AnimatedWordsSection = () => {
 
 
 export default function LandingPage() {
-  const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
-
-  useEffect(() => {
-    const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initialTheme = storedTheme || (systemPrefersDark ? 'dark' : 'light');
-    setTheme(initialTheme);
-    document.documentElement.classList.toggle('dark', initialTheme === 'dark');
-  }, []);
-
-  const toggleTheme = () => {
-    setTheme(prevTheme => {
-      const newTheme = prevTheme === 'light' ? 'dark' : 'light';
-      document.documentElement.classList.toggle('dark', newTheme === 'dark');
-      localStorage.setItem('theme', newTheme);
-      return newTheme;
-    });
-  };
-
   const fourReasons = [
     {
       icon: Zap,
@@ -398,41 +378,7 @@ export default function LandingPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-background to-secondary/10">
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 max-w-screen-2xl items-center justify-between mx-auto px-[10vw]">
-          <Link href="/landing" className="mr-6 flex items-center space-x-2">
-            <Logo />
-          </Link>
-          <nav className="flex items-center space-x-1 sm:space-x-2">
-            <Button variant="ghost" asChild className="rounded-full">
-              <Link href="/pricing">Pricing</Link>
-            </Button>
-            <Button variant="ghost" asChild className="rounded-full">
-              <Link href="/blog">Blog</Link>
-            </Button>
-            <Button variant="ghost" asChild className="rounded-full">
-              <Link href="/about">About</Link>
-            </Button>
-            <Around
-              toggled={theme === 'dark'}
-              onClick={toggleTheme}
-              title="Toggle theme"
-              aria-label="Toggle theme"
-              className={cn(
-                "theme-toggle text-foreground/70 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-                "h-7 w-7 p-0.5"
-              )}
-              style={{ '--theme-toggle__around--duration': '500ms' } as React.CSSProperties}
-            />
-            <Button variant="ghost" asChild className="rounded-full">
-              <Link href="/auth">Sign In</Link>
-            </Button>
-            <Button asChild className="shadow-md rounded-full">
-              <Link href="/auth?action=signup">Try for free</Link>
-            </Button>
-          </nav>
-        </div>
-      </header>
+      <PublicNavbar activeLink="landing" />
 
       <main className="flex-1">
         {/* Hero Section */}
@@ -855,3 +801,4 @@ export default function LandingPage() {
     </div>
   );
 }
+

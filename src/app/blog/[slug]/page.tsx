@@ -4,11 +4,12 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams, notFound } from 'next/navigation';
+import { useParams, notFound, useRouter } from 'next/navigation'; // Added useRouter
 import { supabase } from '@/lib/supabaseClient';
+import type { User } from '@supabase/supabase-js'; // Added User type
 import type { Tables } from '@/lib/database.types';
 import { format, parseISO } from 'date-fns';
-import { Loader2, Tag, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe, ArrowRight, Youtube, Instagram, Mail } from 'lucide-react';
+import { Loader2, Tag, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe, ArrowRight, Youtube, Instagram, Mail, Edit3 } from 'lucide-react'; // Added Edit3
 import { MDXRemote, type MDXRemoteSerializeResult } from 'next-mdx-remote';
 import { serialize } from 'next-mdx-remote/serialize';
 import rehypeHighlight from 'rehype-highlight';
@@ -17,9 +18,8 @@ import { Button } from '@/components/ui/button';
 import { TableOfContents, type TocItem } from '../components/TableOfContents';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Logo } from '@/components/icons/Logo';
-import { Around } from "@theme-toggles/react";
-import "@theme-toggles/react/css/Around.css";
+import { PublicNavbar } from '@/components/layout/PublicNavbar'; // Using PublicNavbar
+import { OWNER_EMAIL } from '@/lib/config'; // Import OWNER_EMAIL
 
 const NAVBAR_HEIGHT_OFFSET = 64; // h-16 for header = 4rem = 64px
 
@@ -52,6 +52,7 @@ export default function BlogPostPage() {
   const params = useParams();
   const slug = params?.slug as string | undefined;
   const { toast } = useToast();
+  const router = useRouter(); // For navigation
 
   const [post, setPost] = useState<Tables<'posts'> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,26 +64,30 @@ export default function BlogPostPage() {
   const mainContentRef = useRef<HTMLDivElement>(null);
   const headingElementsRef = useRef<Map<string, HTMLElement>>(new Map());
   const observerRef = useRef<IntersectionObserver | null>(null);
-  const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
   const activeEntryMap = useRef<Map<string, IntersectionObserverEntry>>(new Map());
 
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
-    const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initialTheme = storedTheme || (systemPrefersDark ? 'dark' : 'light');
-    setTheme(initialTheme);
-    document.documentElement.classList.toggle('dark', initialTheme === 'dark');
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+      setIsOwner(user?.email === OWNER_EMAIL);
+    };
+    fetchUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      const user = session?.user ?? null;
+      setCurrentUser(user);
+      setIsOwner(user?.email === OWNER_EMAIL);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
-  const toggleThemeHandler = () => {
-    setTheme(prevTheme => {
-      const newTheme = prevTheme === 'light' ? 'dark' : 'light';
-      document.documentElement.classList.toggle('dark', newTheme === 'dark');
-      localStorage.setItem('theme', newTheme);
-      return newTheme;
-    });
-  };
 
   useEffect(() => {
     if (!slug) {
@@ -142,7 +147,6 @@ export default function BlogPostPage() {
     }
     activeEntryMap.current.clear();
 
-
     if (!mdxSource || !mainContentRef.current) {
       setTocItems([]);
       headingElementsRef.current.clear();
@@ -153,8 +157,9 @@ export default function BlogPostPage() {
     const populateHeadings = () => {
       if (!mainContentRef.current) return;
 
+      // Only query for H1 elements with IDs for TOC
       const headings = Array.from(
-        mainContentRef.current.querySelectorAll('h1[id], h2[id], h3[id], h4[id]') // Ensure only headings with IDs are selected
+        mainContentRef.current.querySelectorAll('h1[id]')
       ) as HTMLElement[];
 
       const newHeadingElementsMap = new Map<string, HTMLElement>();
@@ -163,9 +168,9 @@ export default function BlogPostPage() {
       headings.forEach((heading) => {
         const text = heading.textContent || '';
         const id = heading.id;
-        const level = parseInt(heading.tagName.substring(1), 10);
-        if (id) { // Only add if ID exists
-            newTocItems.push({ id, level: level, text });
+        // Level is always 1 for H1
+        if (id) {
+            newTocItems.push({ id, level: 1, text });
             newHeadingElementsMap.set(id, heading);
         }
       });
@@ -176,10 +181,16 @@ export default function BlogPostPage() {
     
     populateHeadings();
 
+    // Define an activation zone a bit below the navbar.
+    // Top margin: slightly below navbar. Bottom margin: makes the zone about 150px high.
+    const topMargin = NAVBAR_HEIGHT_OFFSET;
+    const activationZoneHeight = 150;
+    const bottomMargin = (typeof window !== 'undefined' ? window.innerHeight : 600) - topMargin - activationZoneHeight;
+
     const observerOptions = {
       root: null,
-      rootMargin: `-${NAVBAR_HEIGHT_OFFSET}px 0px -${(typeof window !== 'undefined' ? window.innerHeight : 600) - NAVBAR_HEIGHT_OFFSET - 150}px 0px`,
-      threshold: 0,
+      rootMargin: `-${topMargin}px 0px -${bottomMargin}px 0px`,
+      threshold: 0, // Trigger as soon as any part enters/leaves the zone
     };
 
     observerRef.current = new IntersectionObserver((entries) => {
@@ -196,39 +207,43 @@ export default function BlogPostPage() {
       
         if (visibleHeadings.length > 0) {
             setActiveHeadingId(visibleHeadings[0].target.id);
-        } else if (headingElementsRef.current.size > 0) {
-            // Fallback: if no heading is in the "activation zone"
+        } else {
+            // Fallback logic: if no heading is in the activation zone
             let bestFallbackId: string | null = null;
-            const headings = Array.from(headingElementsRef.current.values());
-            // Find the last heading that is above the viewport top or very close to it
-            for (let i = headings.length - 1; i >= 0; i--) {
-                const heading = headings[i];
-                if (heading.getBoundingClientRect().top < (NAVBAR_HEIGHT_OFFSET + 20)) { // 20px buffer
+            const allHeadingsArray = Array.from(headingElementsRef.current.values())
+                                      .sort((a,b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+
+            // Find the last heading that is above the activation zone's top or first heading if all are below
+            for (let i = allHeadingsArray.length - 1; i >= 0; i--) {
+                const heading = allHeadingsArray[i];
+                if (heading.getBoundingClientRect().top < topMargin) {
                     bestFallbackId = heading.id;
                     break;
                 }
             }
             if (bestFallbackId) {
                  setActiveHeadingId(bestFallbackId);
-            } else if (headings.length > 0) {
-                // If all headings are below this point (e.g. scrolled to very top)
-                // activate the first one IF it's actually visible or near visible.
-                const firstHeadingRect = headings[0].getBoundingClientRect();
-                if (firstHeadingRect.bottom > 0 && firstHeadingRect.top < window.innerHeight / 2) {
-                   setActiveHeadingId(headings[0].id);
-                } else {
-                   setActiveHeadingId(null); // Clear if nothing is conclusively active
-                }
+            } else if (allHeadingsArray.length > 0) {
+                // If all headings are below the activation zone (e.g. scrolled to top), make first one active if visible.
+                 const firstHeadingRect = allHeadingsArray[0].getBoundingClientRect();
+                 if (firstHeadingRect.bottom > 0 && firstHeadingRect.top < window.innerHeight) {
+                     setActiveHeadingId(allHeadingsArray[0].id);
+                 } else {
+                     setActiveHeadingId(null);
+                 }
             } else {
               setActiveHeadingId(null);
             }
         }
-
-
     }, observerOptions);
 
     const currentObserver = observerRef.current;
-    headingElementsRef.current.forEach(headingEl => currentObserver.observe(headingEl));
+    // Only observe H1 elements for TOC highlighting
+    headingElementsRef.current.forEach(headingEl => {
+      if (headingEl.tagName === 'H1') {
+        currentObserver.observe(headingEl);
+      }
+    });
 
     return () => {
       if (currentObserver) {
@@ -243,11 +258,7 @@ export default function BlogPostPage() {
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-         <div className="container flex h-16 max-w-screen-2xl items-center justify-between mx-auto px-[5vw] md:px-[10vw]">
-            <Link href="/landing" className="mr-6 flex items-center space-x-2"><Logo /></Link>
-         </div>
-        </header>
+        <PublicNavbar activeLink="blog" />
         <main className="flex-1 py-12 md:py-16 flex justify-center items-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
         </main>
@@ -258,11 +269,7 @@ export default function BlogPostPage() {
   if (error) {
     return (
       <div className="flex flex-col min-h-screen">
-        <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-         <div className="container flex h-16 max-w-screen-2xl items-center justify-between mx-auto px-[5vw] md:px-[10vw]">
-           <Link href="/landing" className="mr-6 flex items-center space-x-2"><Logo /></Link>
-         </div>
-        </header>
+        <PublicNavbar activeLink="blog" />
         <main className="flex-1 py-12 md:py-16 text-center">
           <p className="text-destructive">{error}</p>
           <Button onClick={() => window.location.reload()} className="mt-4">Try Again</Button>
@@ -274,11 +281,7 @@ export default function BlogPostPage() {
   if (!post) {
     return (
       <div className="flex flex-col min-h-screen">
-        <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-         <div className="container flex h-16 max-w-screen-2xl items-center justify-between mx-auto px-[5vw] md:px-[10vw]">
-          <Link href="/landing" className="mr-6 flex items-center space-x-2"><Logo /></Link>
-         </div>
-        </header>
+        <PublicNavbar activeLink="blog" />
         <main className="flex-1 py-12 md:py-16 text-center">
           <p className="text-muted-foreground">Post not found.</p>
           <Link href="/blog"><Button variant="link">Back to Blog</Button></Link>
@@ -289,8 +292,9 @@ export default function BlogPostPage() {
 
   const displayDate = post.published_at ? format(parseISO(post.published_at), 'MMMM d, yyyy') : format(parseISO(post.created_at), 'MMMM d, yyyy');
   const authorName = post.author_name_cache || 'ProspectFlow Team';
-  const creditAuthorName = "Kaleigh Moore";
-  const creditAuthorDescription = "Freelance writer for eCommerce & SaaS companies. I write blogs and articles for eCommerce platforms & the SaaS tools that integrate with them.";
+  const creditAuthorName = post.author_name_cache || "Kaleigh Moore";
+  const creditAuthorDescription = post.author_name_cache ? "Contributor" : "Freelance writer for eCommerce & SaaS companies. I write blogs and articles for eCommerce platforms & the SaaS tools that integrate with them.";
+
 
   const mdxComponents = {
     h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
@@ -355,47 +359,20 @@ export default function BlogPostPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 max-w-screen-2xl items-center justify-between mx-auto px-[5vw] md:px-[10vw]">
-          <Link href="/landing" className="mr-6 flex items-center space-x-2">
-            <Logo />
-          </Link>
-          <nav className="flex items-center space-x-1 sm:space-x-2">
-            <Button variant="ghost" asChild className="rounded-full">
-              <Link href="/pricing">Pricing</Link>
-            </Button>
-            <Button variant="ghost" asChild className="rounded-full text-primary font-semibold">
-              <Link href="/blog">Blog</Link>
-            </Button>
-            <Button variant="ghost" asChild className="rounded-full">
-              <Link href="/about">About</Link>
-            </Button>
-            <Around
-              toggled={theme === 'dark'}
-              onClick={toggleThemeHandler}
-              title="Toggle theme"
-              aria-label="Toggle theme"
-              className={cn(
-                "theme-toggle text-foreground/70 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-                "h-7 w-7 p-0.5"
-              )}
-              style={{ '--theme-toggle__around--duration': '500ms' } as React.CSSProperties}
-            />
-            <Button variant="ghost" asChild className="rounded-full">
-              <Link href="/auth">Sign In</Link>
-            </Button>
-            <Button asChild className="shadow-md rounded-full">
-              <Link href="/auth?action=signup">Try for free</Link>
-            </Button>
-          </nav>
-        </div>
-      </header>
+      <PublicNavbar activeLink="blog" />
 
       <main className="flex-1 py-12 md:py-16">
         <div className="container mx-auto px-[5vw] md:px-[8vw] lg:px-[10vw] max-w-screen-xl">
 
           <div className="lg:grid lg:grid-cols-12 lg:gap-x-12 xl:gap-x-16 mb-8">
             <div className="lg:col-span-8">
+                {isOwner && (
+                  <div className="mb-4 flex justify-end">
+                    <Button variant="outline" onClick={() => router.push(`/blog/edit/${post.slug}`)}>
+                      <Edit3 className="mr-2 h-4 w-4" /> Edit Post
+                    </Button>
+                  </div>
+                )}
               {post.cover_image_url && (
                 <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20">
                   <Image

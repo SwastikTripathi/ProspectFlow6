@@ -9,8 +9,8 @@ import { PostCard } from './components/PostCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Loader2, Rss, Search as SearchIcon, XCircle, ArrowRight } from 'lucide-react'; // Added ArrowRight here
-import { PublicNavbar } from '@/components/layout/PublicNavbar'; // Corrected path
+import { Loader2, Rss, Search as SearchIcon, XCircle, ArrowRight } from 'lucide-react';
+import { PublicNavbar } from '@/components/layout/PublicNavbar';
 import { cn } from '@/lib/utils';
 
 
@@ -177,3 +177,4 @@ export default function BlogPage() {
     </div>
   );
 }
+
