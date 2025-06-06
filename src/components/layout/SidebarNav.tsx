@@ -86,10 +86,9 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
   const renderNavItems = (items: NavItem[], groupLabel?: string) => {
     const filteredItems = items.filter(item => !item.ownerOnly || (item.ownerOnly && isOwner));
     
-    // If the group is meant to be owner-only (like "Blog Management") and the user is not owner, don't render the group at all.
-    // We handle this by making the call to renderNavItems conditional for the Blog Management group.
-    // This check is a fallback for generic groups if they end up with no visible items.
-    if (filteredItems.length === 0 && groupLabel) return null; 
+    if (filteredItems.length === 0 && groupLabel && items.every(item => item.ownerOnly)) return null; 
+    if (filteredItems.length === 0 && !groupLabel) return null;
+
 
     return (
         <SidebarGroup>
@@ -101,7 +100,7 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
         <SidebarMenu>
             {filteredItems.map((item) => (
             <React.Fragment key={item.label}>
-                {item.separator && <SidebarSeparator className="my-1" />}
+                {item.separator && item.ownerOnly && isOwner && <SidebarSeparator className="my-1" />}
                 <SidebarMenuItem>
                 <SidebarMenuButton
                     asChild
@@ -174,7 +173,7 @@ export function SidebarNav({ favoriteJobOpenings = [] }: SidebarNavProps) {
                               tooltip={isCollapsedDesktop ? { children: favoriteDisplayName, side: "right", align: "center" } : undefined}
                             >
                               <Link href={`/job-openings?view=${opening.id}`}>
-                                <Star className="text-yellow-500 fill-yellow-400 flex-shrink-0" />
+                                <Star className="text-primary flex-shrink-0" />
                                 <span className={cn("truncate ml-2", isCollapsedDesktop ? "hidden" : "group-data-[collapsible=icon]:hidden")}>
                                   {favoriteDisplayName}
                                 </span>
