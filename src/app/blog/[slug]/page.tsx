@@ -8,7 +8,7 @@ import { useParams, notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import type { Tables } from '@/lib/database.types';
 import { format, parseISO } from 'date-fns';
-import { Loader2, Tag, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe, ArrowRight, Youtube, UserCircle2, MessageSquareText } from 'lucide-react';
+import { Loader2, Tag, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe, ArrowRight, Youtube } from 'lucide-react';
 import { MDXRemote, type MDXRemoteSerializeResult } from 'next-mdx-remote';
 import { serialize } from 'next-mdx-remote/serialize';
 import rehypeHighlight from 'rehype-highlight';
@@ -168,24 +168,31 @@ export default function BlogPostPage() {
 
   const handleScroll = useCallback(() => {
     if (!mainContentRef.current || headingElementsRef.current.length === 0) return;
-    
-    let newActiveId: string | null = null;
-    const threshold = NAVBAR_HEIGHT_OFFSET + 20; // 20px buffer below navbar
 
-    // Iterate from the last heading upwards to find the current active one
-    for (let i = headingElementsRef.current.length - 1; i >= 0; i--) {
+    const scrollThreshold = NAVBAR_HEIGHT_OFFSET + 20; // e.g., 64 + 20 = 84px from top
+    let newActiveId: string | null = null;
+
+    // Iterate from top to bottom, find the *last* heading that is at or above the threshold
+    for (let i = 0; i < headingElementsRef.current.length; i++) {
       const heading = headingElementsRef.current[i];
       const rect = heading.getBoundingClientRect();
-      if (rect.top <= threshold) {
-        newActiveId = heading.id;
-        break; 
+
+      if (rect.top <= scrollThreshold) {
+        newActiveId = heading.id; 
+      } else {
+        // If this heading is below the threshold, all subsequent ones will also be.
+        // The newActiveId (if set from a previous iteration) is the correct one.
+        break;
       }
     }
-
-    // If no heading is above or at the threshold (e.g., scrolled to the very top),
-    // and there are headings, make the first one active.
-    if (!newActiveId && headingElementsRef.current.length > 0) {
-      newActiveId = headingElementsRef.current[0].id;
+    
+    // If no heading is above the threshold (e.g. scrolled to the very top of the page),
+    // default to the first heading's ID if headings exist and the first one is visible.
+    if (newActiveId === null && headingElementsRef.current.length > 0) {
+      const firstHeadingRect = headingElementsRef.current[0].getBoundingClientRect();
+      if (firstHeadingRect.bottom > 0 && firstHeadingRect.top < window.innerHeight) {
+          newActiveId = headingElementsRef.current[0].id;
+      }
     }
   
     if (activeHeadingId !== newActiveId) {
@@ -304,10 +311,10 @@ export default function BlogPostPage() {
       <main className="flex-1 py-12 md:py-16">
         <div className="container mx-auto px-[5vw] md:px-[8vw] lg:px-[10vw] max-w-screen-xl">
           
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 lg:gap-x-12 xl:gap-x-16 mb-8">
+          <div className="mb-8 lg:grid lg:grid-cols-12 lg:gap-x-12 xl:gap-x-16">
             <div className="lg:col-span-8">
               {post.cover_image_url && (
-                <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20">
+                <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 mb-6">
                   <Image
                     src={post.cover_image_url}
                     alt={post.title || 'Blog post cover image'}
@@ -320,7 +327,7 @@ export default function BlogPostPage() {
                 </div>
               )}
               {!post.cover_image_url && (
-                <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 bg-muted flex items-center justify-center">
+                 <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 bg-muted flex items-center justify-center mb-6">
                   <Image
                     src="https://placehold.co/800x500.png"
                     alt="Placeholder image"
@@ -332,8 +339,9 @@ export default function BlogPostPage() {
                 </div>
               )}
             </div>
-            <div className="lg:col-span-4 hidden lg:block"></div>
+            <div className="lg:col-span-4 hidden lg:block"></div> {/* Empty spacer for grid alignment */}
           </div>
+
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 lg:gap-x-12 xl:gap-x-16">
             <div className="lg:col-span-8 order-2 lg:order-1">
@@ -354,7 +362,7 @@ export default function BlogPostPage() {
                 </Link>
               </div>
               
-              <div ref={mainContentRef} className="prose dark:prose-invert max-w-none">
+              <div ref={mainContentRef} className="prose prose-sm dark:prose-invert max-w-none">
                 {mdxSource ? (
                   <MDXRemote {...mdxSource} components={mdxComponents} />
                 ) : (
@@ -375,7 +383,7 @@ export default function BlogPostPage() {
                     <div>
                         <Image
                         src="https://placehold.co/80x80.png" 
-                        alt={creditAuthorName}
+                        alt={authorName}
                         width={80}
                         height={80}
                         className="rounded-full"
@@ -384,10 +392,7 @@ export default function BlogPostPage() {
                     </div>
                     <div className="flex-1">
                         <p className="text-sm text-muted-foreground mb-0.5">Article written by</p>
-                        <h3 className="text-2xl font-bold text-foreground mb-2">{creditAuthorName}</h3>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                         {creditAuthorDescription}
-                        </p>
+                        <h3 className="text-2xl font-bold text-foreground mb-2">{authorName}</h3>
                     </div>
                  </div>
               </div>
@@ -477,4 +482,6 @@ export default function BlogPostPage() {
     </div>
   );
 }
+    
+
     
