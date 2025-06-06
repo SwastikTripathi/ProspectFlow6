@@ -14,7 +14,7 @@ import {
   HoverCardTrigger,
   HoverCardContent,
 } from '@/components/ui/hover-card';
-import { Settings, LogOut, LayoutDashboard } from 'lucide-react';
+import { Settings, LogOut, LayoutDashboard, Home } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Around } from "@theme-toggles/react";
 import "@theme-toggles/react/css/Around.css";
@@ -168,6 +168,12 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
                     {user.email && <p className="text-xs leading-none text-muted-foreground truncate">{user.email}</p>}
                  </div>
                  <div className="my-1 h-px bg-muted" />
+                <Link href="/landing" passHref legacyBehavior>
+                  <a className={cn(menuItemClass)}>
+                    <Home className="mr-2 h-4 w-4" />
+                    <span>Homepage</span>
+                  </a>
+                </Link>
                 <Link href="/" passHref legacyBehavior>
                   <a className={cn(menuItemClass)}>
                     <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -183,7 +189,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
                  <div className="my-1 h-px bg-muted" />
                 <button
                   onClick={handleSignOut}
-                  className={cn(menuItemClass, "w-full text-destructive hover:bg-destructive/20 hover:text-destructive focus:bg-destructive/20 focus:text-destructive")}
+                  className={cn(menuItemClass, "w-full text-destructive hover:bg-destructive/20 focus:bg-destructive/20 hover:text-destructive focus:text-destructive")}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sign Out</span>
@@ -196,7 +202,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
                 <Link href="/auth">Sign In</Link>
               </Button>
               <Button asChild className="shadow-md rounded-full h-9 px-4 text-sm">
-                <Link href="/auth?action=signup">Get Started Free</Link>
+                <Link href="/auth?action=signup">Get Started Free.</Link>
               </Button>
             </>
           )}
