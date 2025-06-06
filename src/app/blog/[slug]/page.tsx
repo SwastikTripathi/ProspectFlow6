@@ -133,50 +133,20 @@ export default function BlogPostPage() {
     fetchPostAndSerialize();
   }, [slug]);
 
-  useEffect(() => {
-    if (!mdxSource || !mainContentRef.current) {
-      setTocItems([]);
-      headingElementsRef.current = [];
+  const handleScroll = useCallback(() => {
+    if (headingElementsRef.current.length === 0) {
+      setActiveHeadingId(null);
       return;
     }
-    
-    const timeoutId = setTimeout(() => {
-      if (mainContentRef.current) {
-        const headings = Array.from(
-          mainContentRef.current.querySelectorAll('h1') 
-        ) as HTMLElement[];
-
-        headingElementsRef.current = headings;
-
-        const newTocItems = headings.map((heading, index) => {
-          const text = heading.textContent || '';
-          const level = parseInt(heading.tagName.substring(1), 10);
-          let id = heading.id;
-          if (!id) {
-            id = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || `heading-${index}`;
-            heading.id = id;
-          }
-          return { id, level, text };
-        });
-        setTocItems(newTocItems);
-      }
-    }, 0); 
-
-    return () => clearTimeout(timeoutId);
-  }, [mdxSource]);
-
-
-  const handleScroll = useCallback(() => {
-    if (!mainContentRef.current || headingElementsRef.current.length === 0) return;
-
-    const scrollThreshold = NAVBAR_HEIGHT_OFFSET + 20; // e.g., 64 + 20 = 84px from top
+  
+    const scrollThreshold = NAVBAR_HEIGHT_OFFSET + 10; // e.g., 64 + 10 = 74px from top
     let newActiveId: string | null = null;
-
+  
     // Iterate from top to bottom, find the *last* heading that is at or above the threshold
     for (let i = 0; i < headingElementsRef.current.length; i++) {
       const heading = headingElementsRef.current[i];
       const rect = heading.getBoundingClientRect();
-
+  
       if (rect.top <= scrollThreshold) {
         newActiveId = heading.id; 
       } else {
@@ -186,8 +156,9 @@ export default function BlogPostPage() {
       }
     }
     
-    // If no heading is above the threshold (e.g. scrolled to the very top of the page),
-    // default to the first heading's ID if headings exist and the first one is visible.
+    // Fallback: If no heading is strictly "active" by being above the threshold,
+    // (e.g. user is at the very top of the page, before first heading reaches threshold)
+    // make the first heading active if it's visible on screen.
     if (newActiveId === null && headingElementsRef.current.length > 0) {
       const firstHeadingRect = headingElementsRef.current[0].getBoundingClientRect();
       if (firstHeadingRect.bottom > 0 && firstHeadingRect.top < window.innerHeight) {
@@ -200,10 +171,44 @@ export default function BlogPostPage() {
     }
   }, [activeHeadingId]);
 
+
+  useEffect(() => {
+    if (!mdxSource || !mainContentRef.current) {
+      setTocItems([]);
+      headingElementsRef.current = [];
+      setActiveHeadingId(null); 
+      return;
+    }
+    
+    if (mainContentRef.current) {
+      const headings = Array.from(
+        mainContentRef.current.querySelectorAll('h1') 
+      ) as HTMLElement[];
+
+      headingElementsRef.current = headings;
+
+      const newTocItems = headings.map((heading, index) => {
+        const text = heading.textContent || '';
+        const level = parseInt(heading.tagName.substring(1), 10);
+        let id = heading.id;
+        if (!id) {
+          id = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || `heading-${index}`;
+          heading.id = id;
+        }
+        return { id, level, text };
+      });
+      setTocItems(newTocItems);
+      
+      queueMicrotask(() => {
+        handleScroll(); 
+      });
+    }
+  }, [mdxSource, handleScroll]);
+
+
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
     window.addEventListener('resize', handleScroll);
-    handleScroll(); 
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
@@ -263,9 +268,11 @@ export default function BlogPostPage() {
   const creditAuthorName = "Kaleigh Moore"; 
   const creditAuthorDescription = "Freelance writer for eCommerce & SaaS companies. I write blogs and articles for eCommerce platforms & the SaaS tools that integrate with them.";
 
+
   const mdxComponents = {
-    h1: (props: any) => {
-      const id = String(props.children).toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+    h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
+      const childrenText = React.Children.toArray(props.children).join('');
+      const id = childrenText.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
       return <h1 id={id} {...props} style={{scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px`}} />;
     },
   };
@@ -311,7 +318,7 @@ export default function BlogPostPage() {
       <main className="flex-1 py-12 md:py-16">
         <div className="container mx-auto px-[5vw] md:px-[8vw] lg:px-[10vw] max-w-screen-xl">
           
-          <div className="mb-8 lg:grid lg:grid-cols-12 lg:gap-x-12 xl:gap-x-16">
+           <div className="lg:grid lg:grid-cols-12 lg:gap-x-12 xl:gap-x-16 mb-8">
             <div className="lg:col-span-8">
               {post.cover_image_url && (
                 <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 mb-6">
@@ -339,7 +346,7 @@ export default function BlogPostPage() {
                 </div>
               )}
             </div>
-            <div className="lg:col-span-4 hidden lg:block"></div> {/* Empty spacer for grid alignment */}
+            <div className="lg:col-span-4 hidden lg:block"></div>
           </div>
 
 
@@ -383,7 +390,7 @@ export default function BlogPostPage() {
                     <div>
                         <Image
                         src="https://placehold.co/80x80.png" 
-                        alt={authorName}
+                        alt={creditAuthorName}
                         width={80}
                         height={80}
                         className="rounded-full"
@@ -392,7 +399,8 @@ export default function BlogPostPage() {
                     </div>
                     <div className="flex-1">
                         <p className="text-sm text-muted-foreground mb-0.5">Article written by</p>
-                        <h3 className="text-2xl font-bold text-foreground mb-2">{authorName}</h3>
+                        <h3 className="text-2xl font-bold text-foreground mb-2">{creditAuthorName}</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{creditAuthorDescription}</p>
                     </div>
                  </div>
               </div>
@@ -482,6 +490,8 @@ export default function BlogPostPage() {
     </div>
   );
 }
+    
+
     
 
     
