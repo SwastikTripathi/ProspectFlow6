@@ -66,7 +66,8 @@ export default function BlogPostPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
   const [scrollPercentage, setScrollPercentage] = useState(0);
-  const headingElementsRef = useRef<(HTMLElement | null)[]>([]);
+  const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null);
+  const headingElementsRef = useRef<HTMLElement[]>([]);
 
 
   useEffect(() => {
@@ -136,25 +137,21 @@ export default function BlogPostPage() {
   const generateToc = useCallback(() => {
     if (post?.content) {
         const newTocItems: TocItem[] = [];
-        const tempContent = post.content.replace(/```[\s\S]*?```/g, ''); // Exclude code blocks
-        const headingRegex = /^(#{1,4})\s+(.*)/gm; // Capture H1 to H4
+        const tempContent = post.content.replace(/```[\s\S]*?```/g, ''); 
+        const headingRegex = /^(#{1,4})\s+(.*)/gm; 
         let match;
         
-        headingElementsRef.current = []; // Clear previous refs
-
         while ((match = headingRegex.exec(tempContent)) !== null) {
             const level = match[1].length;
             const text = match[2].trim();
             const id = slugify(text);
             if (text) {
                 newTocItems.push({ id, level, text });
-                // We'll populate headingElementsRef after render
             }
         }
         setTocItems(newTocItems);
     } else {
         setTocItems([]);
-        headingElementsRef.current = [];
     }
   }, [post?.content]);
 
@@ -165,7 +162,10 @@ export default function BlogPostPage() {
   useEffect(() => {
     // Populate headingElementsRef after tocItems are set and component has rendered
     if (tocItems.length > 0) {
-        headingElementsRef.current = tocItems.map(item => document.getElementById(item.id));
+        const elements = tocItems.map(item => document.getElementById(item.id)).filter(el => el !== null) as HTMLElement[];
+        headingElementsRef.current = elements;
+    } else {
+        headingElementsRef.current = [];
     }
   }, [tocItems]);
 
@@ -173,30 +173,49 @@ export default function BlogPostPage() {
   useEffect(() => {
     const handleScroll = () => {
         if (headingElementsRef.current.length === 0) {
+            setActiveHeadingId(null);
             setScrollPercentage(0);
             return;
         }
 
-        const viewportTopOffset = window.innerHeight * 0.10; // 10% from the top
-        let passedHeadingsCount = 0;
+        const viewportTopOffsetActive = window.innerHeight * 0.20; // 20% from the top for active heading
+        let currentActiveId: string | null = null;
 
-        for (const headingEl of headingElementsRef.current) {
+        for (let i = headingElementsRef.current.length - 1; i >= 0; i--) {
+            const headingEl = headingElementsRef.current[i];
             if (headingEl) {
                 const rect = headingEl.getBoundingClientRect();
-                if (rect.top < viewportTopOffset) {
-                    passedHeadingsCount++;
+                if (rect.top < viewportTopOffsetActive) {
+                    currentActiveId = headingEl.id;
+                    break; 
                 }
             }
         }
-        
-        const totalHeadings = headingElementsRef.current.filter(el => el !== null).length;
-        if (totalHeadings === 0) {
-            setScrollPercentage(0);
-            return;
-        }
+        setActiveHeadingId(currentActiveId);
 
-        const percentage = (passedHeadingsCount / totalHeadings) * 100;
-        setScrollPercentage(Math.min(100, Math.max(0, percentage)));
+        if (currentActiveId) {
+            const activeIndex = tocItems.findIndex(item => item.id === currentActiveId);
+            if (activeIndex !== -1) {
+                const percentage = ((activeIndex + 1) / tocItems.length) * 100;
+                setScrollPercentage(Math.min(100, Math.max(0, percentage)));
+            } else {
+                setScrollPercentage(0); // Active ID found but not in tocItems (should not happen)
+            }
+        } else {
+            // If no heading is "active" (e.g., scrolled to top, above first heading)
+            // Check if first heading is below the threshold, if so, 0%, otherwise, could be >0 if scrolled past it.
+            if(headingElementsRef.current.length > 0 && headingElementsRef.current[0].getBoundingClientRect().top >= viewportTopOffsetActive) {
+                 setScrollPercentage(0);
+            } else if (headingElementsRef.current.length > 0 ) {
+                 // This case handles if user has scrolled past all headings towards the end.
+                 // Or if all headings are above the threshold (e.g. short article)
+                 // Let's check if the last heading is above the viewport.
+                const lastHeading = headingElementsRef.current[headingElementsRef.current.length - 1];
+                if (lastHeading && lastHeading.getBoundingClientRect().bottom < viewportTopOffsetActive) {
+                    setScrollPercentage(100);
+                }
+            }
+        }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -207,7 +226,7 @@ export default function BlogPostPage() {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
     };
-  }, [tocItems]); // Re-run if tocItems changes (though headingElementsRef population depends on it too)
+  }, [tocItems]);
 
 
   useEffect(() => {
@@ -265,7 +284,6 @@ export default function BlogPostPage() {
     h2: headingRenderer(2),
     h3: headingRenderer(3),
     h4: headingRenderer(4),
-    // h5 and h6 won't be in TOC but will still render with IDs if present in content
     h5: headingRenderer(5), 
     h6: headingRenderer(6),
   };
@@ -389,8 +407,8 @@ export default function BlogPostPage() {
                 )}
             </div>
 
-            <div className="lg:grid lg:grid-cols-[1fr_260px] lg:gap-10 xl:gap-16">
-                <div className="min-w-0 order-first">
+            <div className="lg:grid lg:grid-cols-[minmax(0,_1fr)_260px] lg:gap-10 xl:gap-16">
+                <div className="min-w-0 order-first"> {/* Article Content */}
                     <article>
                         <header className="mb-8">
                         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 font-headline text-foreground">
@@ -460,8 +478,8 @@ export default function BlogPostPage() {
                         </div>
                     </section>
                 </div>
-                <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-12rem)] overflow-y-auto pr-4 border-r border-border/60 py-2 order-last"> {/* Changed pl to pr and border-l to border-r */}
-                    <TableOfContents tocItems={tocItems} isLoading={isLoading} scrollPercentage={scrollPercentage} postTitle={post.title || ''} />
+                <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-12rem)] overflow-y-auto pl-4 border-l border-border/60 py-2 order-last"> {/* Changed pr to pl and border-r to border-l */}
+                    <TableOfContents tocItems={tocItems} isLoading={isLoading} scrollPercentage={scrollPercentage} activeHeadingId={activeHeadingId} postTitle={post.title || ''} />
                 </aside>
             </div>
         </div>

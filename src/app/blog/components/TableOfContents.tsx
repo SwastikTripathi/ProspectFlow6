@@ -18,10 +18,11 @@ interface TableOfContentsProps {
   tocItems: TocItem[];
   isLoading: boolean;
   scrollPercentage: number;
+  activeHeadingId?: string | null;
   postTitle: string;
 }
 
-export function TableOfContents({ tocItems, isLoading, scrollPercentage, postTitle }: TableOfContentsProps) {
+export function TableOfContents({ tocItems, isLoading, scrollPercentage, activeHeadingId, postTitle }: TableOfContentsProps) {
   const { toast } = useToast();
   const [currentUrl, setCurrentUrl] = useState('');
 
@@ -41,7 +42,7 @@ export function TableOfContents({ tocItems, isLoading, scrollPercentage, postTit
 
   if (isLoading) {
     return (
-      <div className="relative pl-3 space-y-3 animate-pulse">
+      <div className="relative pl-4 space-y-3 animate-pulse"> {/* Adjusted pl for progress bar */}
         <div className="absolute left-0 top-0 bottom-0 w-1 bg-muted rounded-full"></div>
         <div className="h-6 bg-muted rounded w-3/4"></div>
         <div className="space-y-2">
@@ -54,7 +55,7 @@ export function TableOfContents({ tocItems, isLoading, scrollPercentage, postTit
   }
 
   if (!tocItems || tocItems.length === 0) {
-    return <p className="text-sm text-muted-foreground">No table of contents for this post.</p>;
+    return <p className="text-sm text-muted-foreground pl-3">No table of contents for this post.</p>;
   }
 
   return (
@@ -65,24 +66,31 @@ export function TableOfContents({ tocItems, isLoading, scrollPercentage, postTit
           style={{ height: `${scrollPercentage}%` }}
         />
       </div>
-      <div className="ml-3"> {/* Offset content to not overlap with progress bar */}
+      <div className="ml-4"> {/* Offset content to not overlap with progress bar */}
         <h3 id="toc-heading" className="font-semibold text-lg mb-3 text-foreground">On this page</h3>
         <ul className="space-y-1">
-          {tocItems.map((item) => (
-            <li key={item.id} className={cn(
-              item.level === 1 && 'font-medium',
-              item.level === 2 && 'ml-3',
-              item.level === 3 && 'ml-6 text-xs',
-              item.level >= 4 && 'ml-8 text-xs opacity-80'
-            )}>
-              <a
-                href={`#${item.id}`}
-                className="text-muted-foreground hover:text-primary transition-colors block py-1 hover:underline"
-              >
-                {item.text}
-              </a>
-            </li>
-          ))}
+          {tocItems.map((item) => {
+            const isActive = item.id === activeHeadingId;
+            return (
+              <li key={item.id} className={cn(
+                item.level === 1 && !isActive && 'font-medium',
+                item.level === 1 && isActive && 'font-semibold',
+                item.level === 2 && 'ml-3',
+                item.level === 3 && 'ml-6 text-xs',
+                item.level >= 4 && 'ml-8 text-xs opacity-80'
+              )}>
+                <a
+                  href={`#${item.id}`}
+                  className={cn(
+                    "block py-1 hover:underline",
+                    isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary transition-colors"
+                  )}
+                >
+                  {item.text}
+                </a>
+              </li>
+            );
+          })}
         </ul>
 
         <div className="mt-6 pt-4 border-t border-border/60">
@@ -112,4 +120,3 @@ export function TableOfContents({ tocItems, isLoading, scrollPercentage, postTit
     </nav>
   );
 }
-
