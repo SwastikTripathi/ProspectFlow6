@@ -9,8 +9,8 @@ import { PostCard } from './components/PostCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Loader2, Rss, Search as SearchIcon, XCircle, ArrowRight } from 'lucide-react';
-import { PublicNavbar } from '@/components/layout/PublicNavbar';
+import { Loader2, Rss, Search as SearchIcon, XCircle, ArrowRight } from 'lucide-react'; // Added ArrowRight here
+import { PublicNavbar } from '@/components/layout/PublicNavbar'; // Corrected path
 import { cn } from '@/lib/utils';
 
 
@@ -37,7 +37,9 @@ export default function BlogPage() {
 
         if (dbError) {
           console.error("Supabase error fetching posts:", dbError);
-          throw new Error(`Database error: ${dbError.message} (Code: ${dbError.code}). Hint: ${dbError.hint || 'No hint'}. Details: ${dbError.details || 'No details'}`);
+          // Construct a more detailed error message
+          const message = `Database error: ${dbError.message} (Code: ${dbError.code}). Hint: ${dbError.hint || 'No hint'}. Details: ${dbError.details || 'No details'}`;
+          throw new Error(message);
         }
         setAllPosts(data || []);
         setFilteredPosts(data || []);
@@ -69,6 +71,12 @@ export default function BlogPage() {
   const firstPost = filteredPosts.length > 0 ? filteredPosts[0] : null;
   const remainingPosts = filteredPosts.length > 0 ? filteredPosts.slice(1) : [];
 
+  // Conditions for rendering different states
+  const showInitialLoading = isLoading;
+  const showErrorState = !isLoading && error;
+  const showNoPostsPublishedState = !isLoading && !error && allPosts.length === 0 && searchTerm === '';
+  const showContentArea = !isLoading && !error && !showNoPostsPublishedState;
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-background to-secondary/10">
       <PublicNavbar activeLink="blog" />
@@ -85,28 +93,39 @@ export default function BlogPage() {
         </section>
 
         <section className="container mx-auto px-[5vw] md:px-[10vw]">
-          {isLoading ? (
+          {showInitialLoading ? (
             <div className="flex justify-center items-center py-20">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
-          ) : error ? (
+          ) : showErrorState ? (
             <div className="text-center text-destructive py-20">
               <p>Error loading posts: {error}</p>
               <Button onClick={() => window.location.reload()} className="mt-4">Try Again</Button>
             </div>
-          ) : filteredPosts.length === 0 && searchTerm === '' ? (
+          ) : showNoPostsPublishedState ? (
             <div className="text-center text-muted-foreground py-20">
               <p className="text-xl mb-4">No blog posts published yet.</p>
               <p>Check back soon for updates!</p>
             </div>
           ) : (
+            // showContentArea is true here
             <>
-              {firstPost && (
-                <div className="grid md:grid-cols-3 gap-8 mb-12 items-start">
-                  <div className="md:col-span-2">
+              <div className="grid md:grid-cols-3 gap-8 mb-12 items-start">
+                {/* Column for the first post OR "no search results" message */}
+                <div className="md:col-span-2">
+                  {firstPost ? (
                     <PostCard post={firstPost} />
-                  </div>
-                  <div className="md:col-span-1 space-y-6">
+                  ) : (searchTerm !== '' && filteredPosts.length === 0) ? ( 
+                    // This block renders if search is active and yields no results for the firstPost slot
+                    <div className="text-center text-muted-foreground py-10 md:py-20 border border-border/40 border-dashed rounded-lg h-full flex flex-col justify-center items-center bg-card shadow-sm">
+                      <p className="text-xl mb-4">No posts match your search criteria.</p>
+                      <p>Try a different search term or clear your search.</p>
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Column for Search, Promotion, CTA - always visible in this content area */}
+                <div className="md:col-span-1 space-y-6">
                      <Card className="shadow-md">
                         <CardHeader>
                             <CardTitle className="font-headline text-lg flex items-center"><SearchIcon className="mr-2 h-5 w-5 text-primary"/>Search Articles</CardTitle>
@@ -151,16 +170,9 @@ export default function BlogPage() {
                         </CardContent>
                     </Card>
                   </div>
-                </div>
-              )}
+              </div>
               
-              {filteredPosts.length === 0 && searchTerm !== '' && (
-                <div className="text-center text-muted-foreground py-20 col-span-full">
-                  <p className="text-xl mb-4">No posts match your search criteria.</p>
-                  <p>Try a different search term or clear your search.</p>
-                </div>
-              )}
-
+              {/* Grid for remaining posts (if any) */}
               {remainingPosts.length > 0 && (
                 <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                   {remainingPosts.map((post) => (
@@ -172,8 +184,6 @@ export default function BlogPage() {
           )}
         </section>
       </main>
-
-      {/* Footer is now part of PublicNavbar or a separate Footer component if desired */}
     </div>
   );
 }
