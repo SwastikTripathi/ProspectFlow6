@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { PublicNavbar } from '@/components/layout/PublicNavbar';
 
 const signInSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -77,7 +78,6 @@ export default function AuthPage() {
 
   useEffect(() => {
     console.log('[AuthPage] useEffect for session check and auth listener. isCheckingAuth:', isCheckingAuth);
-    // Initial check for existing session
     const checkSession = async () => {
       setIsCheckingAuth(true);
       console.log('[AuthPage] checkSession: Starting initial session check.');
@@ -88,43 +88,29 @@ export default function AuthPage() {
         router.replace('/'); 
       } else {
         console.log('[AuthPage] checkSession: No active session found.');
-        setIsCheckingAuth(false); // Allow rendering AuthPage if no session
+        setIsCheckingAuth(false); 
       }
     };
     
-    // Supabase client might pick up session from URL fragment here before onAuthStateChange fires.
-    // If checkSession runs and doesn't find a session immediately from a fragment,
-    // onAuthStateChange is the main way to catch the SIGNED_IN event from OAuth.
-    if(!window.location.hash.includes('access_token')) { // Avoid premature redirect if it's an OAuth callback
+    if(typeof window !== 'undefined' && !window.location.hash.includes('access_token')) { 
         checkSession();
     } else {
-        setIsCheckingAuth(false); // If there's a hash, let onAuthStateChange handle it primarily
+        setIsCheckingAuth(false); 
     }
-
 
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log(`[AuthPage] onAuthStateChange: Event - ${event}, Session:`, session);
       if (event === 'SIGNED_IN' && session) {
         console.log(`[AuthPage] onAuthStateChange: SIGNED_IN event. User: ${session.user?.id}. Redirecting to /.`);
-        setIsCheckingAuth(false); // No longer checking, we have a session
+        setIsCheckingAuth(false); 
         router.replace('/');
       } else if (event === 'INITIAL_SESSION') {
-        // This event fires after client initialization.
-        // If session is null here, and checkSession also found null, then user is truly not logged in.
         if (!session) {
           setIsCheckingAuth(false);
         } else {
-          // If INITIAL_SESSION has a session, it means user was already logged in.
            console.log(`[AuthPage] onAuthStateChange: INITIAL_SESSION with active session. User: ${session.user?.id}. Redirecting to /.`);
            router.replace('/');
         }
-      }
-      if (event === 'USER_UPDATED') {
-        console.log('[AuthPage] onAuthStateChange: USER_UPDATED event.');
-      }
-      if (event === 'SIGNED_OUT') {
-        console.log('[AuthPage] onAuthStateChange: SIGNED_OUT event.');
-        // Potentially handle sign-out specific logic if needed, though AppLayout usually handles this
       }
     });
 
@@ -149,9 +135,8 @@ export default function AuthPage() {
         setAuthError(error.message);
         toast({ title: 'Sign In Failed', description: error.message, variant: 'destructive' });
       } else {
-        console.log('[AuthPage] handleSignIn: Sign-in successful. router.refresh() will be called. onAuthStateChange should handle redirect.');
+        console.log('[AuthPage] handleSignIn: Sign-in successful. onAuthStateChange should handle redirect.');
         toast({ title: 'Signed In Successfully!'});
-        // router.refresh(); // onAuthStateChange will handle the redirect
       }
     } catch (error: any) {
       console.error('[AuthPage] handleSignIn: Catch block error.', error);
@@ -159,7 +144,6 @@ export default function AuthPage() {
       toast({ title: 'Sign In Error', description: error.message || 'An unexpected error occurred.', variant: 'destructive' });
     }
     setIsLoading(false);
-    console.log('[AuthPage] handleSignIn: Finished. isLoading set to false.');
   };
 
   const handleSignUp = async (values: SignUpFormValues) => {
@@ -178,9 +162,8 @@ export default function AuthPage() {
         setAuthError(error.message);
         toast({ title: 'Sign Up Failed', description: error.message, variant: 'destructive' });
       } else if (data.session) {
-        console.log('[AuthPage] handleSignUp: Sign-up successful, session created. router.refresh() will be called. onAuthStateChange should handle redirect. User:', data.user?.id);
+        console.log('[AuthPage] handleSignUp: Sign-up successful, session created. User:', data.user?.id);
         toast({ title: 'Account Created & Signed In!' });
-        // router.refresh(); // onAuthStateChange will handle the redirect
       } else if (data.user && !data.session) {
         console.log('[AuthPage] handleSignUp: Sign-up successful, confirmation email sent. User:', data.user?.id);
         setShowConfirmationMessage(true);
@@ -199,7 +182,6 @@ export default function AuthPage() {
       toast({ title: 'Sign Up Error', description: error.message || 'An unexpected error occurred.', variant: 'destructive' });
     }
     setIsLoading(false);
-    console.log('[AuthPage] handleSignUp: Finished. isLoading set to false.');
   };
 
   const handleGoogleSignIn = async () => {
@@ -214,8 +196,6 @@ export default function AuthPage() {
       return;
     }
     
-    // Ensure redirectTo points to this AuthPage itself, so it can handle the session from the URL fragment.
-    // pathname should be '/auth' when on this page.
     const redirectURL = `${siteURL}${pathname}`; 
     console.log('[AuthPage] handleGoogleSignIn: Using redirect URL:', redirectURL);
 
@@ -231,155 +211,157 @@ export default function AuthPage() {
       toast({ title: 'Google Sign-In Failed', description: error.message, variant: 'destructive' });
       setIsGoogleLoading(false);
     }
-    // If successful, Supabase handles the redirect to Google, then back to `redirectURL` with session info in hash.
-    // The `onAuthStateChange` listener on this page will then pick up the `SIGNED_IN` event.
   };
 
-  console.log('[AuthPage] Rendering. isCheckingAuth:', isCheckingAuth, 'isLoading:', isLoading);
   if (isCheckingAuth) {
-    console.log('[AuthPage] Rendering loader because isCheckingAuth is true.');
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <div className="flex min-h-screen flex-col bg-background">
+        <PublicNavbar />
+        <main className="flex flex-1 items-center justify-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Tabs value={defaultTab} onValueChange={(value) => setDefaultTab(value as 'signin'|'signup')} className="w-full max-w-md">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="signin">Sign In</TabsTrigger>
-          <TabsTrigger value="signup">Create Account</TabsTrigger>
-        </TabsList>
-        <TabsContent value="signin">
-          <Card className="shadow-xl">
-            <CardHeader>
-              <CardTitle className="font-headline">Welcome Back!</CardTitle>
-              <CardDescription>Sign in to access your ProspectFlow dashboard.</CardDescription>
-            </CardHeader>
-            <Form {...signInForm}>
-              <form onSubmit={signInForm.handleSubmit(handleSignIn)}>
-                <CardContent className="space-y-4">
-                  <FormField
-                    control={signInForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="you@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+    <div className="flex min-h-screen flex-col bg-background">
+      <PublicNavbar />
+      <main className="flex flex-1 items-center justify-center p-4">
+        <Tabs value={defaultTab} onValueChange={(value) => setDefaultTab(value as 'signin'|'signup')} className="w-full max-w-md">
+            <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="signin">Sign In</TabsTrigger>
+            <TabsTrigger value="signup">Create Account</TabsTrigger>
+            </TabsList>
+            <TabsContent value="signin">
+            <Card className="shadow-xl">
+                <CardHeader>
+                <CardTitle className="font-headline">Welcome Back!</CardTitle>
+                <CardDescription>Sign in to access your ProspectFlow dashboard.</CardDescription>
+                </CardHeader>
+                <Form {...signInForm}>
+                <form onSubmit={signInForm.handleSubmit(handleSignIn)}>
+                    <CardContent className="space-y-4">
+                    <FormField
+                        control={signInForm.control}
+                        name="email"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                            <Input type="email" placeholder="you@example.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={signInForm.control}
+                        name="password"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                            <Input type="password" placeholder="••••••••" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    {showConfirmationMessage && (
+                        <p className="text-sm text-green-600 bg-green-50 p-3 rounded-md border border-green-200">
+                        Account created! Please check your email to confirm your account before signing in.
+                        </p>
                     )}
-                  />
-                  <FormField
-                    control={signInForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                   {showConfirmationMessage && (
-                    <p className="text-sm text-green-600 bg-green-50 p-3 rounded-md border border-green-200">
-                      Account created! Please check your email to confirm your account before signing in.
-                    </p>
-                  )}
-                  {authError && <p className="text-sm text-destructive">{authError}</p>}
-                </CardContent>
-                <CardFooter className="flex-col items-stretch space-y-3">
-                  <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Sign In
-                  </Button>
-                  <div className="relative my-2">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
+                    {authError && <p className="text-sm text-destructive">{authError}</p>}
+                    </CardContent>
+                    <CardFooter className="flex-col items-stretch space-y-3">
+                    <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Sign In
+                    </Button>
+                    <div className="relative my-2">
+                        <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">
+                            Or continue with
+                        </span>
+                        </div>
                     </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card px-2 text-muted-foreground">
-                        Or continue with
-                      </span>
+                    <Button variant="outline" type="button" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+                        {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
+                        Sign in with Google
+                    </Button>
+                    </CardFooter>
+                </form>
+                </Form>
+            </Card>
+            </TabsContent>
+            <TabsContent value="signup">
+            <Card className="shadow-xl">
+                <CardHeader>
+                <CardTitle className="font-headline">Create an Account</CardTitle>
+                <CardDescription>Join ProspectFlow to streamline your outreach.</CardDescription>
+                </CardHeader>
+                <Form {...signUpForm}>
+                <form onSubmit={signUpForm.handleSubmit(handleSignUp)}>
+                    <CardContent className="space-y-4">
+                    <FormField
+                        control={signUpForm.control}
+                        name="email"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                            <Input type="email" placeholder="you@example.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={signUpForm.control}
+                        name="password"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                            <Input type="password" placeholder="Must be at least 6 characters" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    {authError && <p className="text-sm text-destructive">{authError}</p>}
+                    </CardContent>
+                    <CardFooter className="flex-col items-stretch space-y-3">
+                    <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Create Account
+                    </Button>
+                    <div className="relative my-2">
+                        <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">
+                            Or sign up with
+                        </span>
+                        </div>
                     </div>
-                  </div>
-                  <Button variant="outline" type="button" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
-                    {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
-                    Sign in with Google
-                  </Button>
-                </CardFooter>
-              </form>
-            </Form>
-          </Card>
-        </TabsContent>
-        <TabsContent value="signup">
-          <Card className="shadow-xl">
-            <CardHeader>
-              <CardTitle className="font-headline">Create an Account</CardTitle>
-              <CardDescription>Join ProspectFlow to streamline your outreach.</CardDescription>
-            </CardHeader>
-             <Form {...signUpForm}>
-              <form onSubmit={signUpForm.handleSubmit(handleSignUp)}>
-                <CardContent className="space-y-4">
-                   <FormField
-                    control={signUpForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="you@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={signUpForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="Must be at least 6 characters" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  {authError && <p className="text-sm text-destructive">{authError}</p>}
-                </CardContent>
-                <CardFooter className="flex-col items-stretch space-y-3">
-                  <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Create Account
-                  </Button>
-                   <div className="relative my-2">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card px-2 text-muted-foreground">
-                        Or sign up with
-                      </span>
-                    </div>
-                  </div>
-                  <Button variant="outline" type="button" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
-                    {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
-                    Sign up with Google
-                  </Button>
-                </CardFooter>
-              </form>
-            </Form>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                    <Button variant="outline" type="button" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+                        {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
+                        Sign up with Google
+                    </Button>
+                    </CardFooter>
+                </form>
+                </Form>
+            </Card>
+            </TabsContent>
+        </Tabs>
+      </main>
     </div>
   );
 }
