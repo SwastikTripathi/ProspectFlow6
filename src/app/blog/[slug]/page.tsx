@@ -123,7 +123,7 @@ export default function BlogPostPage() {
     }
 
     const headings = Array.from(
-      mainContentRef.current.querySelectorAll('h1, h2') // Only H1 and H2 for TOC
+      mainContentRef.current.querySelectorAll('h1') // Only H1 for TOC
     ) as HTMLElement[];
 
     headingElementsRef.current = headings;
@@ -160,16 +160,28 @@ export default function BlogPostPage() {
     
     let percentage = 0;
     if (currentActiveIndex !== -1 && tocItems.length > 0) {
-      percentage = ((currentActiveIndex + 1) / tocItems.length) * 100;
+        if (currentActiveIndex === tocItems.length - 1) { // If it's the last heading
+          percentage = (currentActiveIndex / tocItems.length) * 100;
+        } else {
+          percentage = ((currentActiveIndex + 1) / tocItems.length) * 100;
+        }
     }
     
-    if (mainContentRef.current && (window.innerHeight + window.scrollY) >= (mainContentRef.current.offsetTop + mainContentRef.current.offsetHeight - 30) ) {
+    const mainContentEl = mainContentRef.current;
+    if (mainContentEl && (window.innerHeight + window.scrollY) >= (mainContentEl.offsetTop + mainContentEl.offsetHeight - 30) ) {
       percentage = 100;
     }
+    
+    if(tocItems.length === 0 && mainContentEl && (window.innerHeight + window.scrollY) >= (mainContentEl.offsetTop + mainContentEl.offsetHeight - 30)) {
+        percentage = 100;
+    } else if (tocItems.length === 0 && currentActiveIndex === -1) {
+        percentage = 0;
+    }
+
 
     setScrollPercentage(Math.min(100, Math.max(0, percentage)));
 
-  }, [tocItems.length]);
+  }, [tocItems]);
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
@@ -229,7 +241,7 @@ export default function BlogPostPage() {
     );
   }
 
-  const displayDate = post.published_at ? format(parseISO(post.published_at), 'MMMM d, yyyy') : 'Date unavailable';
+  const displayDate = post.published_at ? format(parseISO(post.published_at), 'MMMM d, yyyy') : format(parseISO(post.created_at), 'MMMM d, yyyy');
   const authorName = post.author_name_cache || 'ProspectFlow Team';
 
   return (
@@ -276,8 +288,11 @@ export default function BlogPostPage() {
             {/* Left Column: Article Content */}
             <div className="lg:col-span-8 order-2 lg:order-1">
               <div className="mb-4">
-                <p className="font-semibold text-foreground">{authorName}</p>
-                <p className="text-sm text-muted-foreground">{displayDate}</p>
+                <p className="text-sm text-muted-foreground">
+                    <span>{authorName}</span>
+                    <span className="mx-1.5">&bull;</span>
+                    <span>{displayDate}</span>
+                </p>
               </div>
 
               <h1 className="text-3xl sm:text-4xl md:text-[2.5rem] font-bold tracking-tight mb-3 text-gray-900 dark:text-gray-100 leading-tight">
@@ -307,13 +322,7 @@ export default function BlogPostPage() {
 
                  <div className="mt-8 py-4">
                     <p className="text-sm text-muted-foreground mb-1">Article written by</p>
-                    <h3 className="text-xl font-bold text-foreground mb-2">Kaleigh Moore</h3>
-                    <p className="text-base text-muted-foreground leading-relaxed mb-4">
-                        Freelance writer for eCommerce & SaaS companies. I write blogs and articles for eCommerce platforms & the SaaS tools that integrate with them.
-                    </p>
-                    <a href="https://twitter.com/example" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
-                        <Twitter size={20} />
-                    </a>
+                    <h3 className="text-xl font-bold text-foreground mb-2">{authorName}</h3>
                  </div>
               </div>
 
