@@ -10,11 +10,12 @@ import { CheckCircle, Circle, Loader2, CreditCard, HelpCircle } from 'lucide-rea
 import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
-import type { UserSubscription, AvailablePlan, SubscriptionTier, SubscriptionStatus } from '@/lib/types';
+import type { UserSubscription, AvailablePlan, SubscriptionTier, SubscriptionStatus, InvoiceData } from '@/lib/types';
 import { createRazorpayOrder, verifyRazorpayPayment } from '@/app/actions/razorpayActions';
 import { addMonths, isFuture, format } from 'date-fns';
 import { ALL_AVAILABLE_PLANS } from '@/lib/config';
 import { cn } from '@/lib/utils';
+import { generateInvoicePdf } from '@/lib/invoiceGenerator'; // Added import
 
 const NEXT_PUBLIC_RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
@@ -111,7 +112,6 @@ export default function BillingPage() {
   }, [currentUser, fetchSubscription]);
 
   const calculatePlanDisplayInfo = (plan: AvailablePlan): PlanDisplayInfo => {
-    // The 'databaseTier' is 'free' or 'premium'. 'id' is for the purchase option.
     if (plan.databaseTier === 'free') {
       return {
         isFree: true,
@@ -121,7 +121,6 @@ export default function BillingPage() {
       };
     }
   
-    // Paid plans (databaseTier === 'premium')
     const originalTotal = plan.priceMonthly * plan.durationMonths;
     let finalTotal = originalTotal;
     let discountedPerMonth;
@@ -140,7 +139,6 @@ export default function BillingPage() {
         discountPercentage: plan.discountPercentage,
       };
     } else {
-      // No discount on this specific premium purchase option
       return {
         isFree: false,
         isDiscounted: false,
@@ -151,25 +149,90 @@ export default function BillingPage() {
     }
   };
 
+  const handleSuccessfulPaymentAndSubscription = async (
+    plan: AvailablePlan, 
+    paymentId: string, 
+    orderId: string,
+    finalAmountPaid: number
+  ) => {
+    if (!currentUser) return;
+
+    // 1. Prepare data for invoice
+    const userName = currentUser.user_metadata?.full_name || currentUser.email || 'Valued Customer';
+    if (!currentUser.user_metadata?.full_name) {
+        toast({
+            title: 'Name Missing for Invoice',
+            description: 'Your name is not set. Please update it in Account Settings for a complete invoice. Using email for now.',
+            duration: 7000,
+        });
+    }
+    
+    const invoiceData: InvoiceData = {
+      invoiceNumber: `INV-${format(new Date(), 'yyyyMMdd')}-${orderId.slice(-6)}`,
+      invoiceDate: format(new Date(), 'PPP'),
+      userName: userName,
+      userEmail: currentUser.email || 'N/A',
+      planName: plan.name,
+      planPrice: finalAmountPaid,
+      paymentId: paymentId,
+      orderId: orderId,
+      companyName: "ProspectFlow Inc.", // Placeholder, make this configurable
+      // companyAddress: "123 Main St, Anytown, USA",
+      // companyContact: "support@prospectflow.com"
+    };
+
+    // 2. Generate and download PDF invoice
+    try {
+      generateInvoicePdf(invoiceData);
+    } catch (pdfError: any) {
+      toast({
+        title: 'Invoice Generation Failed',
+        description: `Could not generate PDF: ${pdfError.message}. Your subscription is active. Please contact support for an invoice.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    }
+
+    // 3. Placeholder: Save invoice metadata to your database
+    // try {
+    //   const { error: saveInvoiceError } = await supabase
+    //     .from('invoices') // Assuming you have an 'invoices' table
+    //     .insert({
+    //       user_id: currentUser.id,
+    //       invoice_number: invoiceData.invoiceNumber,
+    //       invoice_date: new Date(invoiceData.invoiceDate).toISOString(),
+    //       plan_name: invoiceData.planName,
+    //       amount: invoiceData.planPrice,
+    //       razorpay_payment_id: invoiceData.paymentId,
+    //       razorpay_order_id: invoiceData.orderId,
+    //       // ... other relevant fields
+    //     });
+    //   if (saveInvoiceError) throw saveInvoiceError;
+    // } catch (dbError: any) {
+    //   // Log this error server-side or to an error tracking service
+    //   // User's subscription is active, so this is more for your records.
+    // }
+
+    await fetchSubscription(); // Refresh subscription display
+  };
+
+
   const handleSelectPlan = async (plan: AvailablePlan) => {
     if (!currentUser) {
       toast({ title: 'Not Logged In', description: 'Please log in to select a plan.', variant: 'destructive'});
       return;
     }
     
-    // Check if user is already on the DB tier this plan maps to.
-    // For example, if plan.databaseTier is 'premium' and currentSubscription.tier is 'premium'
     const isAlreadyEffectivelyOnThisDbTier = currentSubscription?.tier === plan.databaseTier && currentSubscription?.status === 'active';
 
     if (plan.databaseTier === 'premium' && isAlreadyEffectivelyOnThisDbTier) {
-      // User is already on a premium plan, so this is an extension or change of duration
+      // Extending or changing duration of premium
     } else if (plan.databaseTier === 'free' && isAlreadyEffectivelyOnThisDbTier) {
       toast({ title: 'Plan Active', description: `You are already on the ${plan.name}.`, variant: 'default' });
       return;
     }
 
-
-    setProcessingPlanId(plan.id); // Use plan.id (purchase option ID) for tracking
+    setProcessingPlanId(plan.id);
     setIsProcessingPayment(true);
 
     try {
@@ -178,17 +241,15 @@ export default function BillingPage() {
 
       const isUserCurrentlyOnActivePremium = 
         currentSubscription &&
-        currentSubscription.tier === 'premium' && // Checks DB tier
+        currentSubscription.tier === 'premium' &&
         currentSubscription.status === 'active' &&
         currentSubscription.plan_expiry_date &&
         isFuture(new Date(currentSubscription.plan_expiry_date));
 
       if (plan.databaseTier === 'premium' && isUserCurrentlyOnActivePremium) {
-        // Extending an existing premium subscription
         newStartDate = new Date(currentSubscription!.plan_start_date!); 
         newExpiryDate = addMonths(new Date(currentSubscription!.plan_expiry_date!), plan.durationMonths);
       } else {
-        // New subscription (was free, or expired premium, or first time)
         newStartDate = new Date();
         newExpiryDate = addMonths(newStartDate, plan.durationMonths);
       }
@@ -198,9 +259,9 @@ export default function BillingPage() {
           .from('user_subscriptions')
           .upsert({
             user_id: currentUser.id,
-            tier: 'free', // Always store 'free' for this plan.databaseTier
+            tier: 'free',
             plan_start_date: newStartDate.toISOString(), 
-            plan_expiry_date: newExpiryDate.toISOString(), // Free plans also get an expiry, e.g. 99 years
+            plan_expiry_date: newExpiryDate.toISOString(),
             status: 'active' as SubscriptionStatus,
             razorpay_order_id: null,
             razorpay_payment_id: null,
@@ -210,7 +271,6 @@ export default function BillingPage() {
         toast({ title: 'Plan Activated!', description: `You are now on the ${plan.name}.` });
         await fetchSubscription();
       } else { 
-        // Paid plan logic (all map to 'premium' DB tier)
         if (!NEXT_PUBLIC_RAZORPAY_KEY_ID) {
             throw new Error("Razorpay Key ID is not configured. Payment cannot proceed.");
         }
@@ -223,8 +283,8 @@ export default function BillingPage() {
           currency: 'INR',
           receipt: `pf_${plan.id}_${Date.now()}`,
           notes: {
-            purchaseOptionId: plan.id, // e.g., 'premium-1m', 'premium-6m'
-            mapsToDbTier: plan.databaseTier, // Should be 'premium'
+            purchaseOptionId: plan.id,
+            mapsToDbTier: plan.databaseTier,
             userId: currentUser.id,
             userName: currentUser.user_metadata?.full_name || currentUser.email || 'User',
             userEmail: currentUser.email || 'N/A',
@@ -242,7 +302,7 @@ export default function BillingPage() {
           amount: orderData.amount,
           currency: orderData.currency,
           name: "ProspectFlow",
-          description: `${plan.name}`, // e.g. "Premium - 6 Months"
+          description: `${plan.name}`,
           order_id: orderData.order_id,
           handler: async function (response: any) {
             setProcessingPlanId(plan.id); 
@@ -259,7 +319,7 @@ export default function BillingPage() {
                   .from('user_subscriptions')
                   .upsert({
                     user_id: currentUser!.id, 
-                    tier: 'premium', // All paid plans map to 'premium' tier in DB
+                    tier: 'premium',
                     plan_start_date: newStartDate.toISOString(), 
                     plan_expiry_date: newExpiryDate.toISOString(),
                     status: 'active' as SubscriptionStatus,
@@ -269,7 +329,10 @@ export default function BillingPage() {
 
                  if (upsertError) throw new Error(upsertError.message || 'Failed to update subscription after payment.');
                 toast({ title: 'Payment Successful!', description: `Your subscription to ${plan.name} is active.`});
-                await fetchSubscription();
+                
+                // Call new handler for invoice and other post-payment actions
+                await handleSuccessfulPaymentAndSubscription(plan, response.razorpay_payment_id, response.razorpay_order_id, finalAmountForPayment);
+                // fetchSubscription is called inside handleSuccessfulPaymentAndSubscription
               } else {
                 toast({ title: 'Payment Verification Failed', description: verificationResult.error || 'Please contact support.', variant: 'destructive' });
               }
@@ -319,48 +382,41 @@ export default function BillingPage() {
     const priceInfo = calculatePlanDisplayInfo(plan);
     const isCurrentlySelectedProcessing = processingPlanId === plan.id && isProcessingPayment;
 
-    // Is the user currently on *any* active premium plan?
     const isUserOnActivePremium = 
         currentSubscription &&
-        currentSubscription.tier === 'premium' && // Check against the DB tier 'premium'
+        currentSubscription.tier === 'premium' && 
         currentSubscription.status === 'active' &&
         currentSubscription.plan_expiry_date &&
         isFuture(new Date(currentSubscription.plan_expiry_date));
 
-    // Does this specific card's databaseTier match the user's active database tier?
     const isCardRepresentingCurrentActiveDbTier = currentSubscription?.tier === plan.databaseTier && currentSubscription?.status === 'active';
-
 
     let ctaTextParts: React.ReactNode[] = [];
     let finalButtonIsDisabled = isCurrentlySelectedProcessing;
     let finalButtonVariant: ButtonProps['variant'] = (plan.isPopular && plan.databaseTier === 'premium') ? 'default' : 'secondary';
 
-
     if (plan.databaseTier === 'free') {
-        if (isUserOnActivePremium) { // User is on active Premium, so "Free" button should be disabled
+        if (isUserOnActivePremium) { 
             ctaTextParts.push(<span key="text" className="font-bold">Premium Active</span>);
             finalButtonIsDisabled = true;
             finalButtonVariant = 'outline';
-        } else if (isCardRepresentingCurrentActiveDbTier) { // User is on active Free plan
+        } else if (isCardRepresentingCurrentActiveDbTier) { 
             ctaTextParts.push(<span key="text" className="font-bold">Current Plan</span>);
             finalButtonIsDisabled = true;
             finalButtonVariant = 'outline';
-        } else { // User is not on active premium, and not on active free (e.g. expired, or never subbed)
+        } else { 
             ctaTextParts.push(<span key="text" className="font-bold">Switch to Free</span>);
             finalButtonVariant = 'secondary';
         }
-    } else { // Paid Plan (databaseTier === 'premium')
-        // This specific card represents a premium purchase option.
-        // The button text depends on whether the user is ALREADY on *any* active premium plan.
+    } else { 
         if (isUserOnActivePremium) {
             ctaTextParts.push(<span key="action" className="font-bold">Extend for</span>);
-        } else { // User is currently on free or has an expired/non-active sub
+        } else { 
             ctaTextParts.push(<span key="action" className="font-bold">Buy for</span>);
         }
         
-        // If this paid plan card is ALSO the one the user is currently subscribed to (unlikely with the new model, but for safety)
         if (isCardRepresentingCurrentActiveDbTier) {
-             finalButtonVariant = 'outline'; // Example: Change variant if it's already active
+             finalButtonVariant = 'outline'; 
         } else if (plan.isPopular) {
             finalButtonVariant = 'default';
         } else {
@@ -399,17 +455,15 @@ export default function BillingPage() {
   let currentPlanStatus = "N/A";
   if (currentSubscription) {
       if (currentSubscription.tier === 'premium') {
-          currentPlanDisplayTitle = "Premium"; // Simplified display name for any premium
+          currentPlanDisplayTitle = "Premium"; 
       } else {
           currentPlanDisplayTitle = "Free Tier";
       }
       currentPlanStatus = currentSubscription.status.charAt(0).toUpperCase() + currentSubscription.status.slice(1);
   } else if (!isLoading) { 
-      // If no subscription record and not loading, assume Free Tier
       currentPlanDisplayTitle = "Free Tier"; 
       currentPlanStatus = "Active";
   }
-
 
   if (isLoading && !currentUser) { 
     return (

@@ -35,8 +35,8 @@ export interface FollowUp {
   created_at?: string;
   follow_up_date: Date;
   original_due_date?: Date | null;
-  email_subject?: string | null; 
-  email_body?: string | null;    
+  email_subject?: string | null;
+  email_body?: string | null;
   status: 'Pending' | 'Sent' | 'Skipped';
 }
 
@@ -91,7 +91,7 @@ export type SubscriptionStatus = 'active' | 'expired' | 'cancelled' | 'pending_p
 export interface UserSubscription {
   id: string;
   user_id: string;
-  tier: SubscriptionTier; 
+  tier: SubscriptionTier;
   plan_start_date: Date | null;
   plan_expiry_date: Date | null;
   status: SubscriptionStatus;
@@ -108,9 +108,9 @@ export interface PlanFeature {
 }
 
 export interface AvailablePlan {
-  id: string; 
-  databaseTier: SubscriptionTier; 
-  name: string; 
+  id: string;
+  databaseTier: SubscriptionTier;
+  name: string;
   priceMonthly: number;
   durationMonths: number;
   discountPercentage?: number;
@@ -128,7 +128,7 @@ export interface DefaultFollowUpTemplates {
   followUp1: FollowUpTemplateContent;
   followUp2: FollowUpTemplateContent;
   followUp3: FollowUpTemplateContent;
-  sharedSignature: string; 
+  sharedSignature: string;
 }
 
 export interface UserSettings {
@@ -145,6 +145,19 @@ export interface ContactFormEntry {
   contactName: string;
   contactEmail: string;
 }
-    
 
+export interface InvoiceData {
+  invoiceNumber: string; // Example: "INV-20240730-001"
+  invoiceDate: string; // Formatted date string
+  userName: string; // User's full name or email
+  userEmail: string;
+  planName: string; // e.g., "ProspectFlow Premium - 6 Months"
+  planPrice: number; // Final price paid
+  paymentId: string;
+  orderId: string;
+  companyName: string;
+  companyAddress?: string;
+  companyContact?: string;
+  // Add more fields as needed, like GSTIN if applicable for India
+}
     
