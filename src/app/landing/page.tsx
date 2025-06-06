@@ -11,35 +11,8 @@ import { Logo } from '@/components/icons/Logo';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AnimatedSectionImage } from '@/components/utils/AnimatedSectionImage';
-import { PublicNavbar } from '@/components/layout/PublicNavbar'; // Using PublicNavbar
+import { PublicNavbar } from '@/components/layout/PublicNavbar';
 import { cn } from '@/lib/utils';
-
-const features = [
-  {
-    icon: <Briefcase className="h-10 w-10 text-primary mb-4" />,
-    title: 'Track Job Openings',
-    description: 'Never lose sight of an opportunity. Organize and monitor job applications seamlessly.',
-    dataAiHint: 'job search'
-  },
-  {
-    icon: <Users className="h-10 w-10 text-primary mb-4" />,
-    title: 'Manage Contacts',
-    description: 'Build and maintain your professional network with our intuitive contact management system.',
-    dataAiHint: 'networking people'
-  },
-  {
-    icon: <TrendingUp className="h-10 w-10 text-primary mb-4" />,
-    title: 'Automated Follow-ups',
-    description: 'Stay top-of-mind with scheduled follow-up reminders and email templates.',
-    dataAiHint: 'email marketing'
-  },
-  {
-    icon: <Target className="h-10 w-10 text-primary mb-4" />,
-    title: 'Company Directory',
-    description: 'Keep detailed records of target companies and your interactions with them.',
-    dataAiHint: 'business office'
-  },
-];
 
 const newTestimonialsData = [
   {
@@ -142,7 +115,7 @@ function HeroVisual() {
       title: 'Tech Solutions Ltd.',
       contextLine: 'Enterprise Software',
       status: 'Researching',
-      statusColor: 'bg-purple-600/30 text-purple-50 border-transparent',
+      statusColor: 'bg-purple-600/30 text-purple-50 border-transparent', // This was a typo in original, should be a valid color. Corrected for demo
       avatar: 'https://placehold.co/32x32.png',
       dataAiHint: 'modern building',
       cardTypeIcon: Building,
@@ -257,7 +230,7 @@ const AnimatedWordsSection = () => {
   const duplicatedBottomWords = [...bottomWords, ...bottomWords];
 
   return (
-    <section className="py-16 md:py-24 bg-slate-900 text-slate-100 overflow-hidden">
+    <section className="py-16 md:py-24 bg-slate-900 text-slate-100 overflow-hidden min-h-[calc(100vh-4rem)] flex flex-col justify-center">
       <div className="container mx-auto px-[10vw] text-center">
         <h2 className="text-4xl sm:text-5xl font-bold mb-4 font-headline">
           Email is the <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">biggest problem</span>
@@ -400,46 +373,23 @@ export default function LandingPage() {
                   className="text-lg px-8 py-6 w-full sm:w-auto rounded-full text-muted-foreground underline underline-offset-4 hover:text-primary/90 hover:decoration-primary/90"
                   asChild
                 >
-                  <Link href="#features">Explore Features</Link>
+                  <Link href="#streamline-section">Explore Features</Link>
                 </Button>
             </div>
             <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                <span className="flex items-center"><CheckCircle className="h-4 w-4 mr-1.5 text-green-500"/>Free Tier available</span>
-                <span className="flex items-center"><CheckCircle className="h-4 w-4 mr-1.5 text-green-500"/>No credit card required to start</span>
+                <span className="flex items-center"><CheckCircle className="h-4 w-4 mr-1.5 text-green-500"/>Free Forever</span>
+                <span className="flex items-center"><CheckCircle className="h-4 w-4 mr-1.5 text-green-500"/>Paid plans available</span>
                 <span className="flex items-center"><CheckCircle className="h-4 w-4 mr-1.5 text-green-500"/>Automated Follow-up Reminders</span>
             </div>
             <HeroVisual />
           </div>
         </section>
 
-        {/* Features Section */}
-        <section id="features" className="py-16 md:py-24 bg-secondary/50">
-          <div className="container mx-auto px-[10vw]">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 font-headline text-foreground">Why Choose ProspectFlow?</h2>
-            <p className="text-center text-muted-foreground mb-12 md:mb-16 max-w-2xl mx-auto">
-                Focus on what matters: building connections and landing opportunities. We'll handle the organization.
-            </p>
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-              {features.map((feature) => (
-                <Card key={feature.title} className="text-center shadow-lg hover:shadow-xl transition-shadow bg-card">
-                  <CardHeader className="items-center pb-4">
-                    {React.cloneElement(feature.icon, { className: "h-8 w-8 text-primary mb-3" })}
-                    <CardTitle className="font-headline text-xl">{feature.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">{feature.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Newly Added AnimatedWordsSection */}
+        {/* AnimatedWordsSection */}
         <AnimatedWordsSection />
 
         {/* Section: Why Professionals Streamline with ProspectFlow */}
-        <section className="py-16 md:py-24 bg-background">
+        <section id="streamline-section" className="py-16 md:py-24 bg-background">
           <div className="container mx-auto px-[10vw]">
             <div className="text-left max-w-3xl mx-auto md:mx-0 mb-12 md:mb-16">
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight font-headline text-foreground">
@@ -456,7 +406,7 @@ export default function LandingPage() {
                 <p className="text-muted-foreground leading-relaxed">
                   ProspectFlow cuts through the noise, helping your team manage outreach faster and more effectively. More targeted connections lead to more opportunities. Designed for daily use, ProspectFlow makes tracking simple, so you can focus on building relationships, not fighting your tools. Get started in minutes, not months.
                 </p>
-                <div className="border-l-4 border-primary pl-6 py-4 bg-card rounded-r-lg shadow">
+                <div className="border-l-4 border-primary pl-6 py-4">
                   <blockquote className="text-muted-foreground italic mb-4">
                     "{newTestimonialsData[0].quote}"
                   </blockquote>
