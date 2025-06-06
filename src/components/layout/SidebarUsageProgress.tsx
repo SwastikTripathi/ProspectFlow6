@@ -170,7 +170,6 @@ export function SidebarUsageProgress({ user }: SidebarUsageProgressProps) {
         });
 
       } catch (error) {
-        console.error("Error fetching sidebar data:", error);
         if (isMounted) {
           const limits = getLimitsForTier('free');
           setStats({ 

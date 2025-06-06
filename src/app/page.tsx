@@ -65,26 +65,20 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setIsLoadingUser(true);
-    console.log('[Dashboard] Auth useEffect: Component mounted/updated. Setting up auth listener.');
 
     const handleAuthStateChanged = (event: string, session: Session | null) => {
-      console.log(`[Dashboard] AuthListener: Event - ${event}, User ID in session: ${session?.user?.id}`);
       setIsLoadingUser(true);
       const newUser = session?.user ?? null;
 
       if (newUser?.id !== previousUserIdRef.current) {
-        console.log(`[Dashboard] AuthListener: User ID changed. New: ${newUser?.id}, Previous: ${previousUserIdRef.current}. Resetting hasFetchedData.`);
         setHasFetchedData(false);
         if (!newUser) {
-          console.log('[Dashboard] AuthListener: User logged out. Clearing stats and chart data.');
           setStats({ followUpsToday: 0, followUpsThisWeek: 0, activeOpenings: 0, totalContacts: 0, totalCompanies: 0 });
           setEmailsSentData([]);
           setOpeningsAddedData([]);
           setLoadingStats(false);
           setLoadingCharts(false);
         }
-      } else {
-        console.log(`[Dashboard] AuthListener: User ID same as previous (${newUser?.id}). Not resetting hasFetchedData.`);
       }
 
       setCurrentUser(newUser);
@@ -92,12 +86,9 @@ export default function DashboardPage() {
       setIsLoadingUser(false);
     };
 
-    console.log('[Dashboard] Auth useEffect: Performing initial supabase.auth.getSession()');
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('[Dashboard] Auth useEffect: Initial getSession() result:', session);
       handleAuthStateChanged('INITIAL_SESSION_PROCESSED', session);
     }).catch(error => {
-      console.error('[Dashboard] Auth useEffect: Error in initial getSession():', error);
       setIsLoadingUser(false);
     });
 
@@ -106,20 +97,17 @@ export default function DashboardPage() {
     });
 
     return () => {
-      console.log('[Dashboard] Auth useEffect: Cleaning up. Unsubscribing auth listener.');
       authListener.subscription.unsubscribe();
     };
   }, []);
 
   const fetchDashboardData = useCallback(async () => {
     if (!currentUser) {
-      console.log('[Dashboard] fetchDashboardData: Aborted - currentUser is null.');
       setLoadingStats(false);
       setLoadingCharts(false);
       return false;
     }
 
-    console.log('[Dashboard] fetchDashboardData: Starting for user:', currentUser.id);
     setLoadingStats(true);
     setLoadingCharts(true);
 
@@ -196,7 +184,6 @@ export default function DashboardPage() {
       };
       setStats(calculatedStats);
       setLoadingStats(false);
-      console.log('[Dashboard] fetchDashboardData: Stats calculated and set.');
 
       const today = startOfDay(new Date());
       const last30DaysInterval = {
@@ -254,10 +241,8 @@ export default function DashboardPage() {
       setEmailsSentData(processedEmailsData);
       setOpeningsAddedData(processedOpeningsData);
       setLoadingCharts(false);
-      console.log('[Dashboard] fetchDashboardData: Chart data processed and set. Fetch successful.');
       return true;
     } catch (error: any) {
-      console.error('[Dashboard] fetchDashboardData: Error occurred:', error);
       toast({
         title: 'Error Fetching Dashboard Data',
         description: error.message,
@@ -270,26 +255,16 @@ export default function DashboardPage() {
   }, [currentUser, toast]);
 
   useEffect(() => {
-    console.log(`[Dashboard] Data Fetch useEffect: User: ${currentUser?.id}, hasFetchedData: ${hasFetchedData}, isLoadingUser: ${isLoadingUser}`);
     if (currentUser && !hasFetchedData && !isLoadingUser) {
-      console.log('[Dashboard] Data Fetch useEffect: Conditions met. Calling fetchDashboardData for user:', currentUser.id);
       fetchDashboardData().then((success) => {
         if (success) {
-          console.log('[Dashboard] Data Fetch useEffect: fetchDashboardData successful. Setting hasFetchedData to true for user:', currentUser.id);
           setHasFetchedData(true);
-        } else {
-          console.log('[Dashboard] Data Fetch useEffect: fetchDashboardData failed for user:', currentUser.id, '. hasFetchedData remains false.');
         }
       });
     } else if (!currentUser && !isLoadingUser) {
-       console.log('[Dashboard] Data Fetch useEffect: No user and not loading user. Ensuring loading states are false.');
        setLoadingStats(false);
        setLoadingCharts(false);
        setHasFetchedData(false);
-    } else if (isLoadingUser) {
-      console.log('[Dashboard] Data Fetch useEffect: Still loading user. Waiting.');
-    } else if (hasFetchedData) {
-      console.log('[Dashboard] Data Fetch useEffect: Data already fetched for user:', currentUser?.id, '. Skipping fetch.');
     }
   }, [currentUser, hasFetchedData, isLoadingUser, fetchDashboardData]);
 

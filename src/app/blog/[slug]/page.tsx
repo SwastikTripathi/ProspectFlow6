@@ -103,14 +103,12 @@ export default function BlogPostPage() {
             });
             setMdxSource(source);
           } catch (serializeError) {
-            console.error("Failed to serialize MDX:", serializeError);
             setError("Failed to render post content.");
           }
         }
 
       } catch (err: any) {
         setError(err.message || 'Failed to fetch post.');
-        console.error('Error fetching post:', err);
       } finally {
         setIsLoading(false);
       }
@@ -189,7 +187,7 @@ export default function BlogPostPage() {
         } else {
             let bestFallbackId: string | null = null;
             const allHeadingsArray = Array.from(headingElementsRef.current.values())
-                                      .sort((a,b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+                                      .sort((a,b) => a.getBoundingClientRect().top - b.target.getBoundingClientRect().top);
 
             for (let i = allHeadingsArray.length - 1; i >= 0; i--) {
                 const heading = allHeadingsArray[i];

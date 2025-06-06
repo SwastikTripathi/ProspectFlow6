@@ -37,14 +37,12 @@ export default function BlogPage() {
           .order('published_at', { ascending: false });
 
         if (dbError) {
-          console.error("Supabase error fetching posts:", dbError);
           const message = `Database error: ${dbError.message} (Code: ${dbError.code}). Hint: ${dbError.hint || 'No hint'}. Details: ${dbError.details || 'No details'}`;
           throw new Error(message);
         }
         setAllPosts(data || []);
         setFilteredPosts(data || []);
       } catch (err: any) {
-        console.error("Error fetching posts:", err);
         setError(err.message || 'Failed to fetch posts.');
       } finally {
         setIsLoading(false);

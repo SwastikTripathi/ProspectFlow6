@@ -66,7 +66,6 @@ async function determineNewJobOpeningStatus(
     .order('created_at', { ascending: true });
 
   if (followUpsError) {
-    console.error('Error fetching follow-ups for status determination:', followUpsError);
     return null;
   }
 
@@ -331,7 +330,6 @@ export default function JobOpeningsPage() {
       }
       return null;
     } catch (error: any) {
-      console.error("Error adding contact to Supabase:", error);
       toast({ title: 'Error Adding Contact', description: error.message, variant: 'destructive' });
       return null;
     }
@@ -398,7 +396,6 @@ export default function JobOpeningsPage() {
             if (newContact?.id) {
               resolvedContactId = newContact.id;
             } else {
-              console.warn(`Could not resolve or create contact: ${formContact.contactName}. Skipping link for this contact.`);
               continue;
             }
           }
@@ -412,7 +409,6 @@ export default function JobOpeningsPage() {
                 user_id: currentUser.id,
               });
             if (linkError) {
-              console.error(`Error linking contact ${resolvedContactId} to job opening ${newJobOpeningData.id}:`, linkError);
               toast({ title: 'Contact Link Error', description: `Could not link contact ${formContact.contactName}. Error: ${JSON.stringify(linkError)}`, variant: 'destructive'});
             }
           }
@@ -442,7 +438,6 @@ export default function JobOpeningsPage() {
         if (followUpsToInsert.length > 0) {
           const { error: followUpError } = await supabase.from('follow_ups').insert(followUpsToInsert);
           if (followUpError) {
-            console.error('Error saving follow-ups:', followUpError);
             toast({
               title: 'Follow-up Save Error',
               description: `Job opening saved, but follow-ups had an issue: ${followUpError.message}`,
@@ -528,7 +523,6 @@ export default function JobOpeningsPage() {
           .eq('user_id', currentUser.id);
 
         if (deleteLinksError) {
-          console.error(`Error deleting old contact links for job opening ${openingId}:`, deleteLinksError);
           toast({ title: 'Contact Link Error', description: `Could not update contact associations (delete step). Error: ${JSON.stringify(deleteLinksError)}`, variant: 'destructive'});
           return;
         }
@@ -545,7 +539,6 @@ export default function JobOpeningsPage() {
             if (newContact?.id) {
               resolvedContactId = newContact.id;
             } else {
-              console.warn(`Could not resolve or create contact during update: ${formContact.contactName}. Skipping link.`);
               continue;
             }
           }
@@ -558,7 +551,6 @@ export default function JobOpeningsPage() {
                 user_id: currentUser.id,
               });
             if (linkError) {
-              console.error(`Error re-linking contact ${resolvedContactId} to job opening ${openingId}:`, linkError);
               toast({ title: 'Contact Link Error', description: `Could not link contact ${formContact.contactName} during update. Error: ${JSON.stringify(linkError)}`, variant: 'destructive'});
             }
           }
@@ -651,7 +643,7 @@ export default function JobOpeningsPage() {
               .single();
 
             if (fetchOpeningError || !jobOpeningData) {
-              console.error('Error fetching job opening to update status:', fetchOpeningError);
+              // Error fetching job opening to update status
             } else {
               const newCalculatedStatus = await determineNewJobOpeningStatus(jobOpeningId, jobOpeningData.status as JobOpening['status'], currentUser.id);
               if (newCalculatedStatus && newCalculatedStatus !== jobOpeningData.status) {
@@ -661,7 +653,6 @@ export default function JobOpeningsPage() {
                   .eq('id', jobOpeningId)
                   .eq('user_id', currentUser.id);
                 if (updateStatusError) {
-                  console.error('Error updating job opening status after logging follow-up:', updateStatusError);
                   toast({ title: 'Status Update Error', description: 'Follow-up logged, but status update failed.', variant: 'destructive'});
                 }
               }
@@ -671,7 +662,6 @@ export default function JobOpeningsPage() {
         }
     } catch (error: any) {
         toast({title: 'Error Logging Follow-up', description: error.message, variant: 'destructive'});
-        console.error("Error logging follow-up:", error);
     }
   };
 
@@ -680,7 +670,6 @@ export default function JobOpeningsPage() {
       toast({ title: 'Authentication Error', description: 'Cannot unlog follow-up.', variant: 'destructive' });
       return;
     }
-    console.log(`[Unlog Debug ${jobOpeningId}] handleUnlogFollowUp Initiated. FollowUpID: ${followUpIdToUnlog}`);
 
     try {
       const { data: followUpToUnlog, error: fetchFollowUpError } = await supabase
@@ -692,23 +681,19 @@ export default function JobOpeningsPage() {
 
       if (fetchFollowUpError || !followUpToUnlog) {
         toast({ title: 'Error Unlogging', description: 'Could not fetch follow-up details to unlog.', variant: 'destructive' });
-        console.error(`[Unlog Debug ${jobOpeningId}] Unlog Error: Could not fetch follow-up to unlog. ID: ${followUpIdToUnlog}`, fetchFollowUpError);
         return;
       }
 
       if (!followUpToUnlog.original_due_date) {
         toast({ title: 'Error Unlogging', description: 'Original due date not found for this follow-up. Cannot revert.', variant: 'destructive' });
-        console.error(`[Unlog Debug ${jobOpeningId}] Unlog Error: Original due date is missing for follow-up ID: ${followUpIdToUnlog}`);
         return;
       }
 
       const revertedDueDate = startOfDay(new Date(followUpToUnlog.original_due_date));
       if (!isValid(revertedDueDate)) {
           toast({ title: 'Error Unlogging', description: 'Invalid original due date stored. Cannot revert.', variant: 'destructive'});
-          console.error(`[Unlog Debug ${jobOpeningId}] Unlog Error: Stored original_due_date is invalid for follow-up ID: ${followUpIdToUnlog}`, followUpToUnlog.original_due_date);
           return;
       }
-      console.log(`[Unlog Debug ${jobOpeningId}] Calculated RevertedDueDate: ${revertedDueDate.toISOString()}`);
 
       const { error: updateError } = await supabase
         .from('follow_ups')
@@ -720,7 +705,6 @@ export default function JobOpeningsPage() {
         .eq('user_id', currentUser.id);
 
       if (updateError) {
-        console.error(`[Unlog Debug ${jobOpeningId}] Unlog Error: Failed to update follow-up status/date.`, updateError);
         throw updateError;
       }
       toast({ title: 'Follow-up Unlogged', description: 'The follow-up has been reverted to pending.' });
@@ -733,10 +717,9 @@ export default function JobOpeningsPage() {
         .single();
 
       if (fetchJobOpeningErrorPage || !jobOpeningData) {
-         console.error(`[Unlog Debug ${jobOpeningId}] Error fetching job opening to update status post-unlog:`, fetchJobOpeningErrorPage);
+         // Error fetching job opening to update status post-unlog
       } else {
         const newCalculatedStatus = await determineNewJobOpeningStatus(jobOpeningId, jobOpeningData.status as JobOpening['status'], currentUser.id);
-        console.log(`[Unlog Debug ${jobOpeningId}] NewCalculatedStatus for Job Opening: ${newCalculatedStatus}`);
         if (newCalculatedStatus && newCalculatedStatus !== jobOpeningData.status) {
           const { error: updateStatusError } = await supabase
             .from('job_openings')
@@ -744,7 +727,6 @@ export default function JobOpeningsPage() {
             .eq('id', jobOpeningId)
             .eq('user_id', currentUser.id);
           if (updateStatusError) {
-            console.error(`[Unlog Debug ${jobOpeningId}] Error updating job opening status after unlogging follow-up:`, updateStatusError);
             toast({ title: 'Status Update Error', description: 'Follow-up unlogged, but job opening status update failed.', variant: 'destructive'});
           }
         }
@@ -753,7 +735,6 @@ export default function JobOpeningsPage() {
       router.refresh();
     } catch (error: any) {
       toast({ title: 'Error Unlogging Follow-up', description: error.message || 'An unexpected error occurred.', variant: 'destructive' });
-      console.error(`[Unlog Debug ${jobOpeningId}] Full error object in catch block:`, error);
     }
   }, [currentUser, toast, fetchPageData, router]);
 
@@ -774,7 +755,6 @@ export default function JobOpeningsPage() {
         .eq('user_id', currentUser.id);
 
       if (contactsLinkError) {
-        console.error("Error deleting job opening contact links:", contactsLinkError);
         toast({ title: 'Error Deleting Opening', description: `Could not delete contact associations: ${JSON.stringify(contactsLinkError)}`, variant: 'destructive'});
       }
 

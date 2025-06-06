@@ -64,8 +64,6 @@ export default function AuthPage() {
   const [showConfirmationMessage, setShowConfirmationMessage] = useState(false);
   const [defaultTab, setDefaultTab] = useState<'signin' | 'signup'>('signin');
 
-  console.log('[AuthPage] Component rendered/re-rendered. Pathname:', pathname);
-
   const signInForm = useForm<SignInFormValues>({
     resolver: zodResolver(signInSchema),
     defaultValues: { email: '', password: '' },
@@ -77,17 +75,12 @@ export default function AuthPage() {
   });
 
   useEffect(() => {
-    console.log('[AuthPage] useEffect for session check and auth listener. isCheckingAuth:', isCheckingAuth);
     const checkSession = async () => {
       setIsCheckingAuth(true);
-      console.log('[AuthPage] checkSession: Starting initial session check.');
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('[AuthPage] checkSession: supabase.auth.getSession() returned. Session:', session);
       if (session) {
-        console.log(`[AuthPage] checkSession: Active session found. User: ${session.user?.id}. Redirecting to /.`);
         router.replace('/'); 
       } else {
-        console.log('[AuthPage] checkSession: No active session found.');
         setIsCheckingAuth(false); 
       }
     };
@@ -99,30 +92,25 @@ export default function AuthPage() {
     }
 
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log(`[AuthPage] onAuthStateChange: Event - ${event}, Session:`, session);
       if (event === 'SIGNED_IN' && session) {
-        console.log(`[AuthPage] onAuthStateChange: SIGNED_IN event. User: ${session.user?.id}. Redirecting to /.`);
         setIsCheckingAuth(false); 
         router.replace('/');
       } else if (event === 'INITIAL_SESSION') {
         if (!session) {
           setIsCheckingAuth(false);
         } else {
-           console.log(`[AuthPage] onAuthStateChange: INITIAL_SESSION with active session. User: ${session.user?.id}. Redirecting to /.`);
            router.replace('/');
         }
       }
     });
 
     return () => {
-      console.log('[AuthPage] useEffect cleanup: Unsubscribing from auth state changes.');
       authSubscription?.unsubscribe();
     };
   }, [router]);
 
 
   const handleSignIn = async (values: SignInFormValues) => {
-    console.log('[AuthPage] handleSignIn: Attempting sign-in for email:', values.email);
     setIsLoading(true);
     setAuthError(null);
     try {
@@ -131,15 +119,12 @@ export default function AuthPage() {
         password: values.password,
       });
       if (error) {
-        console.error('[AuthPage] handleSignIn: Error signing in.', error);
         setAuthError(error.message);
         toast({ title: 'Sign In Failed', description: error.message, variant: 'destructive' });
       } else {
-        console.log('[AuthPage] handleSignIn: Sign-in successful. onAuthStateChange should handle redirect.');
         toast({ title: 'Signed In Successfully!'});
       }
     } catch (error: any) {
-      console.error('[AuthPage] handleSignIn: Catch block error.', error);
       setAuthError(error.message || 'An unexpected error occurred.');
       toast({ title: 'Sign In Error', description: error.message || 'An unexpected error occurred.', variant: 'destructive' });
     }
@@ -147,7 +132,6 @@ export default function AuthPage() {
   };
 
   const handleSignUp = async (values: SignUpFormValues) => {
-    console.log('[AuthPage] handleSignUp: Attempting sign-up for email:', values.email);
     setIsLoading(true);
     setAuthError(null);
     setShowConfirmationMessage(false);
@@ -158,26 +142,21 @@ export default function AuthPage() {
       });
 
       if (error) {
-        console.error('[AuthPage] handleSignUp: Error signing up.', error);
         setAuthError(error.message);
         toast({ title: 'Sign Up Failed', description: error.message, variant: 'destructive' });
       } else if (data.session) {
-        console.log('[AuthPage] handleSignUp: Sign-up successful, session created. User:', data.user?.id);
         toast({ title: 'Account Created & Signed In!' });
       } else if (data.user && !data.session) {
-        console.log('[AuthPage] handleSignUp: Sign-up successful, confirmation email sent. User:', data.user?.id);
         setShowConfirmationMessage(true);
         toast({ title: 'Account Created!', description: 'Please check your email to confirm your account.' });
         signUpForm.reset();
         signInForm.setValue('email', values.email);
         setDefaultTab('signin');
       } else {
-         console.warn('[AuthPage] handleSignUp: Unexpected outcome.', data);
          setAuthError('An unexpected outcome occurred during sign up.');
          toast({ title: 'Sign Up Issue', description: 'An unexpected outcome occurred.', variant: 'destructive' });
       }
     } catch (error: any) {
-      console.error('[AuthPage] handleSignUp: Catch block error.', error);
       setAuthError(error.message || 'An unexpected error occurred.');
       toast({ title: 'Sign Up Error', description: error.message || 'An unexpected error occurred.', variant: 'destructive' });
     }
@@ -190,14 +169,12 @@ export default function AuthPage() {
     
     const siteURL = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
     if (!siteURL) {
-      console.error('[AuthPage] handleGoogleSignIn: Could not determine site URL for redirect.');
       toast({ title: 'Configuration Error', description: 'Could not determine site URL. Google Sign-In aborted.', variant: 'destructive' });
       setIsGoogleLoading(false);
       return;
     }
     
     const redirectURL = `${siteURL}${pathname}`; 
-    console.log('[AuthPage] handleGoogleSignIn: Using redirect URL:', redirectURL);
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -206,7 +183,6 @@ export default function AuthPage() {
       },
     });
     if (error) {
-      console.error('[AuthPage] handleGoogleSignIn: Error initiating Google sign-in.', error);
       setAuthError(error.message);
       toast({ title: 'Google Sign-In Failed', description: error.message, variant: 'destructive' });
       setIsGoogleLoading(false);

@@ -75,7 +75,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
       if (error) throw error;
       setFavoriteJobOpenings(data as JobOpening[] || []);
     } catch (error: any) {
-      console.error("Error fetching favorite job openings:", error);
       toast({ title: 'Error Fetching Favorites', description: error.message, variant: 'destructive' });
       setFavoriteJobOpenings([]);
     }

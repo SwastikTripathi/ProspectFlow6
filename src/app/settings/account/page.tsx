@@ -234,7 +234,6 @@ export default function AccountSettingsPage() {
           .delete()
           .eq('user_id', currentUser.id);
         if (error) {
-          console.error(`Error deleting from ${tableName}:`, error);
           throw new Error(`Failed to delete data from ${tableName}. ${error.message}`);
         }
       }
@@ -242,7 +241,6 @@ export default function AccountSettingsPage() {
       // Sign out the user
       const { error: signOutError } = await supabase.auth.signOut();
       if (signOutError) {
-        console.error('Error signing out:', signOutError);
         // Non-fatal, proceed to inform user about data deletion
       }
 

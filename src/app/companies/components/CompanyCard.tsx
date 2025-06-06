@@ -26,7 +26,6 @@ export function CompanyCard({ company, onEdit, onToggleFavorite }: CompanyCardPr
     try {
       await onToggleFavorite(company.id, !!company.is_favorite);
     } catch (error) {
-      console.error("Error toggling company favorite from card:", error);
       toast({ title: "Favorite Error", description: "Could not update favorite status.", variant: "destructive" });
     } finally {
       setIsTogglingFavorite(false);
@@ -99,5 +98,3 @@ export function CompanyCard({ company, onEdit, onToggleFavorite }: CompanyCardPr
     </Card>
   );
 }
-
-    

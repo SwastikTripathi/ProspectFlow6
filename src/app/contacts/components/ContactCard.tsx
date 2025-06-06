@@ -26,9 +26,8 @@ export function ContactCard({ contact, onEdit, onToggleFavorite }: ContactCardPr
       return;
     }
     navigator.clipboard.writeText(text).then(() => {
-      toast({ title: `${fieldName} Copied!`, description: `${text} copied.` });
+      toast({ title: `${fieldName} Copied!`, description: `${fieldName === 'All Emails' ? 'All associated emails copied.' : text + ' copied.'}` });
     }).catch(err => {
-      console.error(`Failed to copy ${fieldName.toLowerCase()}: `, err);
       toast({ title: "Copy Failed", description: `Could not copy.`, variant: "destructive" });
     });
   };
@@ -39,7 +38,6 @@ export function ContactCard({ contact, onEdit, onToggleFavorite }: ContactCardPr
     try {
       await onToggleFavorite(contact.id, !!contact.is_favorite);
     } catch (error) {
-      console.error("Error toggling contact favorite from card:", error);
       toast({ title: "Favorite Error", description: "Could not update favorite status.", variant: "destructive" });
     } finally {
       setIsTogglingFavorite(false);
@@ -138,5 +136,3 @@ export function ContactCard({ contact, onEdit, onToggleFavorite }: ContactCardPr
     </Card>
   );
 }
-
-    

@@ -41,7 +41,6 @@ export default function BillingPage() {
 
   useEffect(() => {
     if (!NEXT_PUBLIC_RAZORPAY_KEY_ID) {
-        console.warn("BillingPage: NEXT_PUBLIC_RAZORPAY_KEY_ID is not set.");
         toast({
             title: "Razorpay Misconfiguration",
             description: "Razorpay Key ID is not properly set up. Payments may not function.",

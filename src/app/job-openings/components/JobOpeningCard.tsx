@@ -20,12 +20,6 @@ interface JobOpeningCardProps {
   isFocusedView?: boolean; // Optional: indicates if card is in a special focused view
 }
 
-// Helper to ensure console logs are not too verbose in production builds if needed
-const logDebug = (...args: any[]) => {
-  if (process.env.NODE_ENV === 'development') {
-    // console.log(...args);
-  }
-};
 
 const getStatusBadgeClass = (status: JobOpening['status']): string => {
   switch (status) {
@@ -95,27 +89,13 @@ export function JobOpeningCard({
   }, [opening.associated_contacts]);
 
 
-  useEffect(() => {
-    logDebug(`[Card Mount/Update ID: ${opening.id}] Received opening.followUps:`, followUpsArray.map(f => ({id: f.id, date: f.follow_up_date, status: f.status, created_at: f.created_at, original_due_date: f.original_due_date })));
-  }, [followUpsArray, opening.id]);
-
   const upcomingPendingFollowUps = useMemo(() => {
-    const itemsToFilterAndSort = followUpsArray.map(fu => ({
-      id: fu.id,
-      status: fu.status,
-      date: fu.follow_up_date,
-      isValidDate: isValid(fu.follow_up_date),
-      formattedDate: fu.follow_up_date && isValid(fu.follow_up_date) ? format(fu.follow_up_date, 'yyyy-MM-dd HH:mm:ss XXX') : 'Invalid Date'
-    }));
-    logDebug(`[Card ID: ${opening.id}] upcomingPendingFollowUps - Items BEFORE filter/sort:`, JSON.parse(JSON.stringify(itemsToFilterAndSort)));
-
     const filtered = followUpsArray
       .filter(fu => {
         const isValidDate = fu.follow_up_date && isValid(fu.follow_up_date);
         return fu.status === 'Pending' && isValidDate;
       })
       .sort((a, b) => a.follow_up_date.getTime() - b.follow_up_date.getTime());
-    logDebug(`[Card ID: ${opening.id}] upcomingPendingFollowUps - Result:`, filtered.map(f => ({id: f.id, date: f.follow_up_date && isValid(f.follow_up_date) ? format(f.follow_up_date, 'yyyy-MM-dd') : 'Invalid Date', status: f.status })));
     return filtered;
   }, [followUpsArray, opening.id]);
 
@@ -123,10 +103,6 @@ export function JobOpeningCard({
     upcomingPendingFollowUps.length > 0 ? upcomingPendingFollowUps[0] : undefined,
     [upcomingPendingFollowUps]
   );
-
-  useEffect(() => {
-    logDebug(`[Card State Update ID: ${opening.id}] nextFollowUp:`, nextFollowUp ? {id: nextFollowUp.id, date: nextFollowUp.follow_up_date, status: nextFollowUp.status} : 'undefined', `| upcomingPendingFollowUps count: ${upcomingPendingFollowUps.length}`);
-  }, [nextFollowUp, upcomingPendingFollowUps, opening.id]);
 
 
   const firstFollowUpEmailContentExists = followUpsArray[0]?.email_subject && followUpsArray[0].email_subject.trim() !== '';
@@ -169,7 +145,6 @@ export function JobOpeningCard({
     navigator.clipboard.writeText(text).then(() => {
       toast({ title: `${fieldName} Copied!`, description: `${fieldName === 'All Emails' ? 'All associated emails copied.' : text + ' copied.'}` });
     }).catch(err => {
-      console.error(`Failed to copy ${fieldName.toLowerCase()}: `, err);
       toast({ title: "Copy Failed", description: `Could not copy.`, variant: "destructive" });
     });
   };
@@ -188,7 +163,7 @@ export function JobOpeningCard({
     if (!nextFollowUp || !nextFollowUp.id) return;
     setIsLoggingFollowUp(true);
     try { await onLogFollowUp(nextFollowUp.id, opening.id); }
-    catch (error) { console.error("Error logging follow-up from card:", error); }
+    catch (error) { }
     finally { setIsLoggingFollowUp(false); }
   };
 
@@ -196,10 +171,9 @@ export function JobOpeningCard({
     event.stopPropagation();
     if (!lastSentFollowUpLoggedToday || !lastSentFollowUpLoggedToday.id) return;
 
-    logDebug(`[Card Unlog Click ID: ${opening.id}] Unlogging FollowUpID: ${lastSentFollowUpLoggedToday.id}`);
     setIsUnloggingFollowUp(true);
     try { await onUnlogFollowUp(lastSentFollowUpLoggedToday.id, opening.id); }
-    catch (error) { console.error("Error unlogging follow-up from card:", error); toast({ title: "Unlog Error", variant: "destructive" }); }
+    catch (error) { toast({ title: "Unlog Error", variant: "destructive" }); }
     finally { setIsUnloggingFollowUp(false); }
   };
 
@@ -209,7 +183,6 @@ export function JobOpeningCard({
     try {
       await onToggleFavorite(opening.id, !!opening.is_favorite);
     } catch (error) {
-      console.error("Error toggling favorite from card:", error);
       // Toast will be handled by the page component
     } finally {
       setIsTogglingFavorite(false);
