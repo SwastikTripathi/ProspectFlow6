@@ -4,12 +4,12 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams, notFound, useRouter } from 'next/navigation'; // Added useRouter
+import { useParams, notFound, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import type { User } from '@supabase/supabase-js'; // Added User type
+import type { User } from '@supabase/supabase-js';
 import type { Tables } from '@/lib/database.types';
 import { format, parseISO } from 'date-fns';
-import { Loader2, Tag, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe, ArrowRight, Youtube, Instagram, Mail, Edit3 } from 'lucide-react'; // Added Edit3
+import { Loader2, Tag, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe, ArrowRight, Youtube, Instagram, Mail, Edit3 } from 'lucide-react';
 import { MDXRemote, type MDXRemoteSerializeResult } from 'next-mdx-remote';
 import { serialize } from 'next-mdx-remote/serialize';
 import rehypeHighlight from 'rehype-highlight';
@@ -18,8 +18,9 @@ import { Button } from '@/components/ui/button';
 import { TableOfContents, type TocItem } from '../components/TableOfContents';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { PublicNavbar } from '@/components/layout/PublicNavbar'; // Using PublicNavbar
-import { OWNER_EMAIL } from '@/lib/config'; // Import OWNER_EMAIL
+import { PublicNavbar } from '@/components/layout/PublicNavbar';
+import { OWNER_EMAIL } from '@/lib/config';
+import { Logo } from '@/components/icons/Logo'; // Added Logo import
 
 const NAVBAR_HEIGHT_OFFSET = 64; // h-16 for header = 4rem = 64px
 
@@ -52,7 +53,7 @@ export default function BlogPostPage() {
   const params = useParams();
   const slug = params?.slug as string | undefined;
   const { toast } = useToast();
-  const router = useRouter(); // For navigation
+  const router = useRouter();
 
   const [post, setPost] = useState<Tables<'posts'> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -146,10 +147,10 @@ export default function BlogPostPage() {
       observerRef.current.disconnect();
     }
     activeEntryMap.current.clear();
+    headingElementsRef.current.clear();
 
     if (!mdxSource || !mainContentRef.current) {
       setTocItems([]);
-      headingElementsRef.current.clear();
       setActiveHeadingId(null);
       return;
     }
@@ -157,9 +158,8 @@ export default function BlogPostPage() {
     const populateHeadings = () => {
       if (!mainContentRef.current) return;
 
-      // Only query for H1 elements with IDs for TOC
       const headings = Array.from(
-        mainContentRef.current.querySelectorAll('h1[id]')
+        mainContentRef.current.querySelectorAll('h1[id]') // Only H1 for TOC
       ) as HTMLElement[];
 
       const newHeadingElementsMap = new Map<string, HTMLElement>();
@@ -168,9 +168,8 @@ export default function BlogPostPage() {
       headings.forEach((heading) => {
         const text = heading.textContent || '';
         const id = heading.id;
-        // Level is always 1 for H1
         if (id) {
-            newTocItems.push({ id, level: 1, text });
+            newTocItems.push({ id, level: 1, text }); // Level always 1 for H1
             newHeadingElementsMap.set(id, heading);
         }
       });
@@ -180,17 +179,20 @@ export default function BlogPostPage() {
     };
     
     populateHeadings();
+    
+    if (headingElementsRef.current.size === 0) {
+        setActiveHeadingId(null);
+        return;
+    }
 
-    // Define an activation zone a bit below the navbar.
-    // Top margin: slightly below navbar. Bottom margin: makes the zone about 150px high.
     const topMargin = NAVBAR_HEIGHT_OFFSET;
-    const activationZoneHeight = 150;
+    const activationZoneHeight = 150; 
     const bottomMargin = (typeof window !== 'undefined' ? window.innerHeight : 600) - topMargin - activationZoneHeight;
 
     const observerOptions = {
       root: null,
       rootMargin: `-${topMargin}px 0px -${bottomMargin}px 0px`,
-      threshold: 0, // Trigger as soon as any part enters/leaves the zone
+      threshold: 0, 
     };
 
     observerRef.current = new IntersectionObserver((entries) => {
@@ -208,12 +210,10 @@ export default function BlogPostPage() {
         if (visibleHeadings.length > 0) {
             setActiveHeadingId(visibleHeadings[0].target.id);
         } else {
-            // Fallback logic: if no heading is in the activation zone
             let bestFallbackId: string | null = null;
             const allHeadingsArray = Array.from(headingElementsRef.current.values())
                                       .sort((a,b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
 
-            // Find the last heading that is above the activation zone's top or first heading if all are below
             for (let i = allHeadingsArray.length - 1; i >= 0; i--) {
                 const heading = allHeadingsArray[i];
                 if (heading.getBoundingClientRect().top < topMargin) {
@@ -224,7 +224,6 @@ export default function BlogPostPage() {
             if (bestFallbackId) {
                  setActiveHeadingId(bestFallbackId);
             } else if (allHeadingsArray.length > 0) {
-                // If all headings are below the activation zone (e.g. scrolled to top), make first one active if visible.
                  const firstHeadingRect = allHeadingsArray[0].getBoundingClientRect();
                  if (firstHeadingRect.bottom > 0 && firstHeadingRect.top < window.innerHeight) {
                      setActiveHeadingId(allHeadingsArray[0].id);
@@ -238,11 +237,8 @@ export default function BlogPostPage() {
     }, observerOptions);
 
     const currentObserver = observerRef.current;
-    // Only observe H1 elements for TOC highlighting
     headingElementsRef.current.forEach(headingEl => {
-      if (headingEl.tagName === 'H1') {
         currentObserver.observe(headingEl);
-      }
     });
 
     return () => {
@@ -317,7 +313,7 @@ export default function BlogPostPage() {
       } else if (!id) {
         id = `heading-h2-${Math.random().toString(36).substring(7)}`;
       }
-      return <h2 id={id} {...rest} className="text-xl font-semibold tracking-tight mt-8 mb-3" style={{ scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px` }}>{children}</h2>;
+      return <h2 id={id} {...rest} className="text-lg font-semibold tracking-tight mt-8 mb-3" style={{ scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px` }}>{children}</h2>;
     },
     h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
       const { children, ...rest } = props;
@@ -327,7 +323,7 @@ export default function BlogPostPage() {
       } else if (!id) {
         id = `heading-h3-${Math.random().toString(36).substring(7)}`;
       }
-      return <h3 id={id} {...rest} className="text-lg font-semibold tracking-tight mt-6 mb-2" style={{ scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px` }}>{children}</h3>;
+      return <h3 id={id} {...rest} className="text-base font-semibold tracking-tight mt-6 mb-2" style={{ scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px` }}>{children}</h3>;
     },
     h4: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
       const { children, ...rest } = props;
@@ -337,7 +333,7 @@ export default function BlogPostPage() {
       } else if (!id) {
         id = `heading-h4-${Math.random().toString(36).substring(7)}`;
       }
-      return <h4 id={id} {...rest} className="text-base font-semibold tracking-tight mt-5 mb-2" style={{ scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px` }}>{children}</h4>;
+      return <h4 id={id} {...rest} className="text-sm font-semibold tracking-tight mt-5 mb-2" style={{ scrollMarginTop: `${NAVBAR_HEIGHT_OFFSET + 20}px` }}>{children}</h4>;
     },
      p: (props: React.HTMLAttributes<HTMLParagraphElement>) => {
       const { children, className: propClassName, ...rest } = props;
@@ -572,5 +568,4 @@ export default function BlogPostPage() {
     </div>
   );
 }
-
     

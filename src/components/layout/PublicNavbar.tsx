@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation'; // Removed usePathname, not used
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 import { Logo } from '@/components/icons/Logo';
@@ -14,7 +14,7 @@ import {
   HoverCardTrigger,
   HoverCardContent,
 } from '@/components/ui/hover-card';
-import { Settings, LogOut, LayoutDashboard } from 'lucide-react'; // Added LayoutDashboard
+import { Settings, LogOut, LayoutDashboard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Around } from "@theme-toggles/react";
 import "@theme-toggles/react/css/Around.css";
@@ -86,7 +86,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
       toast({ title: 'Sign Out Failed', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Signed Out Successfully' });
-      router.push('/landing');
+      router.push('/landing'); // Redirect to landing after sign out from public pages
     }
   };
 
