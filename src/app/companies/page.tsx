@@ -51,7 +51,7 @@ export default function CompaniesPage() {
         setCurrentUser(session?.user ?? null);
       }
     );
-    
+
     supabase.auth.getUser().then(({ data: { user } }) => {
         setCurrentUser(user);
     });
@@ -115,17 +115,17 @@ export default function CompaniesPage() {
         .from('companies')
         .insert([{ ...companyData, user_id: currentUser.id, is_favorite: false }])
         .select()
-        .single(); 
+        .single();
 
       if (error) throw error;
 
       if (data) {
-        fetchCompanies(); 
+        fetchCompanies();
         toast({
           title: "Company Added",
           description: `${data.name} has been added.`,
         });
-        setIsAddDialogOpen(false); 
+        setIsAddDialogOpen(false);
       }
     } catch (error: any) {
       toast({
@@ -154,19 +154,19 @@ export default function CompaniesPage() {
         .from('companies')
         .update(updatePayload)
         .eq('id', id)
-        .eq('user_id', currentUser.id) 
+        .eq('user_id', currentUser.id)
         .select()
         .single();
 
       if (error) throw error;
 
       if (data) {
-        fetchCompanies(); 
+        fetchCompanies();
          toast({
           title: "Company Updated",
           description: `${data.name} has been updated.`,
         });
-        setIsEditDialogOpen(false); 
+        setIsEditDialogOpen(false);
         setEditingCompany(null);
       }
     } catch (error: any) {
@@ -177,7 +177,7 @@ export default function CompaniesPage() {
       });
     }
   };
-  
+
   const handleToggleFavoriteCompany = async (companyId: string, currentIsFavorite: boolean) => {
     if (!currentUser) {
       toast({ title: 'Not Authenticated', description: 'Please log in.', variant: 'destructive' });
@@ -194,8 +194,8 @@ export default function CompaniesPage() {
       toast({
         title: !currentIsFavorite ? 'Added to Favorites' : 'Removed from Favorites',
       });
-      await fetchCompanies(); 
-      router.refresh(); 
+      await fetchCompanies();
+      router.refresh();
     } catch (error: any) {
       toast({ title: 'Error Toggling Favorite', description: error.message, variant: 'destructive' });
     }
@@ -214,10 +214,10 @@ export default function CompaniesPage() {
         .from('companies')
         .delete()
         .eq('id', companyToDelete.id)
-        .eq('user_id', currentUser.id); 
+        .eq('user_id', currentUser.id);
 
       if (error) throw error;
-      fetchCompanies(); 
+      fetchCompanies();
       toast({
         title: "Company Deleted",
         description: `${companyToDelete.name} has been removed.`,
@@ -244,7 +244,7 @@ export default function CompaniesPage() {
     const notesMatch = searchInNotes && company.notes && company.notes.toLowerCase().includes(term);
     return nameMatch || websiteMatch || notesMatch;
   }).sort((a, b) => a.name.localeCompare(b.name));
-  
+
   const clearSearch = () => {
     setSearchTerm('');
   };
@@ -274,14 +274,14 @@ export default function CompaniesPage() {
               disabled={!currentUser || isLoading}
             />
             {searchTerm && (
-              <Button variant="ghost" size="icon" className="absolute right-28 mr-1 h-7 w-7" onClick={clearSearch}>
-                <XCircle className="h-4 w-4 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="absolute right-28 mr-1 h-7 w-7 hover:bg-transparent focus-visible:bg-transparent hover:text-primary" onClick={clearSearch}>
+                <XCircle className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
               </Button>
             )}
             <div className="flex items-center space-x-2 pr-3 border-l border-input h-full pl-3">
-              <Checkbox 
-                id="searchCompanyNotes" 
-                checked={searchInNotes} 
+              <Checkbox
+                id="searchCompanyNotes"
+                checked={searchInNotes}
                 onCheckedChange={(checked) => setSearchInNotes(checked as boolean)}
                 className="h-4 w-4"
                 disabled={!currentUser || isLoading}
@@ -301,7 +301,7 @@ export default function CompaniesPage() {
             <span className="sr-only">{showOnlyFavorites ? "Show All" : "Show Favorites"}</span>
           </Button>
         </div>
-        
+
         {isLoading ? (
           <div className="flex justify-center items-center py-10">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -321,9 +321,9 @@ export default function CompaniesPage() {
             </CardContent>
           </Card>
         ) : filteredCompanies.length > 0 ? (
-          <CompanyList 
-            companies={filteredCompanies} 
-            onEditCompany={handleEditCompany} 
+          <CompanyList
+            companies={filteredCompanies}
+            onEditCompany={handleEditCompany}
             onToggleFavoriteCompany={handleToggleFavoriteCompany}
           />
         ) : (
@@ -333,7 +333,7 @@ export default function CompaniesPage() {
                 <Building2 className="mr-2 h-5 w-5 text-primary" />
                 {showOnlyFavorites && searchTerm ? "No Favorite Companies Match Your Search" :
                  showOnlyFavorites ? "No Favorite Companies Yet" :
-                 searchTerm ? "No Companies Match Your Search" : 
+                 searchTerm ? "No Companies Match Your Search" :
                  "Company Directory is Empty"}
               </CardTitle>
             </CardHeader>
@@ -341,7 +341,7 @@ export default function CompaniesPage() {
               <p className="text-muted-foreground">
                 {showOnlyFavorites && searchTerm ? "Try adjusting your search or clear the favorites filter." :
                  showOnlyFavorites ? "Mark some companies as favorite to see them here." :
-                 searchTerm ? "Try a different search term or add a new company." : 
+                 searchTerm ? "Try a different search term or add a new company." :
                  "No companies have been added yet. Click \"Add New Company\" to start building your directory."}
               </p>
             </CardContent>
@@ -385,4 +385,3 @@ export default function CompaniesPage() {
   );
 }
 
-    

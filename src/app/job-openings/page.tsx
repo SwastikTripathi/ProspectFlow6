@@ -85,7 +85,7 @@ async function determineNewJobOpeningStatus(
   } else if (sentFollowUpsCount >= 3) {
     return '3rd Follow Up';
   }
-  return currentJobOpeningStatus; 
+  return currentJobOpeningStatus;
 }
 
 
@@ -106,11 +106,11 @@ export default function JobOpeningsPage() {
   const [editingOpening, setEditingOpening] = useState<JobOpening | null>(null);
   const [openingToDelete, setOpeningToDelete] = useState<JobOpening | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  
+
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  
+
   const [focusedOpening, setFocusedOpening] = useState<JobOpening | null>(null);
   const focusedOpeningIdFromUrl = searchParams?.get('view');
 
@@ -148,7 +148,7 @@ export default function JobOpeningsPage() {
         jobOpeningsResponse,
         companiesResponse,
         contactsResponse,
-        allFollowUpsResponse, 
+        allFollowUpsResponse,
         userSettingsResponse,
         jobOpeningContactsResponse,
       ] = await Promise.all([
@@ -182,8 +182,8 @@ export default function JobOpeningsPage() {
             id: fuDb.id,
             follow_up_date: startOfDay(new Date(fuDb.follow_up_date)),
             original_due_date: fuDb.original_due_date ? startOfDay(new Date(fuDb.original_due_date)) : null,
-            email_subject: fuDb.email_subject, 
-            email_body: fuDb.email_body,       
+            email_subject: fuDb.email_subject,
+            email_body: fuDb.email_body,
           } as FollowUp))
           .sort((a,b) => (a.original_due_date || a.created_at!).getTime() - (b.original_due_date || b.created_at!).getTime());
 
@@ -246,13 +246,13 @@ export default function JobOpeningsPage() {
       const openingToFocus = jobOpenings.find(op => op.id === focusedOpeningIdFromUrl);
       setFocusedOpening(openingToFocus || null);
     } else if (!focusedOpeningIdFromUrl) {
-      setFocusedOpening(null); 
+      setFocusedOpening(null);
     }
   }, [focusedOpeningIdFromUrl, jobOpenings]);
 
   const handleCloseFocusedOpeningDialog = () => {
     setFocusedOpening(null);
-    router.replace('/job-openings', { scroll: false }); 
+    router.replace('/job-openings', { scroll: false });
   };
 
   const handleAddNewCompanyToListSupabase = async (companyName: string): Promise<Company | null> => {
@@ -372,7 +372,7 @@ export default function JobOpeningsPage() {
       job_description_url: values.jobDescriptionUrl || null,
       notes: values.notes || null,
       tags: [],
-      is_favorite: false, 
+      is_favorite: false,
       favorited_at: null,
     };
 
@@ -454,8 +454,8 @@ export default function JobOpeningsPage() {
           title: "Job Opening Added",
           description: `${newJobOpeningData.role_title} at ${newJobOpeningData.company_name_cache} has been added.`,
         });
-        await fetchPageData(); 
-        router.refresh(); 
+        await fetchPageData();
+        router.refresh();
         setIsAddDialogOpen(false);
       } else {
          toast({ title: 'Save Error', description: 'Failed to get new job opening data after insert.', variant: 'destructive' });
@@ -599,7 +599,7 @@ export default function JobOpeningsPage() {
         }
         toast({ title: "Job Opening Updated", description: `${updatedJobOpening.role_title} has been updated.`});
         await fetchPageData();
-        router.refresh(); 
+        router.refresh();
         setIsEditDialogOpen(false);
         setEditingOpening(null);
         // If the focused opening was the one being edited, update it
@@ -804,7 +804,7 @@ export default function JobOpeningsPage() {
       setIsDeleteConfirmOpen(false);
     }
   };
-  
+
   const handleToggleFavorite = async (jobOpeningId: string, currentIsFavorite: boolean) => {
     if (!currentUser) {
       toast({ title: 'Not Authenticated', description: 'Please log in to favorite openings.', variant: 'destructive' });
@@ -814,7 +814,7 @@ export default function JobOpeningsPage() {
       const newIsFavorite = !currentIsFavorite;
       const { error } = await supabase
         .from('job_openings')
-        .update({ 
+        .update({
           is_favorite: newIsFavorite,
           favorited_at: newIsFavorite ? new Date().toISOString() : null,
         })
@@ -827,8 +827,8 @@ export default function JobOpeningsPage() {
         title: newIsFavorite ? 'Added to Favorites' : 'Removed from Favorites',
         description: `Job opening has been ${newIsFavorite ? 'favorited' : 'unfavorited'}.`,
       });
-      await fetchPageData(); 
-      router.refresh(); 
+      await fetchPageData();
+      router.refresh();
     } catch (error: any) {
       toast({ title: 'Error Toggling Favorite', description: error.message, variant: 'destructive' });
     }
@@ -958,8 +958,8 @@ export default function JobOpeningsPage() {
               disabled={!currentUser || isLoading}
             />
             {searchTerm && (
-              <Button variant="ghost" size="icon" className="absolute right-28 mr-1 h-7 w-7" onClick={clearSearch}>
-                <XCircle className="h-4 w-4 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="absolute right-28 mr-1 h-7 w-7 hover:bg-transparent focus-visible:bg-transparent hover:text-primary" onClick={clearSearch}>
+                <XCircle className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
               </Button>
             )}
             <div className="flex items-center space-x-2 pr-3 border-l border-input h-full pl-3">
@@ -1007,17 +1007,17 @@ export default function JobOpeningsPage() {
             <CardHeader><CardTitle className="font-headline flex items-center"><Briefcase className="mr-2 h-5 w-5 text-primary" />
             {showOnlyFavorites && searchTerm ? "No Favorite Openings Match Your Search" :
              showOnlyFavorites ? "No Favorite Openings Yet" :
-             searchTerm ? "No Openings Match Your Search" : 
+             searchTerm ? "No Openings Match Your Search" :
              "No Job Openings Yet"}
             </CardTitle></CardHeader>
             <CardContent><p className="text-muted-foreground">
             {showOnlyFavorites && searchTerm ? "Try adjusting your search or clear the favorites filter." :
              showOnlyFavorites ? "Mark some openings as favorite to see them here." :
-             searchTerm ? "Try a different search term or add a new opening." : 
+             searchTerm ? "Try a different search term or add a new opening." :
              "Click \"Add New Opening\" to get started."}
             </p></CardContent>
           </Card>
-        ) : focusedOpening ? null : ( 
+        ) : focusedOpening ? null : (
           sortOption === 'nextFollowUpDate_asc' ? (
             <>
               {actionRequiredOpenings.length > 0 && (
@@ -1058,7 +1058,7 @@ export default function JobOpeningsPage() {
             />
           )
         )}
-        
+
         {focusedOpening && (
           <Dialog open={!!focusedOpening} onOpenChange={(open) => { if (!open) handleCloseFocusedOpeningDialog(); }}>
             <DialogContent className="sm:max-w-xl p-0 border-0 shadow-2xl bg-transparent data-[state=open]:sm:zoom-in-90 data-[state=closed]:sm:zoom-out-90">
@@ -1066,11 +1066,11 @@ export default function JobOpeningsPage() {
                  <RadixDialogTitle>{focusedOpening.role_title}</RadixDialogTitle>
                  <RadixDialogDescription>Details for {focusedOpening.role_title} at {focusedOpening.company_name_cache}</RadixDialogDescription>
               </DialogHeader>
-              <JobOpeningCard 
+              <JobOpeningCard
                 opening={focusedOpening}
                 onEdit={() => {
-                  handleCloseFocusedOpeningDialog(); 
-                  handleEditOpening(focusedOpening); 
+                  handleCloseFocusedOpeningDialog();
+                  handleEditOpening(focusedOpening);
                 }}
                 onLogFollowUp={handleLogFollowUp}
                 onUnlogFollowUp={handleUnlogFollowUp}
@@ -1078,9 +1078,9 @@ export default function JobOpeningsPage() {
                     await handleToggleFavorite(id, isFav);
                     const updatedFocusedOpening = jobOpenings.find(op => op.id === id);
                     if (updatedFocusedOpening) {
-                        setFocusedOpening(updatedFocusedOpening); 
+                        setFocusedOpening(updatedFocusedOpening);
                     } else {
-                        handleCloseFocusedOpeningDialog(); 
+                        handleCloseFocusedOpeningDialog();
                     }
                 }}
                 isFocusedView={true}
@@ -1136,4 +1136,4 @@ export default function JobOpeningsPage() {
   );
 }
 
-    
+

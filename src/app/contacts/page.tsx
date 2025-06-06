@@ -132,7 +132,7 @@ export default function ContactsPage() {
       if (error) throw error;
       if (data) {
         toast({ title: "Company Added", description: `${data.name} has been added.` });
-        await fetchContactsAndCompanies(); 
+        await fetchContactsAndCompanies();
         return data as Company;
       }
       return null;
@@ -155,9 +155,9 @@ export default function ContactsPage() {
         const company = await handleAttemptCreateCompany(values.company_name_input);
         if (company) {
             companyIdToLink = company.id;
-            companyNameCache = company.name; 
+            companyNameCache = company.name;
         } else {
-            return; 
+            return;
         }
     } else if (companyIdToLink && values.company_name_input) {
       const selectedCompany = companies.find(c => c.id === companyIdToLink);
@@ -175,7 +175,7 @@ export default function ContactsPage() {
       notes: values.notes || null,
       company_id: companyIdToLink,
       company_name_cache: companyNameCache,
-      tags: [], 
+      tags: [],
       is_favorite: false,
     };
 
@@ -185,11 +185,11 @@ export default function ContactsPage() {
         .insert([contactDataToInsert])
         .select()
         .single();
-      
+
       if (error) throw error;
       if (data) {
         toast({ title: "Contact Added", description: `${data.name} has been added.` });
-        fetchContactsAndCompanies(); 
+        fetchContactsAndCompanies();
         setIsAddDialogOpen(false);
       }
     } catch (error: any) {
@@ -217,12 +217,12 @@ export default function ContactsPage() {
             companyIdToLink = company.id;
             companyNameCache = company.name;
         } else {
-            return; 
+            return;
         }
     } else if (companyIdToLink && values.company_name_input) {
         const selectedCompany = companies.find(c => c.id === companyIdToLink);
         companyNameCache = selectedCompany ? selectedCompany.name : values.company_name_input;
-    } else if (!values.company_name_input) { 
+    } else if (!values.company_name_input) {
         companyIdToLink = null;
         companyNameCache = null;
     }
@@ -250,7 +250,7 @@ export default function ContactsPage() {
       if (error) throw error;
       if (data) {
         toast({ title: "Contact Updated", description: `${data.name} has been updated.` });
-        fetchContactsAndCompanies(); 
+        fetchContactsAndCompanies();
         setIsEditDialogOpen(false);
         setEditingContact(null);
       }
@@ -275,8 +275,8 @@ export default function ContactsPage() {
       toast({
         title: !currentIsFavorite ? 'Added to Favorites' : 'Removed from Favorites',
       });
-      await fetchContactsAndCompanies(); 
-      router.refresh(); 
+      await fetchContactsAndCompanies();
+      router.refresh();
     } catch (error: any) {
       toast({ title: 'Error Toggling Favorite', description: error.message, variant: 'destructive' });
     }
@@ -284,7 +284,7 @@ export default function ContactsPage() {
 
   const handleInitiateDeleteContact = (contact: Contact) => {
     setContactToDelete(contact);
-    setIsEditDialogOpen(false); 
+    setIsEditDialogOpen(false);
     setIsDeleteConfirmOpen(true);
   };
 
@@ -300,7 +300,7 @@ export default function ContactsPage() {
       if (error) throw error;
 
       toast({ title: "Contact Deleted", description: `${contactToDelete.name} has been removed.` });
-      fetchContactsAndCompanies(); 
+      fetchContactsAndCompanies();
     } catch (error: any) {
       toast({ title: 'Error Deleting Contact', description: error.message || 'Could not delete contact.', variant: 'destructive' });
     } finally {
@@ -308,7 +308,7 @@ export default function ContactsPage() {
       setIsDeleteConfirmOpen(false);
     }
   };
-  
+
   const filteredContacts = contacts.filter(contact => {
     if (showOnlyFavorites && !contact.is_favorite) {
       return false;
@@ -351,8 +351,8 @@ export default function ContactsPage() {
               disabled={!currentUser || isLoading}
             />
              {searchTerm && (
-              <Button variant="ghost" size="icon" className="absolute right-28 mr-1 h-7 w-7" onClick={clearSearch}>
-                <XCircle className="h-4 w-4 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="absolute right-28 mr-1 h-7 w-7 hover:bg-transparent focus-visible:bg-transparent hover:text-primary" onClick={clearSearch}>
+                <XCircle className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
               </Button>
             )}
             <div className="flex items-center space-x-2 pr-3 border-l border-input h-full pl-3">
@@ -378,7 +378,7 @@ export default function ContactsPage() {
             <span className="sr-only">{showOnlyFavorites ? "Show All" : "Show Favorites"}</span>
           </Button>
         </div>
-        
+
         {isLoading ? (
           <div className="flex justify-center items-center py-10">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -389,9 +389,9 @@ export default function ContactsPage() {
             <CardContent><p className="text-muted-foreground">You need to be signed in to view and manage contacts.</p></CardContent>
           </Card>
         ) : filteredContacts.length > 0 ? (
-          <ContactList 
-            contacts={filteredContacts} 
-            onEditContact={handleEditContact} 
+          <ContactList
+            contacts={filteredContacts}
+            onEditContact={handleEditContact}
             onToggleFavoriteContact={handleToggleFavoriteContact}
           />
         ) : (
@@ -401,7 +401,7 @@ export default function ContactsPage() {
                 <Users className="mr-2 h-5 w-5 text-primary" />
                 {showOnlyFavorites && searchTerm ? "No Favorite Contacts Match Your Search" :
                  showOnlyFavorites ? "No Favorite Contacts Yet" :
-                 searchTerm ? "No Contacts Match Your Search" : 
+                 searchTerm ? "No Contacts Match Your Search" :
                  "Contact Directory is Empty"}
               </CardTitle>
             </CardHeader>
@@ -409,7 +409,7 @@ export default function ContactsPage() {
               <p className="text-muted-foreground">
                 {showOnlyFavorites && searchTerm ? "Try adjusting your search or clear the favorites filter." :
                  showOnlyFavorites ? "Mark some contacts as favorite to see them here." :
-                 searchTerm ? "Try a different search term or add a new contact." : 
+                 searchTerm ? "Try a different search term or add a new contact." :
                  "No contacts have been added yet. Click \"Add New Contact\" to start building your directory."}
               </p>
             </CardContent>
@@ -457,4 +457,3 @@ export default function ContactsPage() {
   );
 }
 
-    

@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface TocItem {
   id: string;
-  level: number; 
+  level: number;
   text: string;
 }
 
@@ -53,7 +53,7 @@ export function TableOfContents({ tocItems, isLoading, activeHeadingId, postTitl
             <div className="h-8 w-8 bg-muted rounded-md"></div>
             <div className="h-8 w-8 bg-muted rounded-md"></div>
             <div className="h-8 w-8 bg-muted rounded-md"></div>
-            <div className="h-8 w-20 bg-muted rounded-md"></div>
+            <div className="h-8 w-8 bg-muted rounded-md"></div> {/* Changed width to match icon button */}
         </div>
       </div>
     );
@@ -61,7 +61,7 @@ export function TableOfContents({ tocItems, isLoading, activeHeadingId, postTitl
 
   if (!tocItems || tocItems.length === 0) {
     return (
-        <div> 
+        <div>
             <h3 id="toc-heading" className="text-lg font-semibold text-foreground mb-3">
                 Table of Contents
             </h3>
@@ -70,29 +70,30 @@ export function TableOfContents({ tocItems, isLoading, activeHeadingId, postTitl
              <div className="mt-6 pt-4 border-t border-border/60">
               <h4 className="text-sm font-semibold text-foreground mb-2">Share this article</h4>
               <div className="flex items-center space-x-1.5">
-                <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary h-8 w-8">
+                <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary hover:bg-transparent focus-visible:bg-transparent h-8 w-8">
                   <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook">
                     <Facebook size={18} />
                   </a>
                 </Button>
-                <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary h-8 w-8">
+                <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary hover:bg-transparent focus-visible:bg-transparent h-8 w-8">
                   <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(postTitle)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on Twitter">
                     <Twitter size={18} />
                   </a>
                 </Button>
-                <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary h-8 w-8">
+                <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary hover:bg-transparent focus-visible:bg-transparent h-8 w-8">
                   <a href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(currentUrl)}&title=${encodeURIComponent(postTitle)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn">
                     <Linkedin size={18} />
                   </a>
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-primary h-8 px-2 text-xs"
+                  size="icon"
+                  className="text-muted-foreground hover:text-primary hover:bg-transparent focus-visible:bg-transparent h-8 w-8"
                   onClick={handleCopyLink}
                   disabled={!currentUrl}
+                  aria-label="Copy link"
                 >
-                  <LinkIcon className="mr-1.5 h-3.5 w-3.5" /> Copy link
+                  <LinkIcon className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -106,19 +107,16 @@ export function TableOfContents({ tocItems, isLoading, activeHeadingId, postTitl
         <h3 id="toc-heading" className="text-lg font-semibold text-foreground mb-3">
           Table of Contents
         </h3>
-        <ul className="space-y-1 border-l border-transparent relative ml-px"> {/* Removed border-gray-200 dark:border-gray-700 */}
+        <ul className="space-y-1 border-l border-transparent relative ml-px">
           {tocItems.map((item) => {
-            const isActive = item.id === activeHeadingId;
+            // const isActive = item.id === activeHeadingId; // activeHeadingId is still available if needed for other logic
             return (
               <li key={item.id} className="relative">
-                {/* Removed the span element that created the side bar */}
                 <a
                   href={`#${item.id}`}
                   className={cn(
-                    "block py-1.5 pr-2 pl-4 text-sm transition-colors duration-150",
-                    isActive 
-                        ? "text-foreground underline underline-offset-4 decoration-primary decoration-2" 
-                        : "text-muted-foreground hover:text-foreground/80",
+                    "block py-1.5 pr-2 pl-4 text-sm transition-colors duration-150 text-muted-foreground hover:text-foreground/80",
+                    // No active state classes for visual highlighting
                   )}
                 >
                   {item.text}
@@ -132,29 +130,30 @@ export function TableOfContents({ tocItems, isLoading, activeHeadingId, postTitl
       <div className="mt-6 pt-4 border-t border-border/60">
         <h4 className="text-sm font-semibold text-foreground mb-2">Share this article</h4>
         <div className="flex items-center space-x-1.5">
-          <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary h-8 w-8">
+          <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary hover:bg-transparent focus-visible:bg-transparent h-8 w-8">
             <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook">
               <Facebook size={18} />
             </a>
           </Button>
-          <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary h-8 w-8">
+          <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary hover:bg-transparent focus-visible:bg-transparent h-8 w-8">
             <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(postTitle)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on X (Twitter)">
               <Twitter size={18} />
             </a>
           </Button>
-          <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary h-8 w-8">
+          <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-primary hover:bg-transparent focus-visible:bg-transparent h-8 w-8">
             <a href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(currentUrl)}&title=${encodeURIComponent(postTitle)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn">
               <Linkedin size={18} />
             </a>
           </Button>
           <Button
             variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-primary h-8 px-2 text-xs"
+            size="icon"
+            className="text-muted-foreground hover:text-primary hover:bg-transparent focus-visible:bg-transparent h-8 w-8"
             onClick={handleCopyLink}
             disabled={!currentUrl}
+            aria-label="Copy link"
           >
-            <LinkIcon className="mr-1.5 h-3.5 w-3.5" /> Copy link
+            <LinkIcon className="h-4 w-4" />
           </Button>
         </div>
       </div>

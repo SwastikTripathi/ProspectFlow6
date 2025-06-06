@@ -48,7 +48,7 @@ function getInitials(name?: string | null, email?: string | null): string {
       return emailPrefix.toUpperCase();
     }
   }
-  return 'U'; 
+  return 'U';
 }
 
 
@@ -60,7 +60,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
   const [favoriteJobOpenings, setFavoriteJobOpenings] = useState<JobOpening[]>([]);
-  
+
   const fetchFavoriteJobOpenings = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -78,7 +78,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       setFavoriteJobOpenings([]);
     }
   }, [toast]);
-  
+
   useEffect(() => {
     setIsLoadingAuth(true);
 
@@ -86,14 +86,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
       (event, currentSession) => {
         const newCurrentUser = currentSession?.user ?? null;
         setUser(newCurrentUser);
-        
+
         if (newCurrentUser) {
           fetchFavoriteJobOpenings(newCurrentUser.id);
         } else {
           setFavoriteJobOpenings([]);
         }
 
-        setIsLoadingAuth(false); 
+        setIsLoadingAuth(false);
 
         if (event === 'SIGNED_OUT') {
           if (!PUBLIC_PATHS.includes(pathname)) {
@@ -102,7 +102,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         }
       }
     );
-    
+
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
         const initialUser = initialSession?.user ?? null;
         setUser(initialUser);
@@ -117,7 +117,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         } else if (initialUser && !isLoadingAuth && PUBLIC_PATHS.includes(pathname)) {
             router.push('/');
         }
-        if (isLoadingAuth) { 
+        if (isLoadingAuth) {
             setIsLoadingAuth(false);
         }
     });
@@ -133,7 +133,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     return () => {
       subscription?.unsubscribe();
     };
-  }, [fetchFavoriteJobOpenings, pathname, router]); 
+  }, [fetchFavoriteJobOpenings, pathname, router]);
 
   useEffect(() => {
     if (isLoadingAuth) {
@@ -147,7 +147,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     } else if (!user && !isPublicPath) {
       router.push('/landing');
     }
-  }, [user, isLoadingAuth, pathname, router]); 
+  }, [user, isLoadingAuth, pathname, router]);
 
 
   const handleSignOut = async () => {
@@ -168,7 +168,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         return newTheme;
     });
   };
-  
+
   if (isLoadingAuth && !PUBLIC_PATHS.includes(pathname)) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
@@ -176,9 +176,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  
+
   if (PUBLIC_PATHS.includes(pathname)) {
-     if (user && isLoadingAuth) { 
+     if (user && isLoadingAuth) {
          return (
             <div className="flex h-screen w-screen items-center justify-center bg-background">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -192,10 +192,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
             </div>
         );
      }
-     return <>{children}</>; 
+     return <>{children}</>;
   }
 
-  if (!user && !isLoadingAuth) { 
+  if (!user && !isLoadingAuth) {
      return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -203,7 +203,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user && isLoadingAuth) { 
+  if (!user && isLoadingAuth) {
      return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -213,7 +213,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   const userInitials = user ? getInitials(user.user_metadata?.full_name, user.email) : 'U';
   const userDisplayName = user?.user_metadata?.full_name || user?.email || 'User';
-  
+
   const menuItemClass = "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50";
 
 
@@ -224,14 +224,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <Link href="/" passHref>
             <Logo className="group-data-[collapsible=icon]:hidden" />
           </Link>
-          <SidebarTrigger className="group-data-[collapsible=icon]:hidden md:hidden" />
+          <SidebarTrigger className="group-data-[collapsible=icon]:hidden md:hidden hover:bg-transparent focus-visible:bg-transparent hover:text-primary" />
         </SidebarHeader>
         <SidebarContent>
           <SidebarNav favoriteJobOpenings={favoriteJobOpenings} />
         </SidebarContent>
         <SidebarFooter
           className={cn(
-            "flex flex-col justify-start", 
+            "flex flex-col justify-start",
             "p-2 group-data-[collapsible=icon]:pt-1 group-data-[collapsible=icon]:pb-2 group-data-[collapsible=icon]:pl-2 group-data-[collapsible=icon]:pr-2"
         )}>
           <SidebarUsageProgress user={user} />
@@ -242,8 +242,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
               title="Toggle theme"
               aria-label="Toggle theme"
               className={cn(
-                  "theme-toggle", 
-                  "w-0 p-0 text-xl text-sidebar-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar-background"
+                  "theme-toggle",
+                  "w-0 p-0 text-xl text-sidebar-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar-background hover:text-sidebar-primary",
+                  "group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:mx-auto"
               )}
               style={{ '--theme-toggle__around--duration': '500ms' } as React.CSSProperties}
             />
@@ -253,14 +254,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <SidebarInset className="bg-background">
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6 shadow-sm">
             <div className="flex items-center gap-4">
-                <SidebarTrigger className="md:hidden" />
+                <SidebarTrigger className="md:hidden hover:bg-transparent focus-visible:bg-transparent hover:text-primary" />
             </div>
             {user && (
             <HoverCard openDelay={0} closeDelay={200}>
                 <HoverCardTrigger asChild>
                     <Button
                         variant="ghost"
-                        className="relative h-9 w-9 rounded-full focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 border-none"
+                        className="relative h-9 w-9 rounded-full focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 border-none hover:bg-transparent focus-visible:bg-transparent"
                     >
                         <Avatar className="h-9 w-9">
                         <AvatarFallback className="bg-primary text-primary-foreground font-medium">
@@ -277,7 +278,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                         </div>
                     </div>
                     <div className="my-1 h-px bg-muted" />
-                    
+
                     <Link href="/settings/account" passHref legacyBehavior>
                         <a className={cn(menuItemClass, "cursor-pointer hover:bg-accent hover:text-accent-foreground")}>
                         <Settings className="mr-2 h-4 w-4" />
@@ -310,4 +311,3 @@ export function AppLayout({ children }: { children: ReactNode }) {
   );
 }
 
-    
