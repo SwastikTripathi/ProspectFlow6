@@ -252,7 +252,13 @@ export function EditJobOpeningDialog({
                                setCompanySearchInput(currentValue);
                                field.onChange(currentValue);
                                form.setValue("company_id", "");
-                            }}/>
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                                e.preventDefault();
+                                }
+                            }}
+                            />
                           <CommandList>
                             {(filteredCompanies.length === 0 && companySearchInput.trim()) && (
                               <CommandItem onSelect={async () => {
@@ -328,27 +334,22 @@ export function EditJobOpeningDialog({
                                   setContactSearchInputs(prev => prev.map((s, i) => i === index ? searchValue : s));
                                   field.onChange(searchValue);
                                   form.setValue(`contacts.${index}.contact_id`, undefined);
-                                  form.setValue(`contacts.${index}.contactEmail`, '');
-                                }}/>
+                                  // form.setValue(`contacts.${index}.contactEmail`, ''); // Don't auto-clear email on name change
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                                    e.preventDefault();
+                                    }
+                                }}
+                                />
                               <CommandList>
                                 {getFilteredContactsForPopover(contactSearchInputs[index] || '').length === 0 && (contactSearchInputs[index] || '').trim() && (
-                                  <CommandItem onSelect={async () => {
-                                      const currentCompanyIdVal = form.getValues("company_id");
-                                      const currentCompanyNameVal = form.getValues("companyName");
-                                      const currentContactEmailVal = form.getValues(`contacts.${index}.contactEmail`);
-                                      const newContact = await onAddNewContact(contactSearchInputs[index], currentContactEmailVal, currentCompanyIdVal || undefined, currentCompanyNameVal || undefined);
-                                      if (newContact) {
-                                        form.setValue(`contacts.${index}.contactName`, newContact.name, { shouldValidate: true });
-                                        form.setValue(`contacts.${index}.contactEmail`, newContact.email, { shouldValidate: true });
-                                        form.setValue(`contacts.${index}.contact_id`, newContact.id, { shouldValidate: true });
-                                        if(newContact.company_id && !form.getValues("company_id")){
-                                            form.setValue("company_id", newContact.company_id);
-                                            form.setValue("companyName", newContact.company_name_cache || '');
-                                            setCompanySearchInput(newContact.company_name_cache || '');
-                                        }
-                                      }
+                                  <CommandItem onSelect={() => {
+                                      form.setValue(`contacts.${index}.contactName`, contactSearchInputs[index], { shouldValidate: true });
+                                      form.setValue(`contacts.${index}.contact_id`, undefined, { shouldValidate: true });
+                                      // Email is handled by its own form field.
                                       setContactPopoverStates(prev => prev.map((s, i) => i === index ? false : s));
-                                      setContactSearchInputs(prev => prev.map((s, i) => i === index ? (newContact ? newContact.name : '') : s));
+                                      // setContactSearchInputs(prev => prev.map((s, i) => i === index ? contactSearchInputs[index] : s));
                                     }} className="text-sm cursor-pointer">
                                     <ChevronsUpDown className="mr-2 h-4 w-4" />
                                     Create: "{contactSearchInputs[index]}"
@@ -374,22 +375,10 @@ export function EditJobOpeningDialog({
                                     </CommandItem>))}
                                 </CommandGroup>
                                 {getFilteredContactsForPopover(contactSearchInputs[index] || '').length > 0 && (contactSearchInputs[index] || '').trim() && !allExistingContacts.find(c => c.name.toLowerCase() === (contactSearchInputs[index] || '').trim().toLowerCase()) && (
-                                   <CommandItem onSelect={async () => {
-                                      const currentCompanyIdVal = form.getValues("company_id");
-                                      const currentCompanyNameVal = form.getValues("companyName");
-                                      const currentContactEmailVal = form.getValues(`contacts.${index}.contactEmail`);
-                                      const newContact = await onAddNewContact(contactSearchInputs[index], currentContactEmailVal, currentCompanyIdVal || undefined, currentCompanyNameVal || undefined);
-                                      if (newContact) {
-                                        form.setValue(`contacts.${index}.contactName`, newContact.name, { shouldValidate: true });
-                                        form.setValue(`contacts.${index}.contactEmail`, newContact.email, { shouldValidate: true });
-                                        form.setValue(`contacts.${index}.contact_id`, newContact.id, { shouldValidate: true });
-                                        if(newContact.company_id && !form.getValues("company_id")){
-                                            form.setValue("company_id", newContact.company_id);
-                                            form.setValue("companyName", newContact.company_name_cache || '');
-                                        }
-                                      }
+                                   <CommandItem onSelect={() => {
+                                      form.setValue(`contacts.${index}.contactName`, contactSearchInputs[index], { shouldValidate: true });
+                                      form.setValue(`contacts.${index}.contact_id`, undefined, { shouldValidate: true });
                                       setContactPopoverStates(prev => prev.map((s, i) => i === index ? false : s));
-                                      setContactSearchInputs(prev => prev.map((s, i) => i === index ? (newContact ? newContact.name : '') : s));
                                     }} className="text-sm cursor-pointer">
                                    <ChevronsUpDown className="mr-2 h-4 w-4" />
                                     Create: "{contactSearchInputs[index]}"

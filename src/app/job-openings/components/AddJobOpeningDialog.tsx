@@ -99,7 +99,7 @@ export function AddJobOpeningDialog({
   companies,
   contacts: allExistingContacts,
   onAddNewCompany,
-  onAddNewContact,
+  onAddNewContact, // This prop might become less used directly by "Create" in popover
   defaultEmailTemplates,
 }: AddJobOpeningDialogProps) {
   const [companyPopoverOpen, setCompanyPopoverOpen] = useState(false);
@@ -351,10 +351,10 @@ export function AddJobOpeningDialog({
                                     placeholder="Search or create contact..."
                                     value={contactSearchInputs[index] || ''}
                                     onValueChange={(searchValue) => {
-                                    setContactSearchInputs(prev => prev.map((s, i) => i === index ? searchValue : s));
-                                    field.onChange(searchValue);
-                                    form.setValue(`contacts.${index}.contact_id`, undefined);
-                                    form.setValue(`contacts.${index}.contactEmail`, '');
+                                      setContactSearchInputs(prev => prev.map((s, i) => i === index ? searchValue : s));
+                                      field.onChange(searchValue); // Update contactName field
+                                      form.setValue(`contacts.${index}.contact_id`, undefined); // Clear ID if typing new name
+                                      // Do NOT clear email here, user types it in separate field
                                     }}
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
@@ -365,24 +365,14 @@ export function AddJobOpeningDialog({
                                 <CommandList>
                                     {getFilteredContactsForPopover(contactSearchInputs[index] || '').length === 0 && (contactSearchInputs[index] || '').trim() && (
                                     <CommandItem
-                                        onSelect={async () => {
-                                        const currentCompanyIdVal = form.getValues("company_id");
-                                        const currentCompanyNameVal = form.getValues("companyName");
-                                        const currentContactEmailVal = form.getValues(`contacts.${index}.contactEmail`);
-
-                                        const newContact = await onAddNewContact(contactSearchInputs[index], currentContactEmailVal, currentCompanyIdVal || undefined, currentCompanyNameVal || undefined);
-                                        if (newContact) {
-                                            form.setValue(`contacts.${index}.contactName`, newContact.name, { shouldValidate: true });
-                                            form.setValue(`contacts.${index}.contactEmail`, newContact.email, { shouldValidate: true });
-                                            form.setValue(`contacts.${index}.contact_id`, newContact.id, { shouldValidate: true });
-                                            if(newContact.company_id && !form.getValues("company_id")){
-                                                form.setValue("company_id", newContact.company_id);
-                                                form.setValue("companyName", newContact.company_name_cache || '');
-                                                setCompanySearchInput(newContact.company_name_cache || '');
-                                            }
-                                        }
-                                        setContactPopoverStates(prev => prev.map((s, i) => i === index ? false : s));
-                                        setContactSearchInputs(prev => prev.map((s, i) => i === index ? (newContact ? newContact.name : '') : s));
+                                        onSelect={() => {
+                                          // Set name, clear ID, user fills email in the form.
+                                          form.setValue(`contacts.${index}.contactName`, contactSearchInputs[index], { shouldValidate: true });
+                                          form.setValue(`contacts.${index}.contact_id`, undefined, { shouldValidate: true });
+                                          // Email is handled by its own form field, don't auto-fill or clear here from popover create action.
+                                          setContactPopoverStates(prev => prev.map((s, i) => i === index ? false : s));
+                                          // Keep search input as the name for display in trigger
+                                          // setContactSearchInputs(prev => prev.map((s, i) => i === index ? contactSearchInputs[index] : s));
                                         }}
                                         className="text-sm cursor-pointer"
                                     >
@@ -416,22 +406,10 @@ export function AddJobOpeningDialog({
                                     </CommandGroup>
                                     {getFilteredContactsForPopover(contactSearchInputs[index] || '').length > 0 && (contactSearchInputs[index] || '').trim() && !allExistingContacts.find(c => c.name.toLowerCase() === (contactSearchInputs[index] || '').trim().toLowerCase()) && (
                                     <CommandItem
-                                        onSelect={async () => {
-                                        const currentCompanyIdVal = form.getValues("company_id");
-                                        const currentCompanyNameVal = form.getValues("companyName");
-                                        const currentContactEmailVal = form.getValues(`contacts.${index}.contactEmail`);
-                                        const newContact = await onAddNewContact(contactSearchInputs[index], currentContactEmailVal, currentCompanyIdVal || undefined, currentCompanyNameVal || undefined);
-                                        if (newContact) {
-                                            form.setValue(`contacts.${index}.contactName`, newContact.name, { shouldValidate: true });
-                                            form.setValue(`contacts.${index}.contactEmail`, newContact.email, { shouldValidate: true });
-                                            form.setValue(`contacts.${index}.contact_id`, newContact.id, { shouldValidate: true });
-                                            if(newContact.company_id && !form.getValues("company_id")){
-                                                form.setValue("company_id", newContact.company_id);
-                                                form.setValue("companyName", newContact.company_name_cache || '');
-                                            }
-                                        }
-                                        setContactPopoverStates(prev => prev.map((s, i) => i === index ? false : s));
-                                        setContactSearchInputs(prev => prev.map((s, i) => i === index ? (newContact ? newContact.name : '') : s));
+                                        onSelect={() => {
+                                          form.setValue(`contacts.${index}.contactName`, contactSearchInputs[index], { shouldValidate: true });
+                                          form.setValue(`contacts.${index}.contact_id`, undefined, { shouldValidate: true });
+                                          setContactPopoverStates(prev => prev.map((s, i) => i === index ? false : s));
                                         }}
                                         className="text-sm cursor-pointer"
                                     >
