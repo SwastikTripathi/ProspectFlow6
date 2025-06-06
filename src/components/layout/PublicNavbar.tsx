@@ -119,7 +119,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
         </Link>
         <nav className="flex items-center space-x-1 sm:space-x-2">
           <Button variant="ghost" asChild className={navLinkClass('pricing')}>
-            <Link href="/pricing">Pricing</Link>
+            <Link href={user ? "/settings/billing" : "/pricing"}>Pricing</Link>
           </Button>
           <Button variant="ghost" asChild className={navLinkClass('blog')}>
             <Link href="/blog">Blog</Link>
@@ -188,7 +188,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
                 <Link href="/auth">Sign In</Link>
               </Button>
               <Button asChild className="shadow-md rounded-full">
-                <Link href="/auth?action=signup">Try for free</Link>
+                <Link href="/auth?action=signup">Get Started Free</Link>
               </Button>
             </>
           )}
