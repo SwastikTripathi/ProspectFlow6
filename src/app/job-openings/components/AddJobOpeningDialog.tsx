@@ -62,7 +62,7 @@ const addJobOpeningSchema = z.object({
   company_id: z.string().optional(),
   roleTitle: z.string().min(1, "Role title is required"),
   contacts: z.array(contactEntrySchema).min(1, "At least one contact is required."),
-  initialEmailDate: z.date({ required_error: "Initial email date is required" }),
+  initialEmailDate: z.date({ invalid_type_error: "Initial email date is required." }).default(() => new Date()),
   jobDescriptionUrl: z.string().url("Must be a valid URL").optional().or(z.literal('')),
   notes: z.string().optional(),
   followUp1: followUpContentSchema,
@@ -247,6 +247,11 @@ export function AddJobOpeningDialog({
                                field.onChange(currentValue);
                                form.setValue("company_id", "");
                             }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                                e.preventDefault();
+                              }
+                            }}
                           />
                           <CommandList>
                             {(filteredCompanies.length === 0 && companySearchInput.trim()) && (
@@ -350,6 +355,11 @@ export function AddJobOpeningDialog({
                                     field.onChange(searchValue);
                                     form.setValue(`contacts.${index}.contact_id`, undefined);
                                     form.setValue(`contacts.${index}.contactEmail`, '');
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                                        e.preventDefault();
+                                      }
                                     }}
                                 />
                                 <CommandList>
