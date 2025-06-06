@@ -21,7 +21,7 @@ import { Logo } from '../icons/Logo';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/hover-card';
-import { LogOut, Loader2, Settings, CreditCard } from 'lucide-react';
+import { LogOut, Loader2, Settings, CreditCard, Home } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Around } from "@theme-toggles/react"
 import "@theme-toggles/react/css/Around.css"
@@ -244,9 +244,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
               className={cn(
                   "theme-toggle",
                   "text-xl text-sidebar-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar-background hover:text-sidebar-primary",
-                  "w-auto", // Ensure it's always visible and takes its natural width
-                  "group-data-[collapsible=icon]:mx-auto", // Center it when collapsed
-                  "group-data-[collapsible=icon]:p-0" // No padding when collapsed
+                  "w-auto",
+                  "group-data-[collapsible=icon]:mx-auto",
+                  "group-data-[collapsible=icon]:p-0"
               )}
               style={{ '--theme-toggle__around--duration': '500ms' } as React.CSSProperties}
             />
@@ -280,7 +280,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
                         </div>
                     </div>
                     <div className="my-1 h-px bg-muted" />
-
+                    <Link href="/landing" passHref legacyBehavior>
+                        <a className={cn(menuItemClass, "cursor-pointer hover:bg-accent hover:text-accent-foreground")}>
+                        <Home className="mr-2 h-4 w-4" />
+                        <span>Homepage</span>
+                        </a>
+                    </Link>
+                    <Link href="/" passHref legacyBehavior>
+                        <a className={cn(menuItemClass, "cursor-pointer hover:bg-accent hover:text-accent-foreground")}>
+                        <Home className="mr-2 h-4 w-4" /> {/* Consider a different icon for Dashboard if Homepage uses Home */}
+                        <span>Dashboard</span>
+                        </a>
+                    </Link>
                     <Link href="/settings/account" passHref legacyBehavior>
                         <a className={cn(menuItemClass, "cursor-pointer hover:bg-accent hover:text-accent-foreground")}>
                         <Settings className="mr-2 h-4 w-4" />
