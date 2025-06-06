@@ -4,7 +4,7 @@
 import { PublicNavbar } from '@/components/layout/PublicNavbar';
 import { PublicFooter } from '@/components/layout/PublicFooter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, Users, MessageSquareQuote } from 'lucide-react'; // Corrected Icon
+import { Mail, Users, MessageSquareQuote, Facebook, Twitter, Youtube, Linkedin } from 'lucide-react'; // Corrected Icon and added social
 import Link from 'next/link';
 
 export default function ContactPage() {
@@ -73,10 +73,21 @@ export default function ContactPage() {
              <MessageSquareQuote className="h-12 w-12 text-primary mx-auto mb-4" />
              <h2 className="text-2xl font-semibold font-headline mb-3">Have Other Questions?</h2>
              <p className="text-muted-foreground max-w-md mx-auto">
-               Check out our <Link href="/blog" className="text-primary hover:underline">Blog</Link> for tips and updates, 
+               Check out our <Link href="/blog" className="text-primary hover:underline">Blog</Link> for tips and updates,
                or explore our <Link href="/pricing" className="text-primary hover:underline">Pricing</Link> page for plan details.
              </p>
            </div>
+
+           <div className="mt-16 text-center">
+            <h3 className="text-xl font-semibold mb-6 text-foreground">Connect with Us</h3>
+            <div className="flex justify-center space-x-6">
+              <a href="#" aria-label="Facebook" className="text-muted-foreground hover:text-primary transition-colors"><Facebook size={24} /></a>
+              <a href="#" aria-label="Twitter" className="text-muted-foreground hover:text-primary transition-colors"><Twitter size={24} /></a>
+              <a href="#" aria-label="YouTube" className="text-muted-foreground hover:text-primary transition-colors"><Youtube size={24} /></a>
+              <a href="#" aria-label="LinkedIn" className="text-muted-foreground hover:text-primary transition-colors"><Linkedin size={24} /></a>
+            </div>
+          </div>
+
         </div>
       </main>
       <PublicFooter />

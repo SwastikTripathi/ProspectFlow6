@@ -101,7 +101,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
   const userDisplayName = user?.user_metadata?.full_name || user?.email || 'User';
 
   const navLinkClass = (linkType?: 'landing' | 'pricing' | 'blog' | 'about') => {
-    const isActive = activeLink === linkType;
+    const isActive = activeLink === linkType && typeof linkType !== 'undefined'; // Ensures linkType must be defined for active state
     return cn(
       "rounded-full px-3 py-1.5 sm:px-4 h-auto text-sm font-medium",
       "transition-colors duration-150 ease-in-out",
@@ -139,7 +139,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
                 title="Toggle theme"
                 aria-label="Toggle theme"
                 className={cn(
-                "theme-toggle text-foreground/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+                "theme-toggle text-foreground/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background hover:text-foreground/70",
                 "block h-6 w-6 p-0"
                 )}
                 style={{ '--theme-toggle__around--duration': '500ms' } as React.CSSProperties}
