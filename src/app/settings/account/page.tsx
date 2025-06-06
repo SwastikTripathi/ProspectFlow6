@@ -452,7 +452,7 @@ export default function AccountSettingsPage() {
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
               Deleting your account will permanently remove all your associated data, including:
-              job openings, contacts, companies, follow-up schedules, and settings. 
+              job openings, contacts, companies, follow-up schedules, email templates, user settings, and subscription information. 
               Your authentication record will remain but will no longer be associated with any application data.
             </p>
             <Button variant="destructive" onClick={() => setIsDeleteStep1Open(true)} disabled={isDeletingAccount}>
@@ -468,10 +468,10 @@ export default function AccountSettingsPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action is irreversible. All your data including job openings, contacts, companies, 
-                follow-up schedules, email templates, user settings, and subscription information will be 
-                <strong>permanently deleted</strong>. 
-                Your authentication record will remain, but will be disassociated from all application data.
+                This action is irreversible. All your data including job openings, contacts, 
+                companies, follow-up schedules, email templates, user settings, and 
+                subscription information will be <strong>permanently deleted</strong>. Your authentication 
+                record will remain, but will be disassociated from all application data.
                 <br /><br />
                 Are you sure you want to proceed?
               </AlertDialogDescription>
