@@ -8,10 +8,10 @@ import { useParams, notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import type { Tables } from '@/lib/database.types';
 import { format, parseISO } from 'date-fns';
-import { Loader2, Tag, UserCircle2, Facebook, Twitter, Linkedin, Link as LinkIcon } from 'lucide-react';
+import { Loader2, Tag, UserCircle2, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Article } from '../components/Article';
+import Article from '../components/Article';
 import { TableOfContents, type TocItem } from '../components/TableOfContents';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -159,12 +159,22 @@ export default function BlogPostPage() {
     
     let percentage = 0;
     if (currentActiveIndex !== -1) {
-      percentage = ((currentActiveIndex + 1) / tocItems.length) * 100;
+      // Base percentage on the active section being started
+      percentage = (currentActiveIndex / tocItems.length) * 100;
     }
-    // Ensure 100% at the very bottom
-    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 30) {
+    
+    // If near the bottom of the page, consider it 100%
+    // (window.innerHeight + window.scrollY) is the bottom of the viewport relative to the document
+    // document.body.offsetHeight is the total height of the document
+    if (mainContentRef.current && (window.innerHeight + window.scrollY) >= (mainContentRef.current.offsetTop + mainContentRef.current.offsetHeight - 30) ) {
       percentage = 100;
+    } else if (currentActiveIndex === tocItems.length -1) { // If last heading is active, show progress based on its start
+         percentage = (currentActiveIndex / tocItems.length) * 100;
+    } else if (currentActiveIndex !== -1) { // Otherwise, if a heading is active, show completion of that section
+         percentage = ((currentActiveIndex + 1) / tocItems.length) * 100;
     }
+
+
     setScrollPercentage(Math.min(100, Math.max(0, percentage)));
 
   }, [tocItems.length]);
@@ -407,4 +417,6 @@ export default function BlogPostPage() {
     </div>
   );
 }
+    
+
     
