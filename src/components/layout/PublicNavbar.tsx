@@ -84,7 +84,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
       toast({ title: 'Sign Out Failed', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Signed Out Successfully' });
-      router.push('/landing'); 
+      router.push('/landing');
     }
   };
 
@@ -103,14 +103,14 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
   const navLinkClass = (linkType?: 'landing' | 'pricing' | 'blog' | 'about') => {
     const isActive = activeLink === linkType;
     return cn(
-      "rounded-full px-3 py-1.5 sm:px-4 h-auto", // Base padding and height
-      "transition-colors duration-150 ease-in-out", // Base transition for color change on active state
+      "rounded-full px-3 py-1.5 sm:px-4 h-auto text-sm",
+      "transition-colors duration-150 ease-in-out",
       isActive
-        ? "text-primary font-semibold cursor-default" // Active link: primary color, bold, cursor default, no hover/active effects
-        : "text-foreground/70 hover:underline hover:decoration-current active:text-primary/90 focus-visible:underline focus-visible:decoration-current" // Inactive link styling
+        ? "text-primary font-semibold cursor-default" // Active link: primary color, bold, cursor default
+        : "text-foreground/70 hover:underline active:text-primary/90 focus-visible:underline" // Inactive link: hover underline, active color change
     );
   };
-  
+
   const menuItemClass = "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50";
 
 
@@ -130,7 +130,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
           <Button variant="ghost" asChild className={navLinkClass('about')}>
             <Link href="/about">About</Link>
           </Button>
-          
+
           <div className="mx-1 sm:mx-2 flex items-center">
             <Around
                 toggled={theme === 'dark'}
@@ -139,7 +139,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
                 aria-label="Toggle theme"
                 className={cn(
                 "theme-toggle text-foreground/70 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-                "block h-6 w-6 p-0" // Ensures icon behaves as a block for centering
+                "block h-6 w-6 p-0"
                 )}
                 style={{ '--theme-toggle__around--duration': '500ms' } as React.CSSProperties}
             />
@@ -204,4 +204,3 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
     </header>
   );
 }
-    
