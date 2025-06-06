@@ -145,7 +145,7 @@ function HeroVisual() {
                   <Tooltip key={index}>
                     <TooltipTrigger asChild>
                       <div
-                        className="bg-card p-3 rounded-lg shadow-md border border-border/50 hover:shadow-xl hover:scale-105 transition-all duration-200 flex flex-col"
+                        className="bg-card p-3 rounded-lg shadow-md border border-border/50 hover:shadow-xl hover:scale-105 transition-all duration-200 flex flex-col cursor-default"
                       >
                         <div className="flex justify-between items-start mb-2">
                           <Badge variant="secondary" className={`text-xs ${card.statusColor}`}>{card.status}</Badge>
