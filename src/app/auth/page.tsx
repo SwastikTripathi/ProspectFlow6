@@ -188,7 +188,7 @@ export default function AuthPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`, // Or just window.location.origin if you handle callback on home
+        redirectTo: `${window.location.origin}/auth/callback`, 
       },
     });
     if (error) {
@@ -197,7 +197,7 @@ export default function AuthPage() {
       toast({ title: 'Google Sign-In Failed', description: error.message, variant: 'destructive' });
       setIsGoogleLoading(false);
     }
-    // If successful, Supabase handles the redirect. No need to setIsLoading(false) here if redirect occurs.
+    // If successful, Supabase handles the redirect.
   };
   
   console.log('[AuthPage] Rendering. isCheckingAuth:', isCheckingAuth, 'isLoading:', isLoading);
