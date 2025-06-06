@@ -21,7 +21,7 @@ import "@theme-toggles/react/css/Around.css";
 import { Progress } from '@/components/ui/progress';
 
 
-const NAVBAR_HEIGHT_OFFSET = 80;
+const NAVBAR_HEIGHT_OFFSET = 80; // Adjust this based on your actual navbar height
 
 const footerLinks = {
     product: [
@@ -123,7 +123,7 @@ export default function BlogPostPage() {
     }
 
     const headings = Array.from(
-      mainContentRef.current.querySelectorAll('h1') // Only H1 for TOC
+      mainContentRef.current.querySelectorAll('h1') // Only H1 for TOC as per previous request
     ) as HTMLElement[];
 
     headingElementsRef.current = headings;
@@ -143,50 +143,45 @@ export default function BlogPostPage() {
 
 
   const handleScroll = useCallback(() => {
-    if (!headingElementsRef.current.length || !tocItems.length || !mainContentRef.current) return;
+    if (!mainContentRef.current) return;
 
-    let currentActiveIndex = -1;
-    for (let i = headingElementsRef.current.length - 1; i >= 0; i--) {
-      const heading = headingElementsRef.current[i];
-      const rect = heading.getBoundingClientRect();
-      if (rect.top < NAVBAR_HEIGHT_OFFSET + 20) { 
-        currentActiveIndex = i;
-        break;
-      }
-    }
+    const contentTop = mainContentRef.current.offsetTop;
+    const contentHeight = mainContentRef.current.offsetHeight;
+    const windowScrollY = window.scrollY;
+    const windowHeight = window.innerHeight;
+
+    // Progress based on how much of the main content has been scrolled past
+    let currentScrollDepth = Math.max(0, windowScrollY + NAVBAR_HEIGHT_OFFSET - contentTop);
+    let percentage = (currentScrollDepth / (contentHeight - (windowHeight - NAVBAR_HEIGHT_OFFSET))) * 100;
     
-    const newActiveId = currentActiveIndex !== -1 ? headingElementsRef.current[currentActiveIndex].id : null;
-    setActiveHeadingId(newActiveId);
-    
-    let percentage = 0;
-    if (currentActiveIndex !== -1 && tocItems.length > 0) {
-        if (currentActiveIndex === tocItems.length - 1) { // If it's the last heading
-          percentage = (currentActiveIndex / tocItems.length) * 100;
-        } else {
-          percentage = ((currentActiveIndex + 1) / tocItems.length) * 100;
-        }
-    }
-    
-    const mainContentEl = mainContentRef.current;
-    if (mainContentEl && (window.innerHeight + window.scrollY) >= (mainContentEl.offsetTop + mainContentEl.offsetHeight - 30) ) {
-      percentage = 100;
-    }
-    
-    if(tocItems.length === 0 && mainContentEl && (window.innerHeight + window.scrollY) >= (mainContentEl.offsetTop + mainContentEl.offsetHeight - 30)) {
+    // If very close to bottom of whole page, ensure 100%
+    if ((windowScrollY + windowHeight) >= (document.body.offsetHeight - 30)) {
         percentage = 100;
-    } else if (tocItems.length === 0 && currentActiveIndex === -1) {
-        percentage = 0;
     }
-
 
     setScrollPercentage(Math.min(100, Math.max(0, percentage)));
 
-  }, [tocItems]);
+    // Active heading logic
+    let currentActiveIndex = -1;
+    for (let i = headingElementsRef.current.length - 1; i >= 0; i--) {
+        const heading = headingElementsRef.current[i];
+        const rect = heading.getBoundingClientRect();
+        if (rect.top < NAVBAR_HEIGHT_OFFSET + 20) { 
+            currentActiveIndex = i;
+            break;
+        }
+    }
+    
+    const newActiveId = currentActiveIndex !== -1 ? headingElementsRef.current[currentActiveIndex].id : null;
+    if (activeHeadingId !== newActiveId) {
+        setActiveHeadingId(newActiveId);
+    }
+  }, [activeHeadingId]);
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
     window.addEventListener('resize', handleScroll);
-    handleScroll(); 
+    handleScroll(); // Initial check
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
@@ -243,6 +238,10 @@ export default function BlogPostPage() {
 
   const displayDate = post.published_at ? format(parseISO(post.published_at), 'MMMM d, yyyy') : format(parseISO(post.created_at), 'MMMM d, yyyy');
   const authorName = post.author_name_cache || 'ProspectFlow Team';
+  // For the credits, we will use the hardcoded "Kaleigh Moore" as per the image.
+  const creditAuthorName = "Kaleigh Moore";
+  const creditAuthorDescription = "Freelance writer for eCommerce & SaaS companies. I write blogs and articles for eCommerce platforms & the SaaS tools that integrate with them.";
+
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -287,6 +286,32 @@ export default function BlogPostPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 lg:gap-x-12 xl:gap-x-16">
             {/* Left Column: Article Content */}
             <div className="lg:col-span-8 order-2 lg:order-1">
+              {post.cover_image_url && (
+                <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 mb-8">
+                  <Image
+                    src={post.cover_image_url}
+                    alt={post.title || 'Blog post cover image'}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, (max-width: 1280px) 66vw, 50vw"
+                    className="object-cover"
+                    priority
+                    data-ai-hint="woman stress laptop"
+                  />
+                </div>
+              )}
+               {!post.cover_image_url && ( // Fallback if no cover image
+                 <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 bg-muted flex items-center justify-center mb-8">
+                    <Image
+                        src="https://placehold.co/800x500.png" 
+                        alt="Placeholder image"
+                        width={800}
+                        height={500}
+                        className="object-cover"
+                        data-ai-hint="woman stress laptop"
+                    />
+                 </div>
+              )}
+
               <div className="mb-4">
                 <p className="text-sm text-muted-foreground">
                     <span>{authorName}</span>
@@ -311,8 +336,8 @@ export default function BlogPostPage() {
               </div>
               
               {/* CTA and Author Bio */}
-              <div className="mt-12 pt-8">
-                 <div className="text-center mb-12">
+              <div className="mt-8"> {/* Reduced top margin */}
+                 <div className="text-center mb-10 pt-4"> {/* Reduced top padding */}
                     <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base py-3 px-6 rounded-lg shadow-md" asChild>
                         <Link href="/pricing">START YOUR FREE 14-DAY TRIAL <ArrowRight className="ml-2 h-5 w-5" /></Link>
                     </Button>
@@ -320,43 +345,32 @@ export default function BlogPostPage() {
 
                  <hr className="border-black/10 dark:border-white/10" />
 
-                 <div className="mt-8 py-4">
-                    <p className="text-sm text-muted-foreground mb-1">Article written by</p>
-                    <h3 className="text-xl font-bold text-foreground mb-2">{authorName}</h3>
+                 <div className="mt-8 py-4 flex items-start gap-x-4">
+                    <div>
+                        <Image
+                        src="https://placehold.co/80x80.png" 
+                        alt={creditAuthorName}
+                        width={80}
+                        height={80}
+                        className="rounded-full"
+                        data-ai-hint="author portrait"
+                        />
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-sm text-muted-foreground mb-0.5">Article written by</p>
+                        <h3 className="text-2xl font-bold text-foreground mb-2">{creditAuthorName}</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                         {creditAuthorDescription}
+                        </p>
+                    </div>
                  </div>
               </div>
 
             </div>
 
-            {/* Right Column: Sticky Sidebar (Image, TOC, Share) */}
+            {/* Right Column: Sticky Sidebar (TOC, Share) */}
             <div className="lg:col-span-4 order-1 lg:order-2 mb-10 lg:mb-0">
               <div className="sticky top-24 space-y-6">
-                {post.cover_image_url && (
-                  <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20">
-                    <Image
-                      src={post.cover_image_url}
-                      alt={post.title || 'Blog post cover image'}
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 33vw"
-                      className="object-cover"
-                      priority
-                      data-ai-hint="woman stress laptop" 
-                    />
-                  </div>
-                )}
-                {!post.cover_image_url && (
-                   <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 bg-muted flex items-center justify-center">
-                      <Image
-                        src="https://placehold.co/600x375.png" 
-                        alt="Placeholder image"
-                        width={600}
-                        height={375}
-                        className="object-cover"
-                        data-ai-hint="woman stress laptop"
-                      />
-                   </div>
-                )}
-                
                 <TableOfContents
                   tocItems={tocItems}
                   isLoading={isLoading}
