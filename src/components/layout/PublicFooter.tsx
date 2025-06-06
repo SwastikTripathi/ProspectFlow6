@@ -14,9 +14,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
-const footerLinkConfig = [
+const footerLinkConfigBase = [
   {
     title: 'Explore',
     links: [
@@ -43,6 +44,7 @@ const footerLinkConfig = [
     title: 'Get Help',
     links: [
       { name: 'Contact Us', href: '/contact' },
+      // Country selector will be manually added here
     ],
   },
 ];
@@ -56,46 +58,49 @@ const sampleCountries = [
   { code: 'AU', name: 'Australia' },
 ];
 
-const LOCAL_STORAGE_COUNTRY_KEY = 'prospectflow-selected-country';
+const LOCAL_STORAGE_COUNTRY_KEY = 'prospectflow-selected-country-name';
 
 export function PublicFooter() {
-  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [selectedCountryName, setSelectedCountryName] = useState<string | null>(null);
+  const [countrySearchInput, setCountrySearchInput] = useState('');
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-    const storedCountry = localStorage.getItem(LOCAL_STORAGE_COUNTRY_KEY);
-    if (storedCountry) {
-      setSelectedCountry(storedCountry);
-    } else {
-      // Default to a country or leave null if no default is desired
-      // setSelectedCountry('US'); // Example: Default to US
+    const storedCountryName = localStorage.getItem(LOCAL_STORAGE_COUNTRY_KEY);
+    if (storedCountryName) {
+      setSelectedCountryName(storedCountryName);
     }
   }, []);
 
-  const handleCountrySelect = (countryCode: string) => {
-    setSelectedCountry(countryCode);
-    localStorage.setItem(LOCAL_STORAGE_COUNTRY_KEY, countryCode);
-    // Optionally, you could add a toast notification here
-    // toast({ title: "Country Selected", description: `Country set to ${sampleCountries.find(c => c.code === countryCode)?.name}.`})
+  const handleCountrySelect = (name: string) => {
+    setSelectedCountryName(name);
+    localStorage.setItem(LOCAL_STORAGE_COUNTRY_KEY, name);
+    setCountrySearchInput(''); // Clear search input after selection
   };
 
   if (!isMounted) {
-    // Avoid hydration mismatch by rendering a placeholder or null until client-side mount
     return (
       <footer className="bg-slate-900 text-slate-300">
         <div className="container mx-auto px-[5vw] md:px-[10vw] py-12 md:py-16">
-          {/* Render a simplified or skeleton footer or nothing */}
+          {/* Skeleton or simplified footer */}
         </div>
       </footer>
     );
   }
 
+  const filteredSampleCountries = sampleCountries.filter(country =>
+    country.name.toLowerCase().includes(countrySearchInput.toLowerCase())
+  );
+
+  const showCustomCountryOption = countrySearchInput.trim() !== '' &&
+    !sampleCountries.some(c => c.name.toLowerCase() === countrySearchInput.trim().toLowerCase());
+
   return (
     <footer className="bg-slate-900 text-slate-300">
       <div className="container mx-auto px-[5vw] md:px-[10vw] py-12 md:py-16">
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-          {footerLinkConfig.map((category) => (
+          {footerLinkConfigBase.map((category) => (
             <div key={category.title}>
               <h5 className="font-bold text-slate-50 mb-4">{category.title}</h5>
               <ul className="space-y-2">
@@ -106,34 +111,56 @@ export function PublicFooter() {
                     </Link>
                   </li>
                 ))}
+                {category.title === 'Get Help' && (
+                  <li className="mt-2">
+                    <DropdownMenu onOpenChange={(open) => { if (!open) setCountrySearchInput(''); }}>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200 hover:text-slate-50 text-left">
+                          <span className="truncate">Country: {selectedCountryName || 'Not Set'}</span>
+                          <Globe className="h-4 w-4 opacity-50 ml-2 flex-shrink-0" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-64 bg-slate-800 border-slate-700 text-slate-200">
+                        <div className="p-2">
+                          <Input
+                            placeholder="Search or type country..."
+                            value={countrySearchInput}
+                            onChange={(e) => setCountrySearchInput(e.target.value)}
+                            className="bg-slate-700 border-slate-600 text-slate-50 placeholder:text-slate-400 focus:border-primary"
+                          />
+                        </div>
+                        <DropdownMenuSeparator className="bg-slate-700"/>
+                        {filteredSampleCountries.map((country) => (
+                          <DropdownMenuItem
+                            key={country.code}
+                            onSelect={() => handleCountrySelect(country.name)}
+                            className="hover:!bg-slate-700 hover:!text-slate-50 focus:!bg-slate-700 focus:!text-slate-50"
+                          >
+                            <span className="flex-1">{country.name}</span>
+                            {selectedCountryName === country.name && <Check className="h-4 w-4 text-primary" />}
+                          </DropdownMenuItem>
+                        ))}
+                        {showCustomCountryOption && (
+                          <>
+                            {filteredSampleCountries.length > 0 && <DropdownMenuSeparator className="bg-slate-700"/>}
+                            <DropdownMenuItem
+                              onSelect={() => handleCountrySelect(countrySearchInput.trim())}
+                              className="hover:!bg-slate-700 hover:!text-slate-50 focus:!bg-slate-700 focus:!text-slate-50"
+                            >
+                              Set country to: "{countrySearchInput.trim()}"
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                         {filteredSampleCountries.length === 0 && !showCustomCountryOption && countrySearchInput.trim() !== '' && (
+                            <DropdownMenuItem disabled className="text-slate-400">No matching countries</DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </li>
+                )}
               </ul>
             </div>
           ))}
-           <div>
-              <h5 className="font-bold text-slate-50 mb-4">Preferences</h5>
-               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200 hover:text-slate-50">
-                    <span>Country {selectedCountry ? `(${selectedCountry})` : ''}</span>
-                    <Globe className="h-4 w-4 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-slate-800 border-slate-700 text-slate-200">
-                  <DropdownMenuLabel className="text-slate-400">Select Country</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-slate-700"/>
-                  {sampleCountries.map((country) => (
-                    <DropdownMenuItem
-                      key={country.code}
-                      onSelect={() => handleCountrySelect(country.code)}
-                      className="hover:!bg-slate-700 hover:!text-slate-50 focus:!bg-slate-700 focus:!text-slate-50"
-                    >
-                      <span className="flex-1">{country.name}</span>
-                      {selectedCountry === country.code && <Check className="h-4 w-4 text-primary" />}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
         </div>
         <div className="border-t border-slate-700 pt-8 flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
@@ -153,3 +180,4 @@ export function PublicFooter() {
     </footer>
   );
 }
+
