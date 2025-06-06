@@ -19,22 +19,22 @@ const footerLinkConfig = [
     title: 'Company',
     links: [
       { name: 'About Us', href: '/about' },
-      { name: 'Careers', href: '#' }, // Placeholder, update href when page exists
-      { name: 'Partner with Us', href: '#' }, // Placeholder
+      { name: 'Careers', href: '/careers' },
+      { name: 'Partner with Us', href: '/partner-with-us' },
     ],
   },
   {
     title: 'Legal',
     links: [
-      { name: 'Privacy Policy', href: '#' }, // Placeholder
-      { name: 'Terms & Conditions', href: '#' }, // Placeholder
+      { name: 'Privacy Policy', href: '/privacy-policy' },
+      { name: 'Terms & Conditions', href: '/terms-and-conditions' },
     ],
   },
   {
     title: 'Get Help',
-    isHelpSection: true, 
+    isHelpSection: true,
     links: [
-      { name: 'Contact Us', href: 'mailto:support@prospectflow.com' },
+      { name: 'Contact Us', href: '/contact' },
     ],
   },
 ];
