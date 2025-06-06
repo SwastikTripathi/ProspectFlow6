@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Loader2, Rss, Search as SearchIcon, XCircle, ArrowRight } from 'lucide-react';
 import { PublicNavbar } from '@/components/layout/PublicNavbar';
+import { PublicFooter } from '@/components/layout/PublicFooter'; // Added import
 import { cn } from '@/lib/utils';
 
 
@@ -141,8 +142,8 @@ export default function BlogPage() {
                                 />
                                 <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 {searchTerm && (
-                                    <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setSearchTerm('')}>
-                                        <XCircle className="h-4 w-4 text-muted-foreground" />
+                                    <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 hover:bg-transparent focus-visible:bg-transparent hover:text-primary" onClick={() => setSearchTerm('')}>
+                                        <XCircle className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
                                     </Button>
                                 )}
                             </div>
@@ -183,6 +184,7 @@ export default function BlogPage() {
           )}
         </section>
       </main>
+      <PublicFooter />
     </div>
   );
 }
