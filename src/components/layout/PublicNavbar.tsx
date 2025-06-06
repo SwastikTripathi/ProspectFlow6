@@ -183,7 +183,7 @@ export function PublicNavbar({ activeLink }: PublicNavbarProps) {
                  <div className="my-1 h-px bg-muted" />
                 <button
                   onClick={handleSignOut}
-                  className={cn(menuItemClass, "w-full text-destructive hover:bg-destructive/20 focus:bg-destructive/20 focus:text-destructive")}
+                  className={cn(menuItemClass, "w-full text-destructive hover:bg-destructive/20 hover:text-destructive focus:bg-destructive/20 focus:text-destructive")}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sign Out</span>
