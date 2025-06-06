@@ -10,13 +10,13 @@ import { CheckCircle, Circle, Loader2, CreditCard, HelpCircle } from 'lucide-rea
 import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
-import type { UserSubscription, AvailablePlan, SubscriptionTier, SubscriptionStatus, InvoiceData } from '@/lib/types';
+import type { UserSubscription, AvailablePlan, SubscriptionTier, SubscriptionStatus, InvoiceData, InvoiceRecord } from '@/lib/types';
 import { createRazorpayOrder, verifyRazorpayPayment } from '@/app/actions/razorpayActions';
 import { addMonths, isFuture, format } from 'date-fns';
 import { ALL_AVAILABLE_PLANS } from '@/lib/config';
 import { cn } from '@/lib/utils';
 import { generateInvoicePdf } from '@/lib/invoiceGenerator';
-import { AskForNameDialog } from '@/components/AskForNameDialog'; // New Import
+import { AskForNameDialog } from '@/components/AskForNameDialog';
 
 const NEXT_PUBLIC_RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
@@ -31,13 +31,12 @@ interface PlanDisplayInfo {
   discountPercentage?: number;
 }
 
-// Data structure to hold information needed for invoice generation
-// if we have to wait for user to input their name.
 interface PendingInvoiceContext {
   plan: AvailablePlan;
   paymentId: string;
   orderId: string;
   finalAmountPaid: number;
+  invoiceNumber: string;
 }
 
 export default function BillingPage() {
@@ -159,9 +158,11 @@ export default function BillingPage() {
     }
   };
 
-  const proceedToGenerateInvoice = (userNameForInvoice: string, context: PendingInvoiceContext) => {
+  const proceedToGenerateInvoiceAndSaveRecord = async (userNameForInvoice: string, context: PendingInvoiceContext) => {
+    if (!currentUser) return;
+
     const invoiceData: InvoiceData = {
-      invoiceNumber: `INV-${format(new Date(), 'yyyyMMdd')}-${context.orderId.slice(-6)}`,
+      invoiceNumber: context.invoiceNumber,
       invoiceDate: format(new Date(), 'PPP'),
       userName: userNameForInvoice,
       userEmail: currentUser?.email || 'N/A',
@@ -169,19 +170,48 @@ export default function BillingPage() {
       planPrice: context.finalAmountPaid,
       paymentId: context.paymentId,
       orderId: context.orderId,
-      companyName: "ProspectFlow Inc.",
-      companyAddress: "123 Innovation Drive, Tech City, ST 54321",
-      companyContact: "contact@prospectflow.com",
+      companyName: "ProspectFlow Inc.", // Placeholder
+      companyAddress: "123 Innovation Drive, Tech City, ST 54321", // Placeholder
+      companyContact: "contact@prospectflow.com", // Placeholder
     };
 
     try {
       generateInvoicePdf(invoiceData);
-      // Future: Save invoice metadata to Supabase `invoices` table here
-      // For example: await supabase.from('invoices').insert({ user_id: currentUser.id, ...invoiceData });
     } catch (pdfError: any) {
       toast({
-        title: 'Invoice Generation Failed',
+        title: 'Invoice PDF Generation Failed',
         description: `Could not generate PDF: ${pdfError.message}. Your subscription is active. Please contact support for an invoice.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    }
+
+    // Save invoice record to database
+    const invoiceRecord: InvoiceRecord = {
+      user_id: currentUser.id,
+      invoice_number: context.invoiceNumber,
+      plan_id: context.plan.id,
+      plan_name: context.plan.name,
+      amount_paid: context.finalAmountPaid,
+      currency: 'INR',
+      razorpay_payment_id: context.paymentId,
+      razorpay_order_id: context.orderId,
+    };
+
+    try {
+      const { error: dbError } = await supabase.from('invoices').insert(invoiceRecord);
+      if (dbError) {
+        throw dbError;
+      }
+      toast({
+        title: 'Invoice Record Saved',
+        description: 'Your invoice details have been saved to our records.',
+        duration: 5000,
+      });
+    } catch (saveError: any) {
+      toast({
+        title: 'Failed to Save Invoice Record',
+        description: `PDF generated, but failed to save record: ${saveError.message}. Please contact support if you need this record.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -202,20 +232,18 @@ export default function BillingPage() {
 
       if (userUpdateError) throw userUpdateError;
 
-      // Refresh currentUser state or specifically update the name
       setCurrentUser(prevUser => prevUser ? {...prevUser, user_metadata: {...prevUser.user_metadata, full_name: submittedName}} : null);
       
       toast({ title: 'Name Updated', description: 'Your name has been saved to your profile.' });
       
-      proceedToGenerateInvoice(submittedName, pendingInvoiceContext);
+      await proceedToGenerateInvoiceAndSaveRecord(submittedName, pendingInvoiceContext);
 
     } catch (error: any) {
       toast({ title: 'Error Updating Name', description: error.message, variant: 'destructive' });
-      // Still attempt to generate invoice with email as fallback if name update fails
-      proceedToGenerateInvoice(currentUser.email || 'Valued Customer', pendingInvoiceContext);
+      await proceedToGenerateInvoiceAndSaveRecord(currentUser.email || 'Valued Customer', pendingInvoiceContext);
     } finally {
       setIsAskNameDialogOpen(false);
-      setPendingInvoiceContext(null); // Clear pending context
+      setPendingInvoiceContext(null);
     }
   };
 
@@ -227,12 +255,13 @@ export default function BillingPage() {
   ) => {
     if (!currentUser) return;
     
-    await fetchSubscription(); // Refresh subscription display first
+    await fetchSubscription(); 
 
     const userNameForInvoice = currentUser.user_metadata?.full_name || '';
+    const invoiceNumber = `INV-${format(new Date(), 'yyyyMMdd')}-${orderId.slice(-6)}`;
 
     if (!userNameForInvoice) {
-      setPendingInvoiceContext({ plan, paymentId, orderId, finalAmountPaid });
+      setPendingInvoiceContext({ plan, paymentId, orderId, finalAmountPaid, invoiceNumber });
       setIsAskNameDialogOpen(true);
       toast({
           title: 'Name Required for Invoice',
@@ -240,7 +269,7 @@ export default function BillingPage() {
           duration: 7000,
       });
     } else {
-      proceedToGenerateInvoice(userNameForInvoice, { plan, paymentId, orderId, finalAmountPaid });
+      await proceedToGenerateInvoiceAndSaveRecord(userNameForInvoice, { plan, paymentId, orderId, finalAmountPaid, invoiceNumber });
     }
   };
 
