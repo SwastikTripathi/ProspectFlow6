@@ -295,7 +295,11 @@ export default function CompaniesPage() {
             onClick={() => setShowOnlyFavorites(!showOnlyFavorites)}
             disabled={!currentUser || isLoading}
             title={showOnlyFavorites ? "Show All Companies" : "Show Only Favorites"}
-            className={cn(showOnlyFavorites && "border-yellow-500 ring-2 ring-yellow-500/50")}
+            className={cn(
+                showOnlyFavorites ? 
+                "border-yellow-500 ring-2 ring-yellow-500/50 hover:bg-primary" : 
+                "hover:bg-background hover:text-muted-foreground"
+            )}
           >
             <Star className={cn("h-5 w-5", showOnlyFavorites ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground")} />
             <span className="sr-only">{showOnlyFavorites ? "Show All" : "Show Favorites"}</span>
