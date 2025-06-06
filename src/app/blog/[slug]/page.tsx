@@ -8,7 +8,7 @@ import { useParams, notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import type { Tables } from '@/lib/database.types';
 import { format, parseISO } from 'date-fns';
-import { Loader2, Tag, UserCircle2, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe } from 'lucide-react';
+import { Loader2, Tag, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe, ArrowRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import Article from '../components/Article';
@@ -18,9 +18,10 @@ import { cn } from '@/lib/utils';
 import { Logo } from '@/components/icons/Logo';
 import { Around } from "@theme-toggles/react";
 import "@theme-toggles/react/css/Around.css";
+import { Progress } from '@/components/ui/progress';
 
 
-const NAVBAR_HEIGHT_OFFSET = 80; // Approx height of sticky navbar + buffer
+const NAVBAR_HEIGHT_OFFSET = 80;
 
 const footerLinks = {
     product: [
@@ -122,7 +123,7 @@ export default function BlogPostPage() {
     }
 
     const headings = Array.from(
-      mainContentRef.current.querySelectorAll('h1, h2, h3, h4')
+      mainContentRef.current.querySelectorAll('h1, h2') // Only H1 and H2 for TOC
     ) as HTMLElement[];
 
     headingElementsRef.current = headings;
@@ -142,13 +143,13 @@ export default function BlogPostPage() {
 
 
   const handleScroll = useCallback(() => {
-    if (!headingElementsRef.current.length || !tocItems.length) return;
+    if (!headingElementsRef.current.length || !tocItems.length || !mainContentRef.current) return;
 
     let currentActiveIndex = -1;
     for (let i = headingElementsRef.current.length - 1; i >= 0; i--) {
       const heading = headingElementsRef.current[i];
       const rect = heading.getBoundingClientRect();
-      if (rect.top < NAVBAR_HEIGHT_OFFSET + 20) { // +20 for a bit of buffer
+      if (rect.top < NAVBAR_HEIGHT_OFFSET + 20) { 
         currentActiveIndex = i;
         break;
       }
@@ -158,22 +159,13 @@ export default function BlogPostPage() {
     setActiveHeadingId(newActiveId);
     
     let percentage = 0;
-    if (currentActiveIndex !== -1) {
-      // Base percentage on the active section being started
-      percentage = (currentActiveIndex / tocItems.length) * 100;
+    if (currentActiveIndex !== -1 && tocItems.length > 0) {
+      percentage = ((currentActiveIndex + 1) / tocItems.length) * 100;
     }
     
-    // If near the bottom of the page, consider it 100%
-    // (window.innerHeight + window.scrollY) is the bottom of the viewport relative to the document
-    // document.body.offsetHeight is the total height of the document
     if (mainContentRef.current && (window.innerHeight + window.scrollY) >= (mainContentRef.current.offsetTop + mainContentRef.current.offsetHeight - 30) ) {
       percentage = 100;
-    } else if (currentActiveIndex === tocItems.length -1) { // If last heading is active, show progress based on its start
-         percentage = (currentActiveIndex / tocItems.length) * 100;
-    } else if (currentActiveIndex !== -1) { // Otherwise, if a heading is active, show completion of that section
-         percentage = ((currentActiveIndex + 1) / tocItems.length) * 100;
     }
-
 
     setScrollPercentage(Math.min(100, Math.max(0, percentage)));
 
@@ -283,12 +275,9 @@ export default function BlogPostPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 lg:gap-x-12 xl:gap-x-16">
             {/* Left Column: Article Content */}
             <div className="lg:col-span-8 order-2 lg:order-1">
-              <div className="flex items-center space-x-3 mb-4 text-sm">
-                <UserCircle2 className="h-8 w-8 text-muted-foreground" /> {/* Placeholder Avatar */}
-                <div>
-                  <p className="font-medium text-foreground">{authorName}</p>
-                  <p className="text-muted-foreground">{displayDate}</p>
-                </div>
+              <div className="mb-4">
+                <p className="font-semibold text-foreground">{authorName}</p>
+                <p className="text-sm text-muted-foreground">{displayDate}</p>
               </div>
 
               <h1 className="text-3xl sm:text-4xl md:text-[2.5rem] font-bold tracking-tight mb-3 text-gray-900 dark:text-gray-100 leading-tight">
@@ -305,6 +294,29 @@ export default function BlogPostPage() {
               <div ref={mainContentRef}>
                 <Article content={post.content} />
               </div>
+              
+              {/* CTA and Author Bio */}
+              <div className="mt-12 pt-8">
+                 <div className="text-center mb-12">
+                    <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base py-3 px-6 rounded-lg shadow-md" asChild>
+                        <Link href="/pricing">START YOUR FREE 14-DAY TRIAL <ArrowRight className="ml-2 h-5 w-5" /></Link>
+                    </Button>
+                 </div>
+
+                 <hr className="border-black/10 dark:border-white/10" />
+
+                 <div className="mt-8 py-4">
+                    <p className="text-sm text-muted-foreground mb-1">Article written by</p>
+                    <h3 className="text-xl font-bold text-foreground mb-2">Kaleigh Moore</h3>
+                    <p className="text-base text-muted-foreground leading-relaxed mb-4">
+                        Freelance writer for eCommerce & SaaS companies. I write blogs and articles for eCommerce platforms & the SaaS tools that integrate with them.
+                    </p>
+                    <a href="https://twitter.com/example" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
+                        <Twitter size={20} />
+                    </a>
+                 </div>
+              </div>
+
             </div>
 
             {/* Right Column: Sticky Sidebar (Image, TOC, Share) */}
@@ -326,7 +338,7 @@ export default function BlogPostPage() {
                 {!post.cover_image_url && (
                    <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 bg-muted flex items-center justify-center">
                       <Image
-                        src="https://placehold.co/600x375.png" // Aspect ratio matches 16/10 for placeholder
+                        src="https://placehold.co/600x375.png" 
                         alt="Placeholder image"
                         width={600}
                         height={375}
@@ -417,6 +429,4 @@ export default function BlogPostPage() {
     </div>
   );
 }
-    
-
     
