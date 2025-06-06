@@ -8,7 +8,7 @@ import { useParams, notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import type { Tables } from '@/lib/database.types';
 import { format, parseISO } from 'date-fns';
-import { Loader2, Tag, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe, ArrowRight } from 'lucide-react';
+import { Loader2, Tag, Facebook, Twitter, Linkedin, Link as LinkIcon, Globe, ArrowRight, Youtube } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import Article from '../components/Article';
@@ -20,7 +20,7 @@ import { Around } from "@theme-toggles/react";
 import "@theme-toggles/react/css/Around.css";
 
 
-const NAVBAR_HEIGHT_OFFSET = 80; 
+const NAVBAR_HEIGHT_OFFSET = 80; // Approx height of the main navbar
 
 const footerLinks = {
     product: [
@@ -117,22 +117,23 @@ export default function BlogPostPage() {
   useEffect(() => {
     if (!post || !mainContentRef.current) {
       setTocItems([]);
+      headingElementsRef.current = [];
       return;
     }
 
-    // Generate TOC from H1 headings
+    // Generate TOC from H1 headings only
     const headings = Array.from(
       mainContentRef.current.querySelectorAll('h1') 
     ) as HTMLElement[];
 
     headingElementsRef.current = headings;
 
-    const newTocItems = headings.map((heading) => {
+    const newTocItems = headings.map((heading, index) => {
       const text = heading.textContent || '';
-      const level = parseInt(heading.tagName.substring(1), 10); // Will be 1
+      const level = parseInt(heading.tagName.substring(1), 10);
       let id = heading.id;
       if (!id) {
-        id = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+        id = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || `heading-${index}`;
         heading.id = id;
       }
       return { id, level, text };
@@ -142,14 +143,21 @@ export default function BlogPostPage() {
 
 
   const handleScroll = useCallback(() => {
-    if (!mainContentRef.current) return;
+    if (!mainContentRef.current || headingElementsRef.current.length === 0) return;
 
     let currentActiveIndex = -1;
-    for (let i = headingElementsRef.current.length - 1; i >= 0; i--) {
+    // Iterate from top to bottom. The active heading is the *last one*
+    // whose top has passed or is at/just above the navbar line.
+    for (let i = 0; i < headingElementsRef.current.length; i++) {
         const heading = headingElementsRef.current[i];
         const rect = heading.getBoundingClientRect();
-        if (rect.top < NAVBAR_HEIGHT_OFFSET + 20) { 
+
+        // If the heading's top is at or above the (navbar_height + small_buffer)
+        if (rect.top <= NAVBAR_HEIGHT_OFFSET + 20) { 
             currentActiveIndex = i;
+        } else {
+            // This heading and subsequent ones are below the threshold,
+            // so the previous one (if any) was the correct one.
             break;
         }
     }
@@ -158,11 +166,12 @@ export default function BlogPostPage() {
     if (activeHeadingId !== newActiveId) {
         setActiveHeadingId(newActiveId);
     }
-  }, [activeHeadingId]);
+  }, [activeHeadingId]); // Removed NAVBAR_HEIGHT_OFFSET from dependencies as it's constant
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
     window.addEventListener('resize', handleScroll);
+    // Initial call to set active heading based on current scroll position
     handleScroll(); 
     return () => {
       window.removeEventListener('scroll', handleScroll);
@@ -220,8 +229,8 @@ export default function BlogPostPage() {
 
   const displayDate = post.published_at ? format(parseISO(post.published_at), 'MMMM d, yyyy') : format(parseISO(post.created_at), 'MMMM d, yyyy');
   const authorName = post.author_name_cache || 'ProspectFlow Team';
-  const creditAuthorName = "Kaleigh Moore"; 
-  const creditAuthorDescription = "Freelance writer for eCommerce & SaaS companies. I write blogs and articles for eCommerce platforms & the SaaS tools that integrate with them.";
+  const creditAuthorName = "Kaleigh Moore"; // As per image
+  const creditAuthorDescription = "Freelance writer for eCommerce & SaaS companies. I write blogs and articles for eCommerce platforms & the SaaS tools that integrate with them."; // As per image
 
 
   return (
@@ -264,35 +273,41 @@ export default function BlogPostPage() {
 
       <main className="flex-1 py-12 md:py-16">
         <div className="container mx-auto px-[5vw] md:px-[8vw] lg:px-[10vw] max-w-screen-xl">
+          {/* Cover Image - Moved to its own row, constrained width */}
+          {post.cover_image_url && (
+            <div className="max-w-4xl mx-auto mb-8">
+              <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20">
+                <Image
+                  src={post.cover_image_url}
+                  alt={post.title || 'Blog post cover image'}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 80vw, 60vw" // Adjust sizes as needed
+                  className="object-cover"
+                  priority
+                  data-ai-hint="woman stress laptop"
+                />
+              </div>
+            </div>
+          )}
+          {!post.cover_image_url && ( 
+             <div className="max-w-4xl mx-auto mb-8">
+               <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 bg-muted flex items-center justify-center">
+                  <Image
+                      src="https://placehold.co/800x500.png" 
+                      alt="Placeholder image"
+                      width={800}
+                      height={500}
+                      className="object-cover"
+                      data-ai-hint="woman stress laptop"
+                  />
+               </div>
+             </div>
+          )}
+
+          {/* Two-column layout for content and TOC */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 lg:gap-x-12 xl:gap-x-16">
             {/* Left Column: Article Content */}
             <div className="lg:col-span-8 order-2 lg:order-1">
-              {post.cover_image_url && (
-                <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 mb-8">
-                  <Image
-                    src={post.cover_image_url}
-                    alt={post.title || 'Blog post cover image'}
-                    fill
-                    sizes="(max-width: 1024px) 100vw, (max-width: 1280px) 66vw, 50vw"
-                    className="object-cover"
-                    priority
-                    data-ai-hint="woman stress laptop"
-                  />
-                </div>
-              )}
-               {!post.cover_image_url && ( 
-                 <div className="aspect-[16/10] relative rounded-xl overflow-hidden shadow-lg border border-border/20 bg-muted flex items-center justify-center mb-8">
-                    <Image
-                        src="https://placehold.co/800x500.png" 
-                        alt="Placeholder image"
-                        width={800}
-                        height={500}
-                        className="object-cover"
-                        data-ai-hint="woman stress laptop"
-                    />
-                 </div>
-              )}
-
               <div className="mb-4 text-sm text-muted-foreground">
                   <span>{authorName}</span>
                   <span className="mx-1.5">&bull;</span>
@@ -315,7 +330,7 @@ export default function BlogPostPage() {
               </div>
               
               <div className="mt-4"> 
-                 <div className="text-center mb-10 pt-4"> 
+                 <div className="text-center mb-10 pt-2"> {/* Reduced top padding for CTA */}
                     <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base py-3 px-6 rounded-lg shadow-md" asChild>
                         <Link href="/pricing">START YOUR FREE 14-DAY TRIAL <ArrowRight className="ml-2 h-5 w-5" /></Link>
                     </Button>
@@ -348,7 +363,7 @@ export default function BlogPostPage() {
 
             {/* Right Column: Sticky Sidebar (TOC, Share) */}
             <div className="lg:col-span-4 order-1 lg:order-2 mb-10 lg:mb-0">
-              <div className="sticky top-48 space-y-6"> {/* Adjusted top-X for vertical alignment */}
+              <div className="sticky top-24 space-y-6"> {/* Adjusted top-X based on navbar height (h-16 ~ 4rem, top-24 ~ 6rem, so 2rem below navbar) */}
                 <TableOfContents
                   tocItems={tocItems}
                   isLoading={isLoading}
@@ -421,6 +436,7 @@ export default function BlogPostPage() {
             <div className="flex space-x-4">
               <a href="#" aria-label="Facebook" className="text-slate-400 hover:text-primary transition-colors"><Facebook size={20} /></a>
               <a href="#" aria-label="Twitter" className="text-slate-400 hover:text-primary transition-colors"><Twitter size={20} /></a>
+               <a href="#" aria-label="YouTube" className="text-slate-400 hover:text-primary transition-colors"><Youtube size={20} /></a>
               <a href="#" aria-label="LinkedIn" className="text-slate-400 hover:text-primary transition-colors"><Linkedin size={20} /></a>
             </div>
           </div>
@@ -430,3 +446,4 @@ export default function BlogPostPage() {
   );
 }
     
+
