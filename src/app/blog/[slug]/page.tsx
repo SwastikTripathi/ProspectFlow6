@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams, notFound, useRouter } from 'next/navigation';
@@ -11,7 +11,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, CalendarDays, UserCircle as UserIcon, Edit3, Trash2, ArrowRight, Facebook, Twitter, Youtube, Linkedin, Globe as FooterGlobeIcon } from 'lucide-react'; // Added Youtube here
+import { Loader2, ArrowLeft, CalendarDays, UserCircle as UserIcon, Edit3, Trash2, ArrowRight, Facebook, Twitter, Youtube, Linkedin, Globe as FooterGlobeIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Logo } from '@/components/icons/Logo';
 import { Around } from "@theme-toggles/react";
@@ -66,7 +66,7 @@ export default function BlogPostPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
   const [scrollPercentage, setScrollPercentage] = useState(0);
-  const articleContentRef = useRef<HTMLDivElement>(null);
+  const headingElementsRef = useRef<(HTMLElement | null)[]>([]);
 
 
   useEffect(() => {
@@ -133,61 +133,81 @@ export default function BlogPostPage() {
     fetchPost();
   }, [slug]);
 
-  useEffect(() => {
+  const generateToc = useCallback(() => {
     if (post?.content) {
-      const newTocItems: TocItem[] = [];
-      const headingRegex = /^(#{1,4})\s+(.*)/gm;
-      let match;
-      const tempContent = post.content.replace(/```[\s\S]*?```/g, '');
+        const newTocItems: TocItem[] = [];
+        const tempContent = post.content.replace(/```[\s\S]*?```/g, ''); // Exclude code blocks
+        const headingRegex = /^(#{1,4})\s+(.*)/gm; // Capture H1 to H4
+        let match;
+        
+        headingElementsRef.current = []; // Clear previous refs
 
-      while ((match = headingRegex.exec(tempContent)) !== null) {
-        const level = match[1].length;
-        const text = match[2].trim();
-        const id = slugify(text);
-        if (text) {
-            newTocItems.push({ id, level, text });
+        while ((match = headingRegex.exec(tempContent)) !== null) {
+            const level = match[1].length;
+            const text = match[2].trim();
+            const id = slugify(text);
+            if (text) {
+                newTocItems.push({ id, level, text });
+                // We'll populate headingElementsRef after render
+            }
         }
-      }
-      setTocItems(newTocItems);
+        setTocItems(newTocItems);
     } else {
-      setTocItems([]);
+        setTocItems([]);
+        headingElementsRef.current = [];
     }
   }, [post?.content]);
 
   useEffect(() => {
-    const articleElement = articleContentRef.current;
-    if (!articleElement) return;
+    generateToc();
+  }, [generateToc]);
+  
+  useEffect(() => {
+    // Populate headingElementsRef after tocItems are set and component has rendered
+    if (tocItems.length > 0) {
+        headingElementsRef.current = tocItems.map(item => document.getElementById(item.id));
+    }
+  }, [tocItems]);
 
+
+  useEffect(() => {
     const handleScroll = () => {
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      const articleTop = articleElement.offsetTop;
-      const articleHeight = articleElement.scrollHeight;
-      const viewportHeight = window.innerHeight;
-      
-      let scrolledPastArticleStart = Math.max(0, scrollTop - articleTop);
-      
-      let scrollableDistanceInArticle = articleHeight - viewportHeight;
-      if (scrollableDistanceInArticle <=0) { 
-        setScrollPercentage(scrollTop > articleTop ? 100: 0); 
-        return;
-      }
+        if (headingElementsRef.current.length === 0) {
+            setScrollPercentage(0);
+            return;
+        }
 
-      let percentage = (scrolledPastArticleStart / scrollableDistanceInArticle) * 100;
-      percentage = Math.min(100, Math.max(0, percentage));
-      setScrollPercentage(percentage);
+        const viewportTopOffset = window.innerHeight * 0.10; // 10% from the top
+        let passedHeadingsCount = 0;
+
+        for (const headingEl of headingElementsRef.current) {
+            if (headingEl) {
+                const rect = headingEl.getBoundingClientRect();
+                if (rect.top < viewportTopOffset) {
+                    passedHeadingsCount++;
+                }
+            }
+        }
+        
+        const totalHeadings = headingElementsRef.current.filter(el => el !== null).length;
+        if (totalHeadings === 0) {
+            setScrollPercentage(0);
+            return;
+        }
+
+        const percentage = (passedHeadingsCount / totalHeadings) * 100;
+        setScrollPercentage(Math.min(100, Math.max(0, percentage)));
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); 
-
     window.addEventListener('resize', handleScroll, { passive: true });
-
+    handleScroll(); // Initial calculation
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
     };
-  }, [post?.content, isLoading]); 
+  }, [tocItems]); // Re-run if tocItems changes (though headingElementsRef population depends on it too)
 
 
   useEffect(() => {
@@ -245,7 +265,8 @@ export default function BlogPostPage() {
     h2: headingRenderer(2),
     h3: headingRenderer(3),
     h4: headingRenderer(4),
-    h5: headingRenderer(5),
+    // h5 and h6 won't be in TOC but will still render with IDs if present in content
+    h5: headingRenderer(5), 
     h6: headingRenderer(6),
   };
 
@@ -369,7 +390,7 @@ export default function BlogPostPage() {
             </div>
 
             <div className="lg:grid lg:grid-cols-[1fr_260px] lg:gap-10 xl:gap-16">
-                <div className="min-w-0 order-first"> {/* Changed order */}
+                <div className="min-w-0 order-first">
                     <article>
                         <header className="mb-8">
                         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 font-headline text-foreground">
@@ -402,8 +423,7 @@ export default function BlogPostPage() {
                         )}
 
                         <div 
-                          ref={articleContentRef} 
-                          className="prose prose-lg dark:prose-invert prose-headings:font-headline prose-headings:text-foreground prose-p:text-foreground/90 prose-p:leading-relaxed prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground prose-blockquote:border-primary prose-blockquote:text-muted-foreground prose-code:bg-muted prose-code:text-foreground prose-code:p-1 prose-code:rounded-sm prose-code:font-code"
+                          className="prose prose-lg dark:prose-invert prose-headings:font-headline prose-headings:text-foreground prose-p:text-foreground/90 prose-p:leading-relaxed prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground prose-blockquote:border-primary prose-blockquote:text-muted-foreground prose-code:bg-muted prose-code:text-foreground prose-code:p-1 prose-code:rounded-sm prose-code:font-code break-words"
                         >
                         <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                             {post.content}
@@ -411,7 +431,7 @@ export default function BlogPostPage() {
                         </div>
                     </article>
 
-                    <section className="mt-4 py-6">
+                    <section className="mt-4 py-4"> {/* Reduced margin-top */}
                         <div className="flex justify-center">
                         <Button size="lg" asChild className="shadow-md rounded-full">
                             <Link href="/auth?action=signup">
@@ -440,7 +460,7 @@ export default function BlogPostPage() {
                         </div>
                     </section>
                 </div>
-                <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-12rem)] overflow-y-auto pl-4 border-l border-border/60 py-2 order-last"> {/* Changed order */}
+                <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-12rem)] overflow-y-auto pr-4 border-r border-border/60 py-2 order-last"> {/* Changed pl to pr and border-l to border-r */}
                     <TableOfContents tocItems={tocItems} isLoading={isLoading} scrollPercentage={scrollPercentage} postTitle={post.title || ''} />
                 </aside>
             </div>
@@ -516,4 +536,3 @@ export default function BlogPostPage() {
     </div>
   );
 }
-
