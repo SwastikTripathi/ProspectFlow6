@@ -134,35 +134,31 @@ export default function BlogPostPage() {
   }, [slug]);
 
   const handleScroll = useCallback(() => {
-    if (headingElementsRef.current.length === 0) {
-      setActiveHeadingId(null);
-      return;
-    }
-  
-    const scrollThreshold = NAVBAR_HEIGHT_OFFSET + 10; // e.g., 64 + 10 = 74px from top
+    const activationPoint = NAVBAR_HEIGHT_OFFSET + 10; // Line below navbar
     let newActiveId: string | null = null;
   
-    // Iterate from top to bottom, find the *last* heading that is at or above the threshold
-    for (let i = 0; i < headingElementsRef.current.length; i++) {
-      const heading = headingElementsRef.current[i];
-      const rect = heading.getBoundingClientRect();
+    if (headingElementsRef.current.length > 0) {
+      let currentClosestTop = -Infinity; // Used to find the heading closest to the activationPoint from above
   
-      if (rect.top <= scrollThreshold) {
-        newActiveId = heading.id; 
-      } else {
-        // If this heading is below the threshold, all subsequent ones will also be.
-        // The newActiveId (if set from a previous iteration) is the correct one.
-        break;
+      for (const heading of headingElementsRef.current) {
+        const rect = heading.getBoundingClientRect();
+  
+        // If the heading's top is at or above the activation point
+        if (rect.top <= activationPoint) {
+          // And it's "more visible" or "lower on the page" than the previous candidate
+          // This means rect.top is closer to activationPoint (larger) than currentClosestTop
+          if (rect.top > currentClosestTop) {
+            currentClosestTop = rect.top;
+            newActiveId = heading.id;
+          }
+        }
       }
-    }
-    
-    // Fallback: If no heading is strictly "active" by being above the threshold,
-    // (e.g. user is at the very top of the page, before first heading reaches threshold)
-    // make the first heading active if it's visible on screen.
-    if (newActiveId === null && headingElementsRef.current.length > 0) {
-      const firstHeadingRect = headingElementsRef.current[0].getBoundingClientRect();
-      if (firstHeadingRect.bottom > 0 && firstHeadingRect.top < window.innerHeight) {
-          newActiveId = headingElementsRef.current[0].id;
+  
+      // Fallback: If no heading was found to be at or above the activation point
+      // (e.g., scrolled to the very top, all headings are below the line),
+      // then make the first heading active.
+      if (newActiveId === null) {
+        newActiveId = headingElementsRef.current[0].id;
       }
     }
   
@@ -346,7 +342,7 @@ export default function BlogPostPage() {
                 </div>
               )}
             </div>
-            <div className="lg:col-span-4 hidden lg:block"></div>
+            <div className="lg:col-span-4 hidden lg:block"></div> {/* Empty column to match ratio */}
           </div>
 
 
@@ -408,7 +404,7 @@ export default function BlogPostPage() {
             </div>
 
             <div className="lg:col-span-4 order-1 lg:order-2 mb-10 lg:mb-0">
-              <div className="sticky top-28 space-y-6">
+              <div className="sticky top-28 space-y-6"> {/* Adjusted sticky top value */}
                 <TableOfContents
                   tocItems={tocItems}
                   isLoading={isLoading && !mdxSource}
@@ -490,6 +486,8 @@ export default function BlogPostPage() {
     </div>
   );
 }
+    
+
     
 
     
