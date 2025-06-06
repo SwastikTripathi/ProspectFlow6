@@ -87,7 +87,7 @@ export default function AuthPage() {
         router.replace('/'); // Redirect if session already exists
       } else {
         console.log('[AuthPage] checkSession: No active session found.');
-        setIsCheckingAuth(false); 
+        setIsCheckingAuth(false);
       }
     };
     checkSession();
@@ -96,7 +96,7 @@ export default function AuthPage() {
       console.log(`[AuthPage] onAuthStateChange: Event - ${event}, Session:`, session);
       if (event === 'SIGNED_IN' && session) {
         console.log(`[AuthPage] onAuthStateChange: SIGNED_IN event. User: ${session.user?.id}. Redirecting to /.`);
-        router.replace('/'); 
+        router.replace('/');
       } else if (event === 'INITIAL_SESSION' && !session) {
         setIsCheckingAuth(false);
       }
@@ -112,7 +112,7 @@ export default function AuthPage() {
       console.log('[AuthPage] useEffect cleanup: Unsubscribing from auth state changes.');
       authSubscription?.unsubscribe();
     };
-  }, [router]); 
+  }, [router]);
 
 
   const handleSignIn = async (values: SignInFormValues) => {
@@ -131,7 +131,7 @@ export default function AuthPage() {
       } else {
         console.log('[AuthPage] handleSignIn: Sign-in successful. router.refresh() will be called. onAuthStateChange should handle redirect.');
         toast({ title: 'Signed In Successfully!'});
-        router.refresh(); 
+        router.refresh();
       }
     } catch (error: any) {
       console.error('[AuthPage] handleSignIn: Catch block error.', error);
@@ -160,7 +160,7 @@ export default function AuthPage() {
       } else if (data.session) {
         console.log('[AuthPage] handleSignUp: Sign-up successful, session created. router.refresh() will be called. onAuthStateChange should handle redirect. User:', data.user?.id);
         toast({ title: 'Account Created & Signed In!' });
-        router.refresh(); 
+        router.refresh();
       } else if (data.user && !data.session) {
         console.log('[AuthPage] handleSignUp: Sign-up successful, confirmation email sent. User:', data.user?.id);
         setShowConfirmationMessage(true);
@@ -185,10 +185,22 @@ export default function AuthPage() {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     setAuthError(null);
+    
+    const siteURL = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+    if (!siteURL) {
+      console.error('[AuthPage] handleGoogleSignIn: Could not determine site URL for redirect.');
+      toast({ title: 'Configuration Error', description: 'Could not determine site URL. Google Sign-In aborted.', variant: 'destructive' });
+      setIsGoogleLoading(false);
+      return;
+    }
+    
+    const redirectURL = `${siteURL}/auth/callback`;
+    console.log('[AuthPage] handleGoogleSignIn: Using redirect URL:', redirectURL);
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`, 
+        redirectTo: redirectURL,
       },
     });
     if (error) {
@@ -199,7 +211,7 @@ export default function AuthPage() {
     }
     // If successful, Supabase handles the redirect.
   };
-  
+
   console.log('[AuthPage] Rendering. isCheckingAuth:', isCheckingAuth, 'isLoading:', isLoading);
   if (isCheckingAuth) {
     console.log('[AuthPage] Rendering loader because isCheckingAuth is true.');
